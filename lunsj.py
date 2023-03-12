@@ -1,18 +1,4 @@
-"""
-2023-02-23 Filip Gornitzka Abelson
-Script to fetch menus from FBU canteen API and return JSON/dict with language[en/no]->menu for each canteen
-#### Examples API endpoints and web pages (removed unnecessary bloat from links in Python script, not as you find them on web or below)
-# Fresh 4 You
-curl "https://snaroyveien30-gg.issfoodservices.no/api/articles/article/200147073/p200011994--c200029061/200004464/200005204"
-https://snaroyveien30-gg.issfoodservices.no/articles/r200004464-selvbetjent-kantine--p200011994-kantine-1--c200029061-fresh-4-you/mandag--200147073
-# Eat The Street Lunch
-curl "https://snaroyveien30-gg.issfoodservices.no/api/articles/article/200132372/p200011994--c200028866/200004464/200005204"
-https://snaroyveien30-gg.issfoodservices.no/articles/r200004464-selvbetjent-kantine--o200005204-kantine--p200011994-kantine-1--c200028866-eat-the-street-lunsj/fredag--200132372
-# Flow
-curl "https://snaroyveien30-gg.issfoodservices.no/api/articles/article/200132488/p200011994--c200028863/200004464/200005204"
-https://snaroyveien30-gg.issfoodservices.no/articles/r200004464-selvbetjent-kantine--o200005204-kantine--p200011994-kantine-1--c200028863-flow/tirsdag--200132488
-"""
-
+import random
 import requests
 from datetime import datetime, date
 
@@ -27,7 +13,7 @@ def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
         "**Eat The Street**": [200131936, 200132048, 200132156, 200132264, 200132372],
         "**Flow**": [200131963, 200132488, 200132183, 200147040, 200132399],
         "**Fresh 4 You**": [200147073, 200132021, 200132129, 200132237, 200132345],
-        "**_Eat The Street - Middag_**": [200131990, 200132102, 200132210, 200132318, 200132426]
+        "**_Middag - Eat The Street_**": [200131990, 200132102, 200132210, 200132318, 200132426]
     }
 
     if weekday is None:
@@ -44,6 +30,7 @@ def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
     divider = "-" * 10
     menus = data["article"]["description"].split(divider)
     weekdayy = data["article"]["name"].split(divider)
+    weekdayyy = weekdayy[0].strip(" ")
 
     # Clean menu text
     menu = {}
@@ -60,13 +47,15 @@ def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
                 continue
 
             # Remove allergy information (all trailing after " AL"), and add extra strip just in case
-            dish = dish.split(" AL")[0].strip()
-            dishes.append(dish)
+            dish = dish.split(" (")[0].strip().split(" AL")[0].strip()
+            if canteen == "**_Middag - Eat The Street_**":
+                dishes.append("_" + dish + "_")
+            else:
+                dishes.append(dish)
 
         menu[lang] = dishes
 
-    return menu
-
+    return menu, weekdayyy
 
 def format_menu(canteen_menu: dict[str, list[str]], lang: str = 'no') -> str:
     """
@@ -80,34 +69,34 @@ if __name__ == "__main__":
         "**Eat The Street**",
         "**Flow**",
         "**Fresh 4 You**",
-        "**_Eat The Street - Middag_**"
+        "**_Middag - Eat The Street_**"
     ]
 
-    # Choose lang and format output text
-    lang = 'no'
-    header = "## Dagens lunsj -" if lang == "no" else "## Today's lunch -"
+    emojies = [
+        "\U0001f354", "\U0001f356", "\U0001f969", "\U0001f953", "\U0001f96A", "\U0001f32E", "\U0001f959",
+        "\U0001f9C6", "\U0001f958", "\U0001f957", "\U0001f980", "\U0001f967", "\U0001f364", "\U0001f35C",
+        "\U0001f372", "\U0001f32F", "\U0001f355", "\U0001f357"
+    ]
 
+    lang = 'no'
     today = datetime.today()
     weekday = datetime.now()
     weekday_name = weekday.strftime('%A')
 
-    if lang == 'no':
-        if weekday_name == "Monday":
-            weekday_name = "Mandag"
-        elif weekday_name == "Tuesday":
-            weekday_name = "Tirsdag"
-        elif weekday_name == "Wednesday":
-            weekday_name = "Onsdag"
-        elif weekday_name == "Thursday":
-            weekday_name = "Torsdag"
-        elif weekday_name == "Friday":
-            weekday_name = "GOD FREDAG"
-        elif weekday_name == "Sunday":
-            weekday_name = "Søndag"
+    try:
+        meny, ukedag = get_menu(canteens[0])
+    except:
+        ukedag = weekday_name
 
-    # Printing today's menu for all canteens, as no weekday is set
-    print(header, weekday_name + ",", today.strftime("%d.%m.%Y:"))
-    for c in canteens:
-        canteen_menu = get_menu(c)
-        print(c)
-        print(format_menu(canteen_menu), "\n")
+    print("## Dagens lunsj -", ukedag + " " + today.strftime("%d.%m.%Y:"))
+
+    if weekday.weekday() > 6:
+        print("\nIngen meny på lørdag og søndag. Kom tilbake på mandag :)")
+    else:
+        for c in canteens:
+            y, v = get_menu(c,1)
+            canteen_menu = y
+            emoji_choice = random.choice(range(1, len(emojies)))
+            # print(emojies[emoji_choice] + " " + c + " " + emojies[emoji_choice])
+            print(c)
+            print(format_menu(canteen_menu), "\n")
