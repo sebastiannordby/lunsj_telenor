@@ -12,7 +12,7 @@ app.get('/', (req, res) => {
     python.stdout.on('data', function (data) {
         const buffer = Buffer.from(data);
 
-        dataToSend = buffer.toString('latin1');
+        dataToSend = buffer.toString('utf-8');
     });
 
     python.on('close', (code) => {
