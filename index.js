@@ -69,7 +69,7 @@ function getPage(req, res, day) {
                         border-radius: 20px;
                         background: #fff;
                         overflow: hidden;
-                        height: 100%;
+                        max-height: 100%;
                     }
 
                     .content {
