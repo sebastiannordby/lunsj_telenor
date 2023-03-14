@@ -3,7 +3,6 @@ import sys
 import requests
 from datetime import datetime, date, timedelta
 
-
 def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
     """
     Returns dict with list of dishes (menu) for langs no/en as a tuple
@@ -11,10 +10,10 @@ def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
 
     # Scraped from URLs, ordered list from Monday to Friday
     canteen_ids = {
-        "**Eat The Street**": [200131936, 200132048, 200132156, 200132264, 200132372],
-        "**Flow**": [200131963, 200132488, 200132183, 200147040, 200132399],
-        "**Fresh 4 You**": [200147073, 200132021, 200132129, 200132237, 200132345],
-        "**_Middag - Eat The Street_**": [200131990, 200132102, 200132210, 200132318, 200132426]
+        "Eat The Street": [200131936, 200132048, 200132156, 200132264, 200132372],
+        "Flow": [200131963, 200132488, 200132183, 200147040, 200132399],
+        "Fresh 4 You": [200147073, 200132021, 200132129, 200132237, 200132345],
+        "Middag - Eat The Street": [200131990, 200132102, 200132210, 200132318, 200132426]
     }
 
     if weekday == -1:
@@ -51,10 +50,7 @@ def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
 
             # Remove allergy information (all trailing after " AL"), and add extra strip just in case
             dish = dish.split(" (")[0].strip().split(" AL")[0].strip().split(" Al")[0].strip()
-            if canteen == "**_Middag - Eat The Street_**":
-                dishes.append("_" + dish + "_")
-            else:
-                dishes.append(dish)
+            dishes.append(dish)
 
         menu[lang] = dishes
 
@@ -69,10 +65,10 @@ def format_menu(canteen_menu: dict[str, list[str]], lang: str = 'no') -> str:
 
 if __name__ == "__main__":
     canteens = [
-        "**Eat The Street**",
-        "**Flow**",
-        "**Fresh 4 You**",
-        "**_Middag - Eat The Street_**"
+        "Eat The Street",
+        "Flow",
+        "Fresh 4 You",
+        "Middag - Eat The Street"
     ]
 
     emojies = [
@@ -87,6 +83,8 @@ if __name__ == "__main__":
     weekday_name = weekday.strftime('%A')
 
     dag = int(sys.argv[1])
+    if dag is None:
+        print("Du må gi meg noe å søke på!")
 
     try:
         meny, ukedag = get_menu(canteens[0], dag)
@@ -97,9 +95,9 @@ if __name__ == "__main__":
         print("\nIngen meny på lørdag og søndag. Kom tilbake på mandag :)")
     else:
         if dag == -1:
-            print("## Dagens lunsj \U0001f37D ", ukedag + " " + today.strftime("%d.%m.%Y:"))
+            print("Dagens lunsj \U0001f37D ", ukedag + " " + today.strftime("%d.%m.%Y:"))
         else:
-            print("## Lunsjmeny - " + ukedag + ": \U0001f37D")
+            print("Lunsjmeny - " + ukedag + " \U0001f37D :")
         for c in canteens:
             y, v = get_menu(c, dag)
             canteen_menu = y
