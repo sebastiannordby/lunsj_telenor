@@ -3,7 +3,6 @@ import sys
 import requests
 from datetime import datetime, date, timedelta
 
-
 def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
     """
     Returns dict with list of dishes (menu) for langs no/en as a tuple
