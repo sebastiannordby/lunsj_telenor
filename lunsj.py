@@ -72,21 +72,12 @@ if __name__ == "__main__":
         "Middag - Eat The Street"
     ]
 
-    emojies = [
-        # "\U0001f354", "\U0001f356", "\U0001f969", "\U0001f953", "\U0001f96A", "\U0001f32E", "\U0001f959",
-        # "\U0001f9C6", "\U0001f958", "\U0001f957", "\U0001f980", "\U0001f967", "\U0001f364", "\U0001f35C",
-        # "\U0001f372", "\U0001f32F", "\U0001f355", "\U0001f357"
-    ]
-
     lang = 'no'
     today = datetime.today()
     weekday = datetime.now()
     weekday_name = weekday.strftime('%A')
 
     dag = int(sys.argv[1])
-
-    if dag is None:
-        print("Du må gi meg noe å søke på!")
 
     try:
         meny, ukedag = get_menu(canteens[0], dag)
