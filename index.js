@@ -48,7 +48,7 @@ function getPage(req, res, day) {
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Lunsj</title>
+                <title>Lunsjmeny</title>
                 <meta charset="UTF-8" />
                 <link rel="preconnect" href="https://fonts.googleapis.com">
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
