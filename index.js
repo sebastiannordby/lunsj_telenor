@@ -69,6 +69,7 @@ function getPage(req, res, day) {
                         border-radius: 20px;
                         background: #fff;
                         overflow: hidden;
+                        height: 100%;
                     }
 
                     .content {
@@ -90,6 +91,7 @@ function getPage(req, res, day) {
                         display: flex;
                         align-items: center;
                         justify-content: center;
+                        padding: 1em;
                     }
 
                     .buttons {
