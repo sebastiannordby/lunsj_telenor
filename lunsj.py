@@ -1,6 +1,7 @@
 import random
+import sys
 import requests
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 
 def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
@@ -16,10 +17,12 @@ def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
         "**_Middag - Eat The Street_**": [200131990, 200132102, 200132210, 200132318, 200132426]
     }
 
-    if weekday is None:
+    if weekday == -1:
         weekday = datetime.now().weekday()
     if weekday > 4:
         raise ValueError("No data for Saturday and Sunday. Choose weekday =< 4")
+    if weekday < -1:
+        raise ValueError("Choose weekday -1 =< 4")
 
     # Get JSON data from API
     r = requests.get(
@@ -47,7 +50,7 @@ def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
                 continue
 
             # Remove allergy information (all trailing after " AL"), and add extra strip just in case
-            dish = dish.split(" (")[0].strip().split(" AL")[0].strip()
+            dish = dish.split(" (")[0].strip().split(" AL")[0].strip().split(" Al")[0].strip()
             if canteen == "**_Middag - Eat The Street_**":
                 dishes.append("_" + dish + "_")
             else:
@@ -83,20 +86,23 @@ if __name__ == "__main__":
     weekday = datetime.now()
     weekday_name = weekday.strftime('%A')
 
+    dag = int(sys.argv[1])
+
     try:
-        meny, ukedag = get_menu(canteens[0])
+        meny, ukedag = get_menu(canteens[0], dag)
     except:
         ukedag = weekday_name
 
-    print("## Dagens lunsj -", ukedag + " " + today.strftime("%d.%m.%Y:"))
-
-    if weekday.weekday() > 6:
+    if dag > 4:
         print("\nIngen meny på lørdag og søndag. Kom tilbake på mandag :)")
     else:
+        if dag == -1:
+            print("## Dagens lunsj \U0001f37D ", ukedag + " " + today.strftime("%d.%m.%Y:"))
+        else:
+            print("## Lunsjmeny - " + ukedag + ": \U0001f37D")
         for c in canteens:
-            y, v = get_menu(c,1)
+            y, v = get_menu(c, dag)
             canteen_menu = y
-            emoji_choice = random.choice(range(1, len(emojies)))
-            # print(emojies[emoji_choice] + " " + c + " " + emojies[emoji_choice])
-            print(c)
+            emoji_choice = random.choice(range(0, len(emojies)))
+            print(c + " " + emojies[emoji_choice])
             print(format_menu(canteen_menu), "\n")
