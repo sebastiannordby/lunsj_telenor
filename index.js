@@ -54,30 +54,55 @@ function getPage(req, res, day) {
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
                 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
                 <style>
+                    *, *:after {
+                        box-sizing: border-box;
+                    }
+
                     .app {
                         display: flex;
                         flex-direction: column;
-                        max-width: 400px;
-                        margin: auto;
+                        max-width: 1000px;
+                        min-width: 300px;
+                        margin: 1rem;
                         padding: 1em;
                         border: 1px solid #dfdfdf;
                         border-radius: 20px;
                         background: #fff;
+                        overflow: hidden;
+                    }
+
+                    .content {
+                        flex: 1;
+                        overflow: auto;
+                    }
+
+                    html, body {
+                        height: 100vh;
+                        width: 100vw;
                     }
 
                     body {
                         background: url(/burger.jpg);
-                        background-size: cover;
+                        background-size: contain;
                         font-family: 'Bebas Neue', cursive;
+                        overflow: hidden;
+                        font-size: 16px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+
+                    .buttons {
+                        font-size: 1.1em;
                     }
                 </style>
             </head>
 
             <body>
                 <div class="app">
-                    <h1>Meny</h1>
+                    <h1>Lunsjmeny</h1>
 
-                    <div style="display: flex; gap: .5em;">
+                    <div class="buttons" style="display: flex; gap: .5em;">
                         <a href="/dag/mandag">Mandag</a>
                         <a href="/dag/tirsdag">Tirsdag</a>
                         <a href="/dag/onsdag">Onsdag</a>
@@ -85,7 +110,7 @@ function getPage(req, res, day) {
                         <a href="/dag/fredag">Fredag</a>
                     </div>
 
-                    <div>
+                    <div class="content">
                         <p style="white-space: break-spaces;">${dataToSend}</p>
                     </div>
                 </div>
