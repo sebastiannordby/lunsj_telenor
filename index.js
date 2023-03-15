@@ -143,7 +143,7 @@ app.get('/dag/:day', (req, res) => {
 
 app.get('/webex', (req, res) => {
     let dataToSend;
-    const python = spawn('python', ['lunsj_webex.py'], );
+    const python = spawn('python', ['lunsj_webex.py', -1]);
     res.set({ 'content-type': 'text/plain; charset=utf-8' });
 
     python.stdout.on('data', function (data) {
