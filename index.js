@@ -45,87 +45,105 @@ function getPage(req, res, day) {
 
     python.on('close', (code) => {
         res.send(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Lunsjmeny Fornebu</title>
-                <meta charset="UTF-8" />
-                <link rel="preconnect" href="https://fonts.googleapis.com">
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
-                <style>
-                    *, *:after {
-                        box-sizing: border-box;
-                    }
-
-                    .app {
-                        display: flex;
-                        flex-direction: column;
-                        max-width: 1000px;
-                        min-width: 300px;
-                        margin: 1rem;
-                        padding: 1em;
-                        border: 1px solid #dfdfdf;
-                        border-radius: 20px;
-                        background: #fff;
-                        overflow: hidden;
-                        max-height: 100%;
-                        width: 100%;
-                    }
-
-                    .content {
-                        flex: 1;
-                        overflow: auto;
-                    }
-
-                    html, body {
-                        height: 100vh;
-                        width: 100vw;
-                    }
-
-                    body {
-                        background: url(/burger.jpg);
-                        background-size: contain;
-                        font-family: 'Bebas Neue', cursive;
-                        overflow: hidden;
-                        font-size: 2.2rem;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        padding: 1em;
-                        min-width: 300px;
-                    }
-
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Lunsjmeny Fornebu</title>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+            <style>
+                *, *:after {
+                    box-sizing: border-box;
+                }
+                .app {
+                    display: flex;
+                    flex-direction: column;
+                    max-width: 500px;
+                    min-width: 200px;
+                    margin: 1rem;
+                    padding: 1em;
+                    border: 2px solid #dfdfdf;
+                    border-radius: 15px;
+                    background: #fff;
+                    overflow: hidden;
+                    max-height: 100%;
+                    width: 100%;
+                }
+                .content {
+                    flex: 1;
+                    overflow: auto;
+                }
+                html, body {
+                    height: 100%;
+                    margin: 1%;
+                    padding: 2%;
+                }
+                body {
+                    background: url(/burger.jpg);
+                    background-size: contain;
+                    font-family: 'Arial,Helvetica,sans-serif';
+                    font-weight: bold;
+                    font-size: 2.2w;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    min-width: 300px;
+                }
+                .buttons {
+                    font-size: 1.5vw;
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    gap: 0.15em;
+                }
+                .buttons a {
+                    padding: 0.15em .2em;
+                }
+                .buttons a.active {
+                    background-color: #dfdfdf;
+                }
+                @media(min-width: 300px) {
                     .buttons {
-                        font-size: 1.5em;
+                        font-size: 1.1rem;
+                        justify-content: center;
+                        margin-top: 0;
                     }
-
-                    @media(min-width: 1000px) {
-                        body {
-                            font-size: 1.75rem;
-                        }
+                    .buttons {
+                        font-size: 1w;
+                        display: flex;
+                        flex-wrap: wrap;
+                        justify-content: center;
+                        gap: 0.15em;
                     }
-                </style>
-            </head>
+                    .content {
+                        margin-left: 0em;
+                    }
+                }
+            </style>
+        </head>
 
-            <body>
-                <div class="app">
-                    <h1>Lunsjmeny Fornebu</h1>
+        <body>
+            <div class="app">
+                <h1>LUNSJMENY FORNEBU</h1>
 
-                    <div class="buttons" style="display: flex; gap: .5em;">
-                        <a href="/dag/mandag">Mandag</a>
-                        <a href="/dag/tirsdag">Tirsdag</a>
-                        <a href="/dag/onsdag">Onsdag</a>
-                        <a href="/dag/torsdag">Torsdag</a>
-                        <a href="/dag/fredag">Fredag</a>
-                    </div>
-
-                    <div class="content">
-                        <p style="white-space: break-spaces;">${dataToSend}</p>
-                    </div>
+                <div class="buttons" style="display: center; gap: .1em;">
+                    <a href="/dag/mandag">Mandag</a>
+                    <a href="/dag/tirsdag">Tirsdag</a>
+                    <a href="/dag/onsdag">Onsdag</a>
+                    <a href="/dag/torsdag">Torsdag</a>
+                    <a href="/dag/fredag">Fredag</a>
                 </div>
-            </body>
-            </html>
+
+                <div class="content">
+                    <p style="white-space: break-spaces;">${dataToSend}</p>
+                </div>
+            </div>
+        </body>
+        </html>
         `);
     });
 }
