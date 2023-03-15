@@ -70,6 +70,7 @@ function getPage(req, res, day) {
                         background: #fff;
                         overflow: hidden;
                         max-height: 100%;
+                        width: 100%;
                     }
 
                     .content {
@@ -87,15 +88,22 @@ function getPage(req, res, day) {
                         background-size: contain;
                         font-family: 'Bebas Neue', cursive;
                         overflow: hidden;
-                        font-size: 16px;
+                        font-size: 2.2rem;
                         display: flex;
                         align-items: center;
                         justify-content: center;
                         padding: 1em;
+                        min-width: 300px;
                     }
 
                     .buttons {
-                        font-size: 1.1em;
+                        font-size: 1.5em;
+                    }
+
+                    @media(min-width: 1000px) {
+                        body {
+                            font-size: 1.75rem;
+                        }
                     }
                 </style>
             </head>
