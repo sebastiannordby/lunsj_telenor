@@ -80,6 +80,7 @@ function getPage(req, res, day) {
                     height: 100%;
                     margin: 1%;
                     padding: 2%;
+                }
                 body {
                   background: url(/mat.jpg);
                   background-size: cover;
