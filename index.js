@@ -84,7 +84,9 @@ function getPage(req, res, day) {
                   background: url(/mat.jpg);
                   background-size: cover;
                   background-position: center center;
-                  font-family: 'Bebas Neue';
+                  background-repeat: no-repeat;
+                  background-attachment: fixed;
+                  font-family: 'Arial,Helvetica,sans-serif';
                   font-weight: bold;
                   font-size: 2.2w;
                   display: flex;
