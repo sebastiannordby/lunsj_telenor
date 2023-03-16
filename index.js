@@ -59,16 +59,16 @@ function getPage(req, res, day) {
                     box-sizing: border-box;
                 }
                 .app {
-                    display: flex;
+                    display: table-column-group;
                     flex-direction: column;
-                    max-width: 500px;
+                    max-width: 450px;
                     min-width: 200px;
                     margin: 1rem;
                     padding: 1em;
                     border: 2px solid #dfdfdf;
                     border-radius: 15px;
                     background: #fff;
-                    overflow: hidden;
+                    overflow: inherit;
                     max-height: 100%;
                     width: 100%;
                 }
@@ -77,9 +77,9 @@ function getPage(req, res, day) {
                     overflow: auto;
                 }
                 html, body {
-                    height: 100%;
-                    margin: 1%;
-                    padding: 2%;
+                    height: auto%;
+                    margin: 0%;
+                    padding: 0%;
                 }
                 body {
                   background: url(/mat.jpg);
@@ -104,7 +104,7 @@ function getPage(req, res, day) {
                     gap: 0.15em;
                 }
                 .buttons a {
-                    padding: 0.15em .2em;
+                    padding: 0em .4em;
                 }
                 .buttons a.active {
                     background-color: #dfdfdf;
