@@ -82,7 +82,7 @@ function getPage(req, res, day) {
                     padding: 2%;
                 }
                 body {
-                    background: url(/sigve-brekke-telenor.jpg);
+                    background: url(/mat.jpg);
                     background-size: contain;
                     font-family: 'Arial,Helvetica,sans-serif';
                     font-weight: bold;
