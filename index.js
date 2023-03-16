@@ -90,6 +90,7 @@ function getPage(req, res, day) {
                   font-family: 'Bebas Neue';
                   font-weight: bold;
                   font-size: 2.2w;
+                  vertical-align: middle;
                   display: grid;
                   flex-direction: column;
                   justify-content: center;
