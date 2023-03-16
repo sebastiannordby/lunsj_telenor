@@ -81,7 +81,7 @@ function getPage(req, res, day) {
                     margin: 1%;
                     padding: 2%;
                 body {
-                  background: url(/burger.jpg);
+                  background: url(/mat.jpg);
                   background-size: cover;
                   background-position: center center;
                   background-repeat: no-repeat;
