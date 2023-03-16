@@ -59,7 +59,8 @@ function getPage(req, res, day) {
                     box-sizing: border-box;
                 }
                 .app {
-                    display: table-column-group;
+                    display: flex;
+                    justify-content: center;
                     flex-direction: column;
                     max-width: 450px;
                     min-width: 200px;
