@@ -63,14 +63,14 @@ function getPage(req, res, day) {
                     flex-direction: column;
                     max-width: 450px;
                     min-width: 200px;
-                    margin: 1rem;
-                    padding: 1em;
+                    margin: auto;
+                    padding: 0.8em;
                     border: 2px solid #dfdfdf;
                     border-radius: 15px;
                     background: #fff;
                     overflow: inherit;
                     max-height: 100%;
-                    width: 100%;
+                    width: auto;
                 }
                 .content {
                     flex: 1;
@@ -94,7 +94,7 @@ function getPage(req, res, day) {
                   flex-direction: column;
                   justify-content: center;
                   align-items: center;
-                  min-width: 300px;
+                  min-width: 100px;
                 }
                 .buttons {
                     font-size: 1.5vw;
