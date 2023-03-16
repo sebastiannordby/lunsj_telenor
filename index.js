@@ -64,7 +64,7 @@ function getPage(req, res, day) {
                     max-width: 450px;
                     min-width: 200px;
                     margin: auto;
-                    padding: 3%;
+                    padding: 1em;
                     border: 2px solid #dfdfdf;
                     border-radius: 15px;
                     background: #fff;
