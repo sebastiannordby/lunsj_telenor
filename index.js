@@ -79,7 +79,7 @@ function getPage(req, res, day) {
                 html, body {
                     height: auto%;
                     margin: auto;
-                    padding: 0%;
+                    padding: auto;
                 }
                 body {
                   background: url(/mat.jpg);
