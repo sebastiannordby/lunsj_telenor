@@ -80,18 +80,18 @@ function getPage(req, res, day) {
                     height: 100%;
                     margin: 1%;
                     padding: 2%;
-                }
                 body {
-                    background: url(/mat.jpg);
-                    background-size: contain;
-                    font-family: 'Arial,Helvetica,sans-serif';
-                    font-weight: bold;
-                    font-size: 2.2w;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    min-width: 300px;
+                  background: url(/mat.jpg);
+                  background-size: cover;
+                  background-position: center center;
+                  font-family: 'Arial,Helvetica,sans-serif';
+                  font-weight: bold;
+                  font-size: 2.2w;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: center;
+                  align-items: center;
+                  min-width: 300px;
                 }
                 .buttons {
                     font-size: 1.5vw;
