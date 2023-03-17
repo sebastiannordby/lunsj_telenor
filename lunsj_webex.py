@@ -107,3 +107,4 @@ if __name__ == "__main__":
             emoji_choice = random.choice(range(0, len(emojies)))
             print(c + " " + emojies[emoji_choice])
             print(format_menu(canteen_menu), "\n")
+        print("[Lunsjmenyen for hele uka finner du her](https://lunsj.regrettable.solutions/)")
