@@ -91,7 +91,7 @@ function getPage(req, res, day) {
                   font-family: 'Verdana,Geneva,sans-serif';
                   font-weight: bold;
                   font-size: 2.2w;
-                  margin-top: 13vh;
+                  margin-top: 9vh;
                   vertical-align: middle;
                   display: grid;
                   flex-direction: column;
