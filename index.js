@@ -60,11 +60,10 @@ function getPage(req, res, day) {
                 }
                 .app {
                     display: flex;
-                    justify-content: center;
                     flex-direction: column;
                     max-width: 450px;
                     min-width: 200px;
-                    margin: auto;
+                    margin: 0.5rem;
                     padding: 1em;
                     border: 2px solid #dfdfdf;
                     border-radius: 15px;
@@ -78,9 +77,8 @@ function getPage(req, res, day) {
                     overflow: auto;
                 }
                 html, body {
-                    height: auto;
-                    margin: 0%;
-                    padding: 0%;
+                    height: 100vh;
+                    width: 100vw;
                 }
                 body {
                   background: url(/mat.jpg);
@@ -90,8 +88,7 @@ function getPage(req, res, day) {
                   background-attachment: fixed;
                   font-family: 'Verdana,Geneva,sans-serif';
                   font-weight: bold;
-                  font-size: 2.2w;
-                  margin-top: 9vh;
+                  font-size: 2w;
                   vertical-align: middle;
                   display: grid;
                   flex-direction: column;
@@ -119,7 +116,6 @@ function getPage(req, res, day) {
                         margin-top: 0;
                     }
                     .buttons {
-                        font-size: 1w;
                         display: flex;
                         flex-wrap: wrap;
                         justify-content: center;
