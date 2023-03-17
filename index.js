@@ -88,7 +88,7 @@ function getPage(req, res, day) {
                   background-position: center center;
                   background-repeat: no-repeat;
                   background-attachment: fixed;
-                  font-family: 'Bebas Neue';
+                  font-family: 'Raleway';
                   font-weight: bold;
                   font-size: 2.2w;
                   vertical-align: middle;
