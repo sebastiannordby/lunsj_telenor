@@ -10,10 +10,10 @@ def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
 
     # Scraped from URLs, ordered list from Monday to Friday
     canteen_ids = {
-        "**Eat The Street**": [200131936, 200132048, 200132156, 200132264, 200132372],
-        "**Flow**": [200131963, 200132488, 200132183, 200147040, 200132399],
-        "**Fresh 4 You**": [200147073, 200132021, 200132129, 200132237, 200132345],
-        "**_Middag - Eat The Street_**": [200131990, 200132102, 200132210, 200132318, 200132426]
+        "Eat The Street": [200131936, 200132048, 200132156, 200132264, 200132372],
+        "Flow": [200131963, 200132488, 200132183, 200147040, 200132399],
+        "Fresh 4 You": [200147073, 200132021, 200132129, 200132237, 200132345],
+        "Eat The Street - Middag": [200131990, 200132102, 200132210, 200132318, 200132426]
     }
 
     if weekday == -1:
@@ -68,10 +68,10 @@ def format_menu(canteen_menu: dict[str, list[str]], lang: str = 'no') -> str:
 
 if __name__ == "__main__":
     canteens = [
-        "**Eat The Street**",
-        "**Flow**",
-        "**Fresh 4 You**",
-        "**_Middag - Eat The Street_**"
+        "Eat The Street",
+        "Flow",
+        "Fresh 4 You",
+        "Eat The Street - Middag"
     ]
 
     emojies = [
@@ -102,9 +102,19 @@ if __name__ == "__main__":
             y, v = get_menu(c, dag)
             canteen_menu = y
             emoji_choice = random.choice(range(0, len(emojies)))
-            if c == "**_Middag - Eat The Street_**":
-                print(emojies[emoji_choice] + " " + c + " - Middag \U0001f55E 15:00 - 17:30 \U0001f3E2 K3")
+            if c == "Eat The Street - Middag":
+                if ukedag == "Fredag":
+                    print(emojies[emoji_choice] + " " + c + " \U0001f55E 15:00 - 17:00 \U0001f3E2 K3")
+                    print(format_menu(canteen_menu), "\n")
+                else:
+                    print(emojies[emoji_choice] + " " + c + " \U0001f55E 15:00 - 17:30 \U0001f3E2 K3")
+                    print(format_menu(canteen_menu), "\n")
+            if c == "Flow":
+                print(emojies[emoji_choice] + " " + c + " - Lunsj \U0001f565 10:30 - 14:00 \U0001f3E2 B3")
                 print(format_menu(canteen_menu), "\n")
-            else:
-                print(emojies[emoji_choice] + " " + c + " - Lunsj \U0001f55E 10:30 - 14:00 \U0001f3E2 K3")
+            if c == "Eat The Street":
+                print(emojies[emoji_choice] + " " + c + " - Lunsj \U0001f565 10:30 - 14:00 \U0001f3E2 K3")
+                print(format_menu(canteen_menu), "\n")
+            if c == "Fresh 4 You":
+                print(emojies[emoji_choice] + " " + c + " - Lunsj \U0001f565 10:30 - 14:00 \U0001f3E2 D3")
                 print(format_menu(canteen_menu), "\n")
