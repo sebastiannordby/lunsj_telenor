@@ -60,7 +60,7 @@ def format_menu(canteen_menu: dict[str, list[str]], lang: str = 'no') -> str:
     """
     Formats menu as text, defaults to Norwegian
     """
-    return "\n".join("* " + dish for dish in canteen_menu[lang])
+    return "\n".join("- " + dish for dish in canteen_menu[lang])
 
 
 if __name__ == "__main__":
