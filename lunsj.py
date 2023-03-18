@@ -84,7 +84,7 @@ if __name__ == "__main__":
     except:
         ukedag = weekday_name
 
-    if dag > 4:
+    if weekday > 4:
         print("\nIngen meny på lørdag og søndag. Kom tilbake på mandag :)")
     else:
         if dag == -1:
