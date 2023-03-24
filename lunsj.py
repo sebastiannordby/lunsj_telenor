@@ -84,10 +84,10 @@ if __name__ == "__main__":
     except:
         ukedag = weekday_name
 
-    if today.weekday() > 4:
-        print("\nIngen meny på lørdag og søndag. Kom tilbake på mandag :)")
-    else:
-        if dag == -1:
+    if -1 =< dag <= 4:
+        if dag == -1 and today.weekday() > 4:
+            print("\nIngen meny på lørdag og søndag. Kom tilbake på mandag :)")
+        elif dag == -1:
             print("Dagens lunsj ---", ukedag + " " + today.strftime("%d.%m.%Y:") + "\n")
         else:
             print(ukedag + ": \n")
