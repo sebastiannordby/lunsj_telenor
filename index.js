@@ -209,4 +209,20 @@ app.get('/test', (req, res) => {
     });
 });
 
+app.get('/test/mandag', (req, res) => {
+    let dataToSend;
+    const python = spawn('python', ['lunsj_test.py', 0]);
+    res.set({ 'content-type': 'text/plain; charset=utf-8' });
+
+    python.stdout.on('data', function (data) {
+        const buffer = Buffer.from(data);
+
+        dataToSend = buffer.toString('utf-8');
+    });
+
+    python.on('close', (code) => {
+        res.send(`${dataToSend}`);
+    });
+});
+
 app.listen(port, () => console.log(`LunsjApp kjører på port: ${port}!`))
