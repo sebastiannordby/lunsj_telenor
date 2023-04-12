@@ -49,7 +49,7 @@ def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
                 continue
 
             # Remove allergy information (all trailing after " AL"), and add extra strip just in case
-            dish = dish.split(" ( ")[0].strip().split(" AL")[0].strip().split(" Al")[0].strip()
+            dish = dish.split(" (")[0].strip().split(" AL")[0].strip().split(" Al")[0].strip()
             if canteen == "**_Middag - Eat The Street_**":
                 dishes.append("_" + dish + "_")
             else:
