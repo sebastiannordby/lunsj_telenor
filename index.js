@@ -88,7 +88,6 @@ function getPage(req, res, day) {
                   background-attachment: fixed;
                   font-family: 'Verdana,Geneva,sans-serif';
                   font-weight: bold;
-                  font-size: 2vw;
                   vertical-align: middle;
                   display: grid;
                   flex-direction: column;
