@@ -46,10 +46,10 @@ function getPage(req, res, day) {
     python.on('close', (code) => {
         res.send(`
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
         <head>
             <title>Lunsjmeny Fornebu</title>
-            <meta charset="UTF-8" />
+            <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <link rel="preconnect" href="https://fonts.googleapis.com">
             <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,7 +88,7 @@ function getPage(req, res, day) {
                   background-attachment: fixed;
                   font-family: 'Verdana,Geneva,sans-serif';
                   font-weight: bold;
-                  font-size: 2w;
+                  font-size: 2vw;
                   vertical-align: middle;
                   display: grid;
                   flex-direction: column;
@@ -132,7 +132,7 @@ function getPage(req, res, day) {
             <div class="app">
                 <h1>LUNSJMENY FORNEBU</h1>
 
-                <div class="buttons" style="display: center; gap: .1em;">
+                <div class="buttons" style="gap: .1em;">
                     <a href="/dag/mandag">Mandag</a>
                     <a href="/dag/tirsdag">Tirsdag</a>
                     <a href="/dag/onsdag">Onsdag</a>
