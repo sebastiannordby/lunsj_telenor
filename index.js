@@ -29,6 +29,14 @@ const days = [
         name: "fredag",
         number: "4"
     }
+    {
+        name: "lordag",
+        number: "5"
+    }
+    {
+        name: "sondag",
+        number: "6"
+    }
 ];
 
 function getPage(req, res, day) {
