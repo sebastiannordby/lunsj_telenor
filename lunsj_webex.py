@@ -98,7 +98,7 @@ if __name__ == "__main__":
         print("\nIngen meny på lørdag og søndag. Kom tilbake på mandag :)")
     else:
         if dag == -1:
-            print("## Dagens lunsj \U0001f37D", ukedag + " " + today.strftime("%d.%m.%Y:"))
+            print("## [Dagens lunsj", ukedag + " " + today.strftime("%d.%m.%Y:") + "](https://lunsj.regrettable.solutions/)")
         else:
             print("## Lunsjmeny - " + ukedag + " \U0001f37D :")
         for c in canteens:
@@ -107,4 +107,3 @@ if __name__ == "__main__":
             emoji_choice = random.choice(range(0, len(emojies)))
             print(c + " " + emojies[emoji_choice])
             print(format_menu(canteen_menu), "\n")
-        print("[Lunsjmenyen for hele uka finner du her](https://lunsj.regrettable.solutions/) \U0001f973")
