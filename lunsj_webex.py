@@ -98,7 +98,7 @@ if __name__ == "__main__":
         print("\nIngen meny på lørdag og søndag. Kom tilbake på mandag :)")
     else:
         if dag == -1:
-            print("## [Dagens lunsj - ", ukedag + " " + today.strftime("%d.%m.%Y:") + "](https://lunsj.regrettable.solutions/)")
+            print("## [Dagens lunsj -", ukedag + " " + today.strftime("%d.%m.%Y:") + "](https://lunsj.regrettable.solutions/)")
         else:
             print("## Lunsjmeny - " + ukedag + " \U0001f37D :")
         for c in canteens:
