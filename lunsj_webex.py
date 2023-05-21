@@ -86,6 +86,7 @@ if __name__ == "__main__":
     weekday_name = weekday.strftime('%A')
 
     dag = int(sys.argv[1])
+
     if dag is None:
         print("Du må gi meg noe å søke på!")
 
@@ -99,11 +100,23 @@ if __name__ == "__main__":
     else:
         if dag == -1:
             print("## [Dagens lunsj -", ukedag + " " + today.strftime("%d.%m.%Y:") + "](https://lunsj.regrettable.solutions/)")
+            print("### OBS! Nye åpningstider!")
         else:
             print("## Lunsjmeny - " + ukedag + " \U0001f37D :")
+            print("### OBS! Nye åpningstider!")
         for c in canteens:
             y, v = get_menu(c, dag)
             canteen_menu = y
             emoji_choice = random.choice(range(0, len(emojies)))
-            print(c + " " + emojies[emoji_choice])
-            print(format_menu(canteen_menu), "\n")
+            if c == "**_Middag - Eat The Street_**":
+                print(c + " " + emojies[emoji_choice] + " (15:00 - 17:00)")
+                print(format_menu(canteen_menu), "\n")
+            if c == "**Flow**":
+                print(c + " " + emojies[emoji_choice] + " (10:30 - 13:00)")
+                print(format_menu(canteen_menu), "\n")
+            if c == "**Eat The Street**":
+                print(c + " " + emojies[emoji_choice] + " (10:30 - 14:00)")
+                print(format_menu(canteen_menu), "\n")
+            if c == "**Fresh 4 You**":
+                print(c + " " + emojies[emoji_choice] + " (10:30 - 13:00)")
+                print(format_menu(canteen_menu), "\n")
