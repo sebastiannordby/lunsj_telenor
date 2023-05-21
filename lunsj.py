@@ -88,11 +88,21 @@ if __name__ == "__main__":
         if dag == -1 and today.weekday() > 4:
             print("Dagens lunsj:\n\nIngen meny på lørdager og søndager. Kom tilbake på mandag, eller velg ukedag.")
         elif dag == -1:
-            print("Dagens lunsj ---", ukedag + " " + today.strftime("%d.%m.%Y:") + "\n")
+            print("Dagens lunsj ---", ukedag + " " + today.strftime("%d.%m.%Y:") + "\n" + "OBS! Nye åpningstider:\n")
         else:
-            print(ukedag + ": \n")
+            print(ukedag + ": \n"+ "OBS! Nye åpningstider:\n")
         for c in canteens:
             y, v = get_menu(c, dag)
             canteen_menu = y
-            print(c)
-            print(format_menu(canteen_menu), "\n")
+            if c == "Middag - Eat The Street":
+                print(c + " (15:00 - 17:00)")
+                print(format_menu(canteen_menu), "\n")
+            if c == "Flow":
+                print(c + " (10:30 - 13:00)")
+                print(format_menu(canteen_menu), "\n")
+            if c == "Eat The Street":
+                print(c + " (10:30 - 14:00)")
+                print(format_menu(canteen_menu), "\n")
+            if c == "Fresh 4 You":
+                print(c + " (10:30 - 13:00)")
+                print(format_menu(canteen_menu), "\n")
