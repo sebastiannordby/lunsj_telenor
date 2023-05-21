@@ -95,8 +95,9 @@ if __name__ == "__main__":
         print("\nIngen meny på lørdag og søndag. Kom tilbake på mandag :)")
     else:
         print("God morgen! \n")
-        print("\U0001f324 \n")
-        print("\U0001f37D", ukedag + " " + today.strftime("%d.%m.%Y:") + "\n")
+        print("\U0001f4c6", ukedag + " " + today.strftime("%d.%m %Y") + " - Uke " + "" + "\n")
+        print("\U0001f30d Fornebu - Bærum - Viken \U0001f556 07:00 - _VÆRET KOMMER HER_\n")
+        print("\U0001f37d Lunsj -og middagsmeny\n")
         for c in canteens:
             y, v = get_menu(c, dag)
             canteen_menu = y
