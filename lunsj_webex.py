@@ -100,7 +100,6 @@ if __name__ == "__main__":
     else:
         if dag == -1:
             print("## [Dagens lunsj -", ukedag + " " + today.strftime("%d.%m.%Y:") + "](https://lunsj.regrettable.solutions/)")
-            print("### OBS! Nye åpningstider!")
         else:
             print("## Lunsjmeny - " + ukedag + " \U0001f37D :")
             print("### OBS! Nye åpningstider!")
