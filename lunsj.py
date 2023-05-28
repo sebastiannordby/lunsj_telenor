@@ -90,7 +90,7 @@ if __name__ == "__main__":
         elif dag == -1:
             print("Dagens lunsj ---", ukedag + " " + today.strftime("%d.%m.%Y:") + "\n" + "OBS! Nye åpningstider:\n")
         else:
-            print(ukedag + ": \n"+ "OBS! Nye åpningstider:\n")
+            print(ukedag + ": \n")
         for c in canteens:
             y, v = get_menu(c, dag)
             canteen_menu = y
