@@ -32,9 +32,7 @@ def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
     dividerLine = "-" * 10
     dividerDot = "." * 10
     menus = data["article"]["description"].split(dividerLine)
-    menus = menus.split(dividerDot)
     weekdayy = data["article"]["name"].split(dividerLine)
-    weekdayy = weekdayy.split(dividerDot)
     weekdayyy = weekdayy[0].strip(" ")
 
     # Clean menu text
