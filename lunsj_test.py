@@ -31,8 +31,10 @@ def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
     # Divider (here using arbitrary length) between Norwegian and English menu
     dividerLine = "-" * 10
     dividerDot = "." * 10
-    menus = data["article"]["description"].split(dividerLine).split(dividerDot)
-    weekdayy = data["article"]["name"].split(dividerLine).split(dividerDot)
+    menus = data["article"]["description"].split(dividerLine)
+    menus = menus.split(dividerDot)
+    weekdayy = data["article"]["name"].split(dividerLine)
+    weekdayy = weekdayy.split(dividerDot)
     weekdayyy = weekdayy[0].strip(" ")
 
     # Clean menu text
