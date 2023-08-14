@@ -28,9 +28,14 @@ def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
         f"https://snaroyveien30-gg.issfoodservices.no/api/articles/article/{canteen_ids[canteen][weekday]}/p200011994/200004464/200005204")
     data = r.json()
 
-    # Divider (here using arbitrary length) between Norwegian and English menu
-    divider = "-" * 10
-    menus = data["article"]["description"].split(divider)
+    dividerLine = "-" * 10
+    dividerDot = "." * 10
+    menus_with_divider1 = data["article"]["description"].split(dividerLine)
+    menus_with_divider2 = [menu.split(dividerDot) for menu in menus_with_divider1]
+
+    # Flatten the list of menus (which are now lists themselves)
+    menus = [dish for sublist in menus_with_divider2 for dish in sublist]
+    
     weekdayy = data["article"]["name"].split(divider)
     weekdayyy = weekdayy[0].strip(" ")
 
