@@ -125,4 +125,4 @@ if __name__ == "__main__":
             if c == "**Fresh 4 You**":
                 print(c + " " + emojies[emoji_choice] + " (10:30 - 13:00)")
                 print(format_menu(canteen_menu), "\n")
-    print("[Hele ukas lunsjmeny finner du på denne linken](https://lunsj.regrettable.solutions/) :D")
+    print("[Hele ukas lunsjmeny finner du på denne linken](https://lunsj.regrettable.solutions/) \U0001f600")
