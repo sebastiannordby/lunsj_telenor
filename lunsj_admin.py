@@ -84,8 +84,9 @@ if __name__ == "__main__":
     ddmmttmm = weekday.strftime("%d.%m.%y kl: %H:%M")
     weekday_name = weekday.strftime('%A')
 
-    dag = int(sys.argv[1])
-
+    # dag = int(sys.argv[1])
+    dag = -1
+    
     try:
         meny, ukedag = get_menu(canteens[0], dag)
     except:
