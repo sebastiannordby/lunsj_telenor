@@ -82,6 +82,16 @@ if __name__ == "__main__":
     weekday_name = weekday.strftime('%A')
 
     dag = int(sys.argv[1])
+    if dag == 0:
+        ukedag_en = "Monday"
+    elif dag == 1:
+        ukedag_en = "Tueday"
+    elif dag == 2:
+        ukedag_en = "Wednesday"
+    elif dag == 3:
+        ukedag_en = "Thursday"
+    elif dag == 4:
+        ukedag_en = "Friday"
 
     try:
         meny, ukedag = get_menu(canteens[0], dag)
@@ -94,7 +104,7 @@ if __name__ == "__main__":
         elif dag == -1:
             print("Todays lunch ---", weekday_name + " " + today.strftime("%d.%m.%Y:") + "\n")
         else:
-            print(weekday_name + ": \n")
+            print(ukedag_en + ": \n")
         for c in canteens:
             y, v = get_menu(c, dag)
             canteen_menu = y
