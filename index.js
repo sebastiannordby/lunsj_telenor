@@ -28,14 +28,39 @@ const days = [
     {
         name: "fredag",
         number: "4"
+    },
+    {
+        name: "monday",
+        number: "0"
+    },
+    {
+        name: "tuesday",
+        number: "1"
+    },
+    {
+        name: "wednesday",
+        number: "2"
+    },
+    {
+        name: "thursday",
+        number: "3"
+    },
+    {
+        name: "friday",
+        number: "4"
     }
 ];
 
-function getPage(req, res, day) {
+function getPage(req, res, day, language) {
     console.log('getPage: ', day);
 
     let dataToSend;
-    const python = spawn('python', ['lunsj.py', day]);
+
+    // Determine the Python script based on the selected language
+    const pythonScript = language === 'en' ? 'lunsj_engelsk.py' : 'lunsj.py';
+
+    const python = spawn('python3', [pythonScript, day]);
+
     res.set({ 'content-type': 'text/html; charset=utf-8' });
 
     python.stdout.on('data', function (data) {
@@ -44,6 +69,26 @@ function getPage(req, res, day) {
     });
 
     python.on('close', (code) => {
+        let buttonsHtml = '';
+        if (language === 'en') {
+            // English buttons
+            buttonsHtml = `
+                <a href="/en/day/monday">Monday</a>
+                <a href="/en/day/tuesday">Tuesday</a>
+                <a href="/en/day/wednesday">Wednesday</a>
+                <a href="/en/day/thursday">Thursday</a>
+                <a href="/en/day/friday">Friday</a>
+            `;
+        } else {
+            // Norwegian buttons (default)
+            buttonsHtml = `
+                <a href="/dag/mandag">Mandag</a>
+                <a href="/dag/tirsdag">Tirsdag</a>
+                <a href="/dag/onsdag">Onsdag</a>
+                <a href="/dag/torsdag">Torsdag</a>
+                <a href="/dag/fredag">Fredag</a>
+            `;
+        }
         res.send(`
         <!DOCTYPE html>
         <html lang="en">
@@ -136,23 +181,24 @@ function getPage(req, res, day) {
             </style>
         </head>
 
-        <body>
-            <div class="app">
-                <h1>LUNSJMENY FORNEBU</h1>
+            <body>
+                <div class="app">
+                    <h1>${language === 'en' ? 'LUNCH MENU FORNEBU' : 'LUNSJMENY FORNEBU'}</h1>
 
-                <div class="buttons" style="gap: .1em;">
-                    <a href="/dag/mandag">Mandag</a>
-                    <a href="/dag/tirsdag">Tirsdag</a>
-                    <a href="/dag/onsdag">Onsdag</a>
-                    <a href="/dag/torsdag">Torsdag</a>
-                    <a href="/dag/fredag">Fredag</a>
-                </div>
+                    <div class="buttons" style="gap: .1em;">
+                        ${buttonsHtml}
+                    </div>
 
-                <div class="content">
-                    <p style="white-space: break-spaces;">${dataToSend}</p>
+                    <div class="content">
+                        <p style="white-space: break-spaces;">${dataToSend}</p>
+                    </div>
+
+                    <div class="buttons" style="gap: .05em;">
+                        <a href="/" style="font-size: 0.8em;">Nor</a>
+                        <a href="/en" style="font-size: 0.8em;">Eng</a>
+                    </div>
                 </div>
-            </div>
-        </body>
+            </body>
         </html>
         `);
     });
@@ -162,11 +208,20 @@ app.get('/', (req, res) => {
     getPage(req, res, -1);
 });
 
+app.get('/en', (req, res) => {
+    getPage(req, res, -1, 'en');
+});
+
 app.get('/dag/:day', (req, res) => {
     const params = req.params;
     const day = days.find(x => x.name == params["day"]);
+    getPage(req, res, day ? day.number : days[0].number, 'no');
+});
 
-    getPage(req, res, day ? day.number : days[0].number);
+app.get('/en/day/:day', (req, res) => {
+    const params = req.params;
+    const day = days.find(x => x.name == params["day"]);
+    getPage(req, res, day ? day.number : days[0].number, 'en');
 });
 
 app.get('/webex', (req, res) => {
