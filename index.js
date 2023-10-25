@@ -113,6 +113,7 @@ function getPage(req, res, day, language) {
 
             <link rel="icon" type="image/png" href="public/apple-touch-icon.png" sizes="152x152">
             <link rel="icon" type="image/png" href="/android-chrome-192x192.png" sizes="192x192">
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
 
             <style>
                 *, *:after {
