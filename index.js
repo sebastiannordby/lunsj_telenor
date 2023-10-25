@@ -108,6 +108,9 @@ function getPage(req, res, day, language) {
             <link rel="preconnect" href="https://fonts.googleapis.com">
             <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
             <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+
+            <link rel=”apple-touch-icon” href=”/pizza-3007395_640.png”/>
+
             <style>
                 *, *:after {
                     box-sizing: border-box;
@@ -154,7 +157,7 @@ function getPage(req, res, day, language) {
                     display: flex;
                     flex-wrap: wrap;
                     justify-content: center;
-                    gap: 0.15em;
+                    gap: 0.01em;
                 }
                 .buttons a {
                     padding: 0em .4em;
@@ -183,9 +186,9 @@ function getPage(req, res, day, language) {
 
             <body>
                 <div class="app">
-                    <h1>${language === 'en' ? 'LUNCH MENU FORNEBU' : 'LUNSJMENY FORNEBU'}</h1>
+                    <h1 style="font-size: 1.7em;">${language === 'en' ? 'LUNCH MENU FORNEBU' : 'LUNSJMENY FORNEBU'}</h1>
 
-                    <div class="buttons" style="gap: .1em;">
+                    <div class="buttons" style="font-size: 1em">
                         ${buttonsHtml}
                     </div>
 
@@ -193,7 +196,7 @@ function getPage(req, res, day, language) {
                         <p style="white-space: break-spaces;">${dataToSend}</p>
                     </div>
 
-                    <div class="buttons" style="gap: .05em;">
+                    <div class="buttons" style="gap: .1em;">
                         <a href="/" style="font-size: 0.8em;">Nor</a>
                         <a href="/en" style="font-size: 0.8em;">Eng</a>
                     </div>
