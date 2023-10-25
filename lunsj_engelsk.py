@@ -85,7 +85,7 @@ if __name__ == "__main__":
     if dag == 0:
         ukedag_en = "Monday"
     elif dag == 1:
-        ukedag_en = "Tueday"
+        ukedag_en = "Tuesday"
     elif dag == 2:
         ukedag_en = "Wednesday"
     elif dag == 3:
