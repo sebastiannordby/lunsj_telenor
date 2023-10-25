@@ -93,6 +93,8 @@ function getPage(req, res, day, language) {
         <!DOCTYPE html>
         <html lang="en">
         <head>
+            <link rel="manifest" href="/manifest.json">
+
             <!-- Google tag (gtag.js) -->
             <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZB3ZXQX08B"></script>
             <script>
