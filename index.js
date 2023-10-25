@@ -110,7 +110,7 @@ function getPage(req, res, day, language) {
             <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 
             <link rel="icon" type="image/png" href="public/apple-touch-icon.png" sizes="152x152">
-            <link rel="icon" type="image/png" href="public/android-chrome-192x192.png" sizes="192x192">
+            <link rel="icon" type="image/png" href="/android-chrome-192x192.png" sizes="192x192">
 
             <style>
                 *, *:after {
