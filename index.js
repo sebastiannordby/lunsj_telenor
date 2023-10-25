@@ -157,19 +157,32 @@ function getPage(req, res, day, language) {
                   min-width: 100px;
                 }
                 .buttons {
-                    font-size: 1.5vw;
+                    font-size: 1.4vw;
                     display: flex;
                     flex-wrap: wrap;
                     justify-content: center;
                     gap: 0.01em;
                 }
                 .buttons a {
-                    padding: 0em .4em;
+                    padding: 0em 0.4em; /* Default padding value */
+                }
+
+                @media (max-width: 429px) {
+                    .buttons a {
+                        padding: 0em 0.2em; /* Adjust padding for screens up to 420px wide */
+                    }
+                }
+
+                @media (max-width: 410px) {
+                    .buttons a {
+                        padding: 0em 0.1em; /* Adjust padding for screens up to 410px wide */
+                    }
+                }
                 }
                 .buttons a.active {
                     background-color: #dfdfdf;
                 }
-                @media(min-width: 300px) {
+                @media(min-width: 280px) {
                     .buttons {
                         font-size: 1.1rem;
                         justify-content: center;
