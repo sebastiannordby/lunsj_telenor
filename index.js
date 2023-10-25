@@ -109,7 +109,8 @@ function getPage(req, res, day, language) {
             <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
             <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 
-            <link rel=”apple-touch-icon” href=”/pizza-3007395_640.png”/>
+            <link rel="icon" type="image/png" href="public/apple-touch-icon.png" sizes="152x152">
+            <link rel="icon" type="image/png" href="public/android-chrome-192x192.png" sizes="192x192">
 
             <style>
                 *, *:after {
