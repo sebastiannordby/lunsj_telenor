@@ -49,7 +49,7 @@ def get_menu(canteen: str, weekday: int | None = None) -> dict[str, list[str]]:
             dish = dish.strip("-").strip()
 
             # Skip non-menu items
-            if dish == "" or "--" in dish or "Open" in dish or "...." in dish or "Opening" in dish:
+            if dish == "" or "--" in dish or "ÅPENT" in dish or "........" in dish or "Åpning" in dish or "Åpent" in dish or "We are" in dish or "OPEN" in dish:
                 continue
 
             # Remove allergy information (all trailing after " AL"), and add extra strip just in case
