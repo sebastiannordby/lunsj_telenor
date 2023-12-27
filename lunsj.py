@@ -94,6 +94,7 @@ if __name__ == "__main__":
             print("Dagens lunsj:\n\nIngen meny på lørdager og søndager. Kom tilbake på mandag, eller velg ukedag.")
         elif dag == -1:
             print("Dagens lunsj ---", ukedag + " " + today.strftime("%d.%m.%Y:") + "\n")
+            print("OBS! Avvikende lunsjtider i romjul. Se Workplace for info om hva som er åpent.")
         else:
             print(ukedag + ": \n")
         for c in canteens:
