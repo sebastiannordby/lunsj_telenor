@@ -95,11 +95,12 @@ if __name__ == "__main__":
         elif dag == -1:
             print("Dagens lunsj ---", ukedag + " " + today.strftime("%d.%m.%Y:") + "\n")
         elif dag == -2:
-            print("Dette er en mer oversiktlig versjon av NPRO sin Lunsjmeny.")
-            print("Menyen hentes direkte fra NPRO sin side og er derfor oppdatert når den blir oppdatert.")
-            print("Link til NPRO sin side: https://snaroyveien30-gg.issfoodservices.no/articles/r200004464-selvbetjent-kantine--o200005204. \n")
-            print("Nettsiden er utviklet og satt opp av Marius Bråthen og Sebastian Nordby. Python-scriptet som brukes til å hente menyen er utviklet med hjelp fra Filip Gornitzka Abelson.")
-            print("Takk til Mats Danielsen som hoster serveren som driver denne siden.")
+            print("Dette er en mer oversiktlig versjon av NPRO sin Lunsjmeny.\n")
+            print("Menyen hentes direkte fra NPRO sin side og speiler innholdet på den siden.\n")
+            print("Link til NPRO sin side:\n")
+            print("https://snaroyveien30-gg.issfoodservices.no/articles/r200004464-selvbetjent-kantine--o200005204. \n")
+            print("Nettsiden er utviklet og satt opp av Marius Bråthen og Sebastian Nordby. Python-scriptet som brukes til å hente menyen er utviklet med hjelp fra Filip Gornitzka Abelson.\n")
+            print("Takk til Mats Danielsen som hoster serveren og domenet.")
         else:
             print(ukedag + ": \n")
         for c in canteens:
