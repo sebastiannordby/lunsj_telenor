@@ -97,7 +97,7 @@ if __name__ == "__main__":
         elif dag == -2:
             print("Dette er en mer oversiktlig versjon av NPRO sin Lunsjmeny.\n")
             print("Menyen hentes direkte fra NPRO sin side og speiler innholdet på den siden.\n")
-            print("Link til NPRO sin side:\n")
+            print("Link til NPRO sin side:")
             print("https://snaroyveien30-gg.issfoodservices.no/articles/r200004464-selvbetjent-kantine--o200005204. \n")
             print("Nettsiden er utviklet og satt opp av Marius Bråthen og Sebastian Nordby. Python-scriptet som brukes til å hente menyen er utviklet med hjelp fra Filip Gornitzka Abelson.\n")
             print("Takk til Mats Danielsen som hoster serveren og domenet.")
