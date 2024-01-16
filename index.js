@@ -232,6 +232,10 @@ app.get('/en', (req, res) => {
     getPage(req, res, -1, 'en');
 });
 
+app.get('/om', (req, res) => {
+    getPage(req, res, -2);
+});
+
 app.get('/dag/:day', (req, res) => {
     const params = req.params;
     const day = days.find(x => x.name == params["day"]);
