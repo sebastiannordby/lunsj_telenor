@@ -100,15 +100,15 @@ if __name__ == "__main__":
     if dag > 4:
         print("\nIngen meny på lørdag og søndag. Kom tilbake på mandag :)")
     else:
-        print("\U0001f4c6", ukedag + " " + today.strftime("%d.%m %Y"))
+        print("\U0001f4c6", ukedag + " " + today.strftime("%d.%m.%Y"))
         print("\U0001f30d Fornebu - Bærum - Viken \U0001f556 07:00\n")
-        print("\U0001f37d Lunsj -og middagsmeny\n")
+        print("\U0001f37d Lunsjmeny\n")
         for c in canteens:
             y, v = get_menu(c, dag)
             canteen_menu = y
             emoji_choice = random.choice(range(0, len(emojies)))
             if c == "Eat The Street - Middag":
-                print(emojies[emoji_choice] + " " + c + " \U0001f55E 15:00 - 17:00 \U0001f3E2 K3")
+                print(emojies[emoji_choice] + " " + c + " \U0001f552 15:00 - 17:00 \U0001f3E2 K3")
                 print(format_menu(canteen_menu), "\n")
             if c == "Flow":
                 print(emojies[emoji_choice] + " " + c + " - Lunsj \U0001f565 10:30 - 13:00 \U0001f3E2 B3")
