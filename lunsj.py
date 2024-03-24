@@ -93,7 +93,8 @@ if __name__ == "__main__":
         if dag == -1 and today.weekday() > 4:
             print("Dagens lunsj:\n\nIngen meny på lørdager og søndager. Kom tilbake på mandag, eller velg ukedag.")
         elif dag == -1:
-            print("Dagens lunsj ---", ukedag + " " + today.strftime("%d.%m.%Y:") + "\n")
+            #print("Dagens lunsj ---", ukedag + " " + today.strftime("%d.%m.%Y:") + "\n")
+            print("NPRO sin løsning for lunsjmeny har blitt tatt ned. Det påvirker også denne siden. Det jobbes med ny løsning. Det blir annonsert på Workplace når det er klart.\n")
         elif dag == -2:
             print("Dette er en mer oversiktlig versjon av NPRO sin Lunsjmeny.\n")
             print("Menyen hentes direkte fra NPRO sin side og speiler innholdet på den siden.\n")
@@ -103,6 +104,7 @@ if __name__ == "__main__":
             print("Takk til Mats Danielsen som hoster serveren og domenet.")
         else:
             print(ukedag + ": \n")
+            print("NPRO sin løsning for lunsjmeny har blitt tatt ned. Det påvirker også denne nettsiden. Det jobbes med ny løsning. Det blir annonsert på Workplace når det er klart.\n")
         for c in canteens:
             y, v = get_menu(c, dag)
             canteen_menu = y
