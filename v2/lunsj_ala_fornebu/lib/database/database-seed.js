@@ -54,6 +54,43 @@ db.serialize(() => {
     console.log(`Admin user inserted, ID ${this.lastID}`);
   });
 
+
+  const createCanteensTableQuery = 
+    `CREATE TABLE IF NOT EXISTS Canteens (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      adminUserId INTEGER,
+      FOREIGN KEY(adminUserId) REFERENCES Users(id)
+    )`;
+
+    db.run(createCanteensTableQuery, (err) => {
+      if (err) {
+        return console.error(
+          "Error creating database", err.message);
+      }
+
+      console.log("Created Canteens table.");
+    });
+
+    const createMenusTableQuery = 
+      `CREATE TABLE IF NOT EXISTS Menus (
+        id INTEGER PRIMARY KEY,
+        day INTEGER NOT NULL CHECK(day >= 1 AND day <= 7),
+        description TEXT,
+        allergens TEXT,
+        canteenId INTEGER,
+        FOREIGN KEY(canteenId) REFERENCES Canteens(id)
+      )`;
+
+    db.run(createMenusTableQuery, (err) => {
+      if (err) {
+        return console.error(
+          "Error creating database", err.message);
+      }
+
+      console.log("Created Menus table.");
+    });
+
   // Close the database connection after all operations are done
   db.close((err) => {
     if (err) {

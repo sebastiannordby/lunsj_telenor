@@ -28,3 +28,51 @@ export async function getUser(username: string, password: string) {
 
   return res;
 }
+
+export async function createUser(username: string, password: string, isAdmin: boolean) {
+  const database = await openDb();
+
+  const res = database.run(
+    `INSERT INTO Users (username, password, isAdmin) VALUES (?, ?, ?)`,
+    [username, password, isAdmin]);
+
+  return res;
+}
+
+export async function createCanteen(name: string, adminUserId: number) {
+  const database = await openDb();
+
+  const res = database.run(
+    `INSERT INTO Canteens (name, adminUserId) VALUES (?, ?)`,
+    [name, adminUserId]);
+
+  return res;
+}
+
+export async function updateCanteen(id: number, name: string, adminUserId: number) {
+  const database = await openDb();
+
+  const res = database.run(
+    `UPDATE Canteens SET name = ?, adminUserId = ? WHERE id = ?`,
+    [name, adminUserId, id]);
+
+  return res;
+}
+
+export async function deleteCanteen(id: number) {
+  const database = await openDb();
+
+  const res = database.run(
+    `DELETE FROM Canteens WHERE id = ?`,
+    [id]);
+
+  return res;
+}
+
+export async function listCanteens() {
+  const database = await openDb();
+
+  const res = database.all(`SELECT * FROM Canteens`);
+
+  return res;
+}

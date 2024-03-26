@@ -9,7 +9,7 @@ import { auth } from "./auth";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Lunsj Forneby",
+  title: "Lunsj Fornebu",
   description: "Food for the people!",
 };
 
