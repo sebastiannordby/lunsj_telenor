@@ -1,4 +1,4 @@
-import { Canteen } from "./definitions";
+import { Canteen, CanteenView } from "./definitions";
 
 export const API = {
     listCanteens: async() => {
@@ -10,6 +10,6 @@ export const API = {
         });
         const json = await res.json();
 
-        return json as Canteen[];
+        return json as CanteenView[];
     }
 };

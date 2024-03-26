@@ -1,6 +1,6 @@
 import sqlite3 from 'sqlite3'
 import { open } from 'sqlite'
-import { User } from '../definitions';
+import { Canteen, CanteenMenu, CanteenView, User } from '../definitions';
 import path from 'path';
 
 // Open SQLite database connection
@@ -72,7 +72,37 @@ export async function deleteCanteen(id: number) {
 export async function listCanteens() {
   const database = await openDb();
 
-  const res = database.all(`SELECT * FROM Canteens`);
+  const res = database.all<Canteen[]>(
+    `SELECT * FROM Canteens`);
 
   return res;
+}
+
+export async function listCanteenMenus() {
+  const database = await openDb();
+
+  const res = database.all<CanteenMenu[]>(
+    `SELECT * FROM Menus`);
+
+  return res;
+}
+
+export async function listCanteenViews() {
+  const canteens = await listCanteens();
+  const allMenus = await listCanteenMenus();
+  const canteenViews: CanteenView[] = [];
+
+  canteens.forEach(canteen => {
+    const menus = allMenus
+      .filter(x => x.canteenId == canteen.id);
+
+    const canteenView: CanteenView = {
+      ...canteen,
+      menus
+    };
+
+    canteenViews.push(canteenView);
+  });
+
+  return canteenViews;
 }

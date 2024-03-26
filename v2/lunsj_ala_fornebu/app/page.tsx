@@ -1,6 +1,6 @@
 "use client"
 import { API } from '@/lib/api';
-import { Canteen } from '@/lib/definitions';
+import { Canteen, CanteenView } from '@/lib/definitions';
 import { Card, CardBody, CardFooter, CardHeader, Divider, Select, SelectItem } from '@nextui-org/react';
 import { useEffect, useState } from 'react';
 
@@ -22,7 +22,7 @@ function fetchMenuForDay<Menu>(day: string) {
 export default function Home() {
   const [selectedDay, setSelectedDay] = useState<string>(new Date().toLocaleDateString('en-US', { weekday: 'long' }));
   const [menu, setMenu] = useState<Menu>({});
-  const [canteens, setCanteens] = useState<Canteen[]>();
+  const [canteens, setCanteens] = useState<CanteenView[]>();
 
   const handleDayChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newDay = event.target.value;
