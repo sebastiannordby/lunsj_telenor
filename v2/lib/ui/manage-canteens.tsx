@@ -4,15 +4,15 @@ import { Canteen, CanteenMenu } from "../definitions";
 import { useEffect, useState } from "react";
 import { API } from "../api";
 
-const DAYS = [
-    "Mandag",
-    "Tirsdag",
-    "Onsdag",
-    "Torsdag",
-    "Fredag",
-    "Lørdag",
-    "Søndag"
-];
+const DAYS = {
+    "1": "Mandag",
+    "2": "Tirsdag",
+    "3": "Onsdag",
+    "4": "Torsdag",
+    "5": "Fredag",
+    "6": "Lørdag",
+    "7": "Søndag"
+} as any;
 
 export function ManageCanteens() {
     const [canteens, setCanteens ] = useState<Canteen[]>([]);
@@ -175,8 +175,8 @@ export function ManageCanteens() {
                                     { canteenMenus.map(x => 
                                         <AccordionItem 
                                             key={x.day} 
-                                            aria-label={DAYS[x.day]}
-                                            title={DAYS[x.day]}>
+                                            aria-label={DAYS[x.day.toString()]}
+                                            title={DAYS[x.day.toString()]}>
                                             <MenuManagement menu={x} setMenu={onMenuUpdated}/>
                                         </AccordionItem>
                                     )}

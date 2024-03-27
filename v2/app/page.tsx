@@ -1,15 +1,33 @@
 "use client"
 import { API } from '@/lib/api';
-import { Canteen, CanteenView } from '@/lib/definitions';
+import { Canteen, CanteenMenu, CanteenView } from '@/lib/definitions';
 import { Card, CardBody, CardFooter, CardHeader, Divider, Select, SelectItem } from '@nextui-org/react';
 import { useEffect, useState } from 'react';
 
 // Define the types for your menu data
 type Menu = {
-  [canteen: string]: string[];
+  [canteen: string]: CanteenMenu[];
 };
 
-const daysOfWeek: string[] = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag'];
+const daysOfWeek: string[] = [
+  'Mandag', 
+  'Tirsdag',
+  'Onsdag',
+  'Torsdag',
+  'Fredag',
+  'Lørdag',
+  'Søndag'
+];
+
+const DAYS = {
+    "1": "Mandag",
+    "2": "Tirsdag",
+    "3": "Onsdag",
+    "4": "Torsdag",
+    "5": "Fredag",
+    "6": "Lørdag",
+    "7": "Søndag"
+} as any;
 
 function fetchMenuForDay<Menu>(day: string) {
   return {
@@ -20,29 +38,55 @@ function fetchMenuForDay<Menu>(day: string) {
 }
 
 export default function Home() {
-  const [selectedDay, setSelectedDay] = useState<string>(new Date().toLocaleDateString('en-US', { weekday: 'long' }));
+  const [selectedDay, setSelectedDay] = useState<string>('Mandag');
   const [menu, setMenu] = useState<Menu>({});
   const [canteens, setCanteens] = useState<CanteenView[]>();
 
-  const handleDayChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  useEffect(() => {
+    let day = new Date().getDay();
+
+    if(day == 0) {
+      day = 7;
+    }
+
+    const dayName = (DAYS as any)[day];
+
+    setSelectedDay(dayName as string);
+  }, []);
+
+  const handleDayChange = async(event: React.ChangeEvent<HTMLSelectElement>) => {
     const newDay = event.target.value;
     setSelectedDay(newDay);
-    setMenu(fetchMenuForDay(newDay));
+  };
+
+  const fetchCanteens = async() => {
+    const res = await API.listCanteensViews();
+
+    console.log('Canteens; ', res);
+
+    setCanteens(res);
   };
 
   useEffect(() => {
-    setMenu(fetchMenuForDay(selectedDay));
+    (async() => {
+      await fetchCanteens();
+    })();
   }, []);
 
   useEffect(() => {
-    (async() => {
-      const cant = await API.listCanteensViews();
+    const menu: Menu = {};
+    const dayEntries = Object.entries(DAYS);
+    const dayEntry = dayEntries.find(x => x[1] == selectedDay);
+    const dayAsNumber = dayEntry?.[0] ?? 1;
 
-      console.log(cant);
+    canteens?.forEach(x => {
+      menu[x.name] = x.menus
+        .filter(x => x.day == dayAsNumber);
+    });
 
-      setCanteens(cant);
-    })();
-  }, []);
+    setMenu(menu);
+
+  }, [ selectedDay ]);
 
   return (
     <div className="container my-auto mx-auto p-8 rounded-lg">
@@ -73,8 +117,8 @@ export default function Home() {
             <Divider/>
             <CardBody>
               <ul className="list-disc pl-5">
-                {canteenMenu.map((foodItem, index) => (
-                  <li key={index}>{foodItem}</li>
+                {canteenMenu.map((menu, index) => (
+                  <li key={index}>{menu.description}</li>
                 ))}
               </ul>
             </CardBody>
