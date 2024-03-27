@@ -102,5 +102,16 @@ export const API = {
         const json = await res.json();
 
         return json as boolean;
-    }
+    },
+    getUser: async() => {
+        const res = await fetch("/api/auth/user", {
+            method: 'GET',
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+        const json = await res.json();
+
+        return json as User;
+    },
 };

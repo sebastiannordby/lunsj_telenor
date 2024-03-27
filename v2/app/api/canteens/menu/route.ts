@@ -15,7 +15,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-
 export async function POST(req: NextRequest) {
   try {
       const incoming = await req.json();

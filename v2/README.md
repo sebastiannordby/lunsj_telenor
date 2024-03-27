@@ -16,4 +16,11 @@ To  run the development server ([http://localhost:3000](http://localhost:3000)):
 npm run dev
 ```
 
+## Security Concerns
+- Passwords are stored in plain text
+- Database file is in source control
+- No extra handling for sanitization of inputs either to database(Injection) or frontend(XSS)
+- Will try to eliminate some of these, though the most important is XSS
+    - No trivial data stored here
+
 

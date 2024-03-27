@@ -1,18 +1,27 @@
-import { auth } from "../auth";
-import { getUserByUsername } from "@/lib/database/database";
+"use client"
+import { API } from "@/lib/api";
+import { User } from "@/lib/definitions";
 import { AdminManagement } from "@/lib/ui/admin-management";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 
-export default async function ManagementPage() {
-    const session = await auth();
-    const user = await getUserByUsername(session?.user?.name ?? '');
+export default function ManagementPage() {
+    const session = useSession();
+    const [user, setUser] = useState<User>();
+
+    useEffect(() => {
+        (async() => {
+            setUser(await API.getUser());
+        })();
+    }, []);
 
     if(user?.isAdmin) {
         return (
-            <AdminManagement session={session} />
+            <AdminManagement />
         );
     } else {
         return (
-            <AdminManagement session={session} />
+            <h1>Hmmm</h1>
         );
     }
 }

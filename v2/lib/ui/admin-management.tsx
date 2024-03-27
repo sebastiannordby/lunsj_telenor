@@ -4,10 +4,10 @@ import { ManageCanteens } from "@/lib/ui/manage-canteens";
 import { Session } from "next-auth";
 import ManageUsers from "./manage-users";
 
-export function AdminManagement({ session} : { session: Session | null }) {
+export function AdminManagement() {
     return (
         <div className="container my-auto mx-auto p-8 rounded-lg bg-white">
-            <h1 className="text-center mb-2 text-xl">Hei {session?.user?.name}</h1>
+            <h1 className="text-center mb-2 text-xl">Dashboard</h1>
 
             <div className="flex flex-col">
                 <Tabs aria-label="Options">
