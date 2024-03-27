@@ -10,11 +10,10 @@ node ./lib/database-seed.js YourAdminUsername YourAdminPassword
 ```
 
 ## Running project
-First, run the development server:
+To  run the development server([http://localhost:3000](http://localhost:3000)):
 
 ```
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
