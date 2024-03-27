@@ -1,6 +1,6 @@
 "use client"
-import { Card, CardBody, Listbox, ListboxItem, Tab, Tabs } from "@nextui-org/react";
-import { CanteenList } from "@/lib/ui/canteen-list";
+import { Card, CardBody, Tab, Tabs } from "@nextui-org/react";
+import { ManageCanteens } from "@/lib/ui/manage-canteens";
 import { Session } from "next-auth";
 import ManageUsers from "./manage-users";
 
@@ -21,7 +21,7 @@ export function AdminManagement({ session} : { session: Session | null }) {
                     <Tab key="canteens" title="Kantiner">
                         <Card>
                             <CardBody>
-                                <CanteenList></CanteenList>
+                                <ManageCanteens/>
                             </CardBody>
                         </Card>  
                     </Tab>

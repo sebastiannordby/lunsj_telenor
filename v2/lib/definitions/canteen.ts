@@ -2,7 +2,6 @@ export type Canteen = {
     id: number;
     name: string;
     adminUserId: number;
-    usersWithAccess: string[]
 };
 
 export type CanteenMenu = {

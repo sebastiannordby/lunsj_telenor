@@ -1,6 +1,17 @@
 import { Canteen, CanteenView, User } from "./definitions";
 
 export const API = {
+    listCanteensViews: async() => {
+        const res = await fetch("/api/canteens/view", {
+            method: 'GET',
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+        const json = await res.json();
+
+        return json as CanteenView[];
+    },
     listCanteens: async() => {
         const res = await fetch("/api/canteens", {
             method: 'GET',
@@ -10,7 +21,31 @@ export const API = {
         });
         const json = await res.json();
 
-        return json as CanteenView[];
+        return json as Canteen[];
+    },
+    createCanteen: async(canteen: Canteen) => {
+        const res = await fetch("/api/canteens", {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(canteen)
+        });
+        const json = await res.json();
+
+        return json as boolean;
+    },
+    updateCanteen: async(canteen: Canteen) => {
+        const res = await fetch("/api/canteens", {
+            method: 'PUT',
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(canteen)
+        });
+        const json = await res.json();
+
+        return json as boolean;
     },
     listUsers: async() => {
         const res = await fetch("/api/users", {

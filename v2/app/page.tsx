@@ -36,7 +36,7 @@ export default function Home() {
 
   useEffect(() => {
     (async() => {
-      const cant = await API.listCanteens();
+      const cant = await API.listCanteensViews();
 
       console.log(cant);
 
