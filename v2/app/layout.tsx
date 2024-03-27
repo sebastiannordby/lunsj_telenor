@@ -2,7 +2,6 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from "@/providers";
-import { SessionProvider } from "next-auth/react";
 import { SignoutComponent } from "@/lib/ui/footer";
 import { auth } from "./auth";
 
@@ -23,21 +22,21 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Providers>
-          <div className="flex flex-col backdrop-blur-sm w-full h-full bg-primary">
-            {children}
+          <Providers>
+            <div className="flex flex-col backdrop-blur-sm w-full h-full bg-primary">
+              {children}
 
-              <footer className="flex p-2 text-white justify-between underline">
-                <a 
-                target="_blank"
-                href="https://no.linkedin.com/in/sebastian-nordby-b45087152">
-                    Utviklet av Nordby Solutions
-                </a>
+                <footer className="flex p-2 text-white justify-between underline">
+                  <a 
+                  target="_blank"
+                  href="https://no.linkedin.com/in/sebastian-nordby-b45087152">
+                      Utviklet av Nordby Solutions
+                  </a>
 
-                <SignoutComponent session={session}/>
-              </footer>
-          </div>
-        </Providers>
+                  <SignoutComponent session={session}/>
+                </footer>
+            </div>
+          </Providers>
       </body>
     </html>
   );
