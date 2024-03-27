@@ -1,16 +1,11 @@
-import { getUser, openDb } from '@/lib/database/database';
+import { getUser } from '@/lib/database/database';
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 
-type CredentialType = {
-  username: string;
-  password: string;
-};
-
-const testProvider2 = Credentials({
+const credentialsProvider = Credentials({
   name: "Credentials",
   credentials: {
-    username: { label: "Brukernavn", type: "text", placeholder: "jsmith" },
+    username: { label: "Brukernavn", type: "text" },
     password: { label: "Passord", type: "password" }
   },
   async authorize(credentials: Partial<Record<"username" | "password", unknown>>, req) {
@@ -29,6 +24,6 @@ export const {
   signOut,
 } = NextAuth({
   providers: [
-    testProvider2
+    credentialsProvider
   ]
 });

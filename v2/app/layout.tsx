@@ -23,7 +23,6 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-      <SessionProvider>
         <Providers>
           <div className="flex flex-col backdrop-blur-sm w-full h-full bg-primary">
             {children}
@@ -39,7 +38,6 @@ export default async function RootLayout({
               </footer>
           </div>
         </Providers>
-      </SessionProvider>
       </body>
     </html>
   );
