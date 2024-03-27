@@ -59,6 +59,15 @@ export const API = {
 
         return json as CanteenMenu[];
     },    
+    saveCanteenMenus: async(canteens: CanteenMenu[]) => {
+        await fetch("/api/canteens/menu", {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(canteens)
+        });
+    },
     listUsers: async() => {
         const res = await fetch("/api/users", {
             method: 'GET',

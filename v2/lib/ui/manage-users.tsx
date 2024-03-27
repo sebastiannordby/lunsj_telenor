@@ -11,7 +11,6 @@ import {
     Listbox,
     Avatar,
     ListboxItem,
-    user,
     Input,
     Checkbox
 } from "@nextui-org/react";
@@ -23,7 +22,6 @@ export default function ManageUsers() {
     const [ user, setUser ] = useState<User>();
     const [ userIsNew, setUserIsNew ] = useState<boolean>(false);
     const {isOpen, onOpen, onOpenChange} = useDisclosure();
-    const [values, setValues] = React.useState<User>();
 
     const editUser = (user: User) => {
         setUser(user);
@@ -72,7 +70,7 @@ export default function ManageUsers() {
 
                 <Button 
                     color="secondary"
-                    size="md"
+                    size="sm"
                     radius="full"
                     onClick={showNewUserDialog}>
                     Legg til
@@ -86,7 +84,7 @@ export default function ManageUsers() {
                 }}
                 items={users}
                 label="Assigned to"
-                selectionMode="single"
+                selectionMode="none"
                 variant="flat">
                 {(item) => (
                 <ListboxItem key={item.id} textValue={item.username}>
@@ -104,7 +102,7 @@ export default function ManageUsers() {
                             style={{ marginLeft: 'auto'}}
                             onClick={() => editUser(item)}
                             radius="full">
-                            Rediger
+                            Endre
                         </Button>
                     </div>
                 </ListboxItem>
@@ -116,7 +114,7 @@ export default function ManageUsers() {
                     {(onClose) => (
                         <>
                         <ModalHeader className="flex flex-col gap-1">
-                            { userIsNew ? "Ny bruker" : `Rediger - ${user?.username}` }
+                            { userIsNew ? "Ny bruker" : `Endre - ${user?.username}` }
                         </ModalHeader>
                         <ModalBody>
                             <UserForm user={user} setUpdatedUser={setUser} />
@@ -138,9 +136,15 @@ export function UserForm({ user, setUpdatedUser }: {
     user: User | undefined,
     setUpdatedUser: (user: User) => void
 }) {
-    const [username, setUsername] = useState(user?.username ?? '');
-    const [password, setPassword] = useState(user?.password ?? '');
-    const [isAdmin, setIsAdmin ] = useState(user?.isAdmin ?? false);
+    const [username, setUsername] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [isAdmin, setIsAdmin ] = useState<boolean>(false);
+
+    useEffect(() => {
+        setUsername(user?.username ?? '');
+        setPassword(user?.password ?? '');
+        setIsAdmin(user?.isAdmin ?? false);
+    }, [user]);
 
     const updateUsername = (username: string) => {
         setUsername(username);

@@ -1,10 +1,9 @@
 "use client"
-import { auth } from "@/app/auth";
 import { Session } from "next-auth";
 import { signIn, signOut } from "next-auth/react"
 import Link from "next/link";
 
-export default async function Footer({
+export default function Footer({
     session
 }: {
     session: Session | null
@@ -14,7 +13,7 @@ export default async function Footer({
         <footer className="flex p-2 text-white justify-between underline">
             <a 
             target="_blank"
-            href="https://proff.no/selskap/nordby-solutions/s%C3%B8rumsand/internettdesign-og-programmering/IFFEND70C2C">
+            href="https://no.linkedin.com/in/sebastian-nordby-b45087152">
                 Utviklet av Nordby Solutions
             </a>
 

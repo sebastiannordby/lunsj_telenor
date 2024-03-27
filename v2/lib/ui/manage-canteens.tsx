@@ -1,16 +1,27 @@
 "use client"
-import { Button, Input, Listbox, ListboxItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Textarea, useDisclosure } from "@nextui-org/react";
+import { Accordion, AccordionItem, Button, Input, Listbox, ListboxItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Textarea, useDisclosure } from "@nextui-org/react";
 import { Canteen, CanteenMenu } from "../definitions";
 import { useEffect, useState } from "react";
 import { API } from "../api";
 
+const DAYS = [
+    "Mandag",
+    "Tirsdag",
+    "Onsdag",
+    "Torsdag",
+    "Fredag",
+    "Lørdag",
+    "Søndag"
+];
+
 export function ManageCanteens() {
     const [canteens, setCanteens ] = useState<Canteen[]>([]);
-    const [canteen, setCanteen ] = useState<Canteen>();
-    const [isCanteenNew, setIsCanteenNew] = useState<boolean>();
+    const [canteen, setCanteen ] = useState<Canteen | null>(null);
+    const [isCanteenNew, setIsCanteenNew] = useState<boolean>(false);
     const {isOpen: isManageDialogOpen, onOpen: openManageDialog, onOpenChange: manageDialogChange} = useDisclosure();
-    const {isOpen: isMenuDialogOpen, onOpen: openMenuDialog, onOpenChange: menuDialogChange} = useDisclosure();
 
+    const [showingMenuFor, setShowingMenuFor] = useState<string>('');
+    const {isOpen: isMenuDialogOpen, onOpen: openMenuDialog, onOpenChange: menuDialogChange} = useDisclosure();
     const [canteenMenus, setCanteenMenus ] = useState<CanteenMenu[]>([]);
 
     const fetchCanteens = async() => {
@@ -24,6 +35,7 @@ export function ManageCanteens() {
             menus[i].canteenId = canteen.id;
         }
 
+        setShowingMenuFor(canteen.name);
         setCanteenMenus(menus);
         openMenuDialog();
     };
@@ -38,7 +50,7 @@ export function ManageCanteens() {
 
             await fetchCanteens();
             setIsCanteenNew(false);
-            setCanteen(undefined);
+            setCanteen(null);
         }
     };
 
@@ -58,9 +70,23 @@ export function ManageCanteens() {
         openManageDialog();
     };
 
+    const saveMenus = async() => {
+        await API.saveCanteenMenus(canteenMenus);
+        setCanteenMenus([]);
+        setShowingMenuFor('');
+    };
+
+    const onMenuUpdated = (menu: CanteenMenu) => {
+        const updatedMenus = canteenMenus.map(item => 
+            item.day === menu.day ? menu : item
+        );
+    
+        setCanteenMenus(updatedMenus);
+    };
+
     useEffect(() => {
         (async() => {
-            fetchCanteens();
+            await fetchCanteens();
         })();
     }, [ ]);
 
@@ -71,7 +97,7 @@ export function ManageCanteens() {
 
                 <Button 
                     color="secondary"
-                    size="md"
+                    size="sm"
                     radius="full"
                     onClick={showNewCanteenDialog}>
                     Legg til
@@ -80,15 +106,14 @@ export function ManageCanteens() {
 
             <Listbox
                 aria-label="User Menu"
-                onAction={(key) => alert(key)}
+                selectionMode="none"
                 className="p-0 gap-0 divide-y divide-default-300/50 dark:divide-default-100/80 bg-content1 max-w-[300px] overflow-visible shadow-small rounded-medium"
                 itemClasses={{
                     base: "px-3 first:rounded-t-medium last:rounded-b-medium rounded-none gap-3 h-12 data-[hover=true]:bg-default-100/80",
-                }}
-                >
+                }}>
 
                 {canteens.map(item => 
-                    <ListboxItem key={item.name}>
+                    <ListboxItem key={item.id} textValue={item.name} >
                         <div className="flex gap-2 items-center w-full">
                             <div className="flex flex-col">
                                 <span className="text-small">{item.name}</span>
@@ -102,7 +127,7 @@ export function ManageCanteens() {
                                     style={{ marginLeft: 'auto'}}
                                     onClick={() => editCanteen(item)}
                                     radius="full">
-                                    Rediger
+                                    Endre
                                 </Button>
                                 <Button 
                                     color="secondary"
@@ -115,7 +140,6 @@ export function ManageCanteens() {
                             </div>
                         </div>                    
                     </ListboxItem>
-
                 )}
             </Listbox>
 
@@ -124,7 +148,7 @@ export function ManageCanteens() {
                     {(onClose) => (
                         <>
                             <ModalHeader className="flex flex-col gap-1">
-                                { isCanteenNew ? "Ny kantine" : `Rediger - ${canteen?.name}` }
+                                { isCanteenNew ? "Ny kantine" : `Endre - ${canteen?.name}` }
                             </ModalHeader>
                             <ModalBody>
                                 <CanteenForm canteen={canteen} setUpdatedCanteen={setCanteen} />
@@ -139,26 +163,29 @@ export function ManageCanteens() {
                 </ModalContent>
             </Modal>             
 
-            <Modal isOpen={isMenuDialogOpen} onOpenChange={menuDialogChange}>
+            <Modal isOpen={isMenuDialogOpen} onOpenChange={menuDialogChange} size="full">
                 <ModalContent>
                     {(onClose) => (
                         <>
                             <ModalHeader className="flex flex-col gap-1">
-                                Meny for
+                                Meny for {showingMenuFor}
                             </ModalHeader>
                             <ModalBody>
-                                <div 
-                                    style={{height: '310px'}}
-                                    className="flex flex-col gap-4 overflow-auto max-h-[300px] h-[300px]">
+                                <Accordion className="h-100">
                                     { canteenMenus.map(x => 
-                                        <MenuManagement menu={x} />
+                                        <AccordionItem 
+                                            key={x.day} 
+                                            aria-label={DAYS[x.day]}
+                                            title={DAYS[x.day]}>
+                                            <MenuManagement menu={x} setMenu={onMenuUpdated}/>
+                                        </AccordionItem>
                                     )}
-                                </div>
-                            </ModalBody>
+                                </Accordion>
+                            </ModalBody>                            
                             <ModalFooter>
                                 <Button 
                                     color="secondary"
-                                    onPress={async() =>{  onClose(); }}>Lagre</Button>
+                                    onPress={async() =>{  onClose(); await saveMenus() }}>Lagre</Button>
                             </ModalFooter>
                         </>
                     )}
@@ -168,50 +195,11 @@ export function ManageCanteens() {
     )
 }
 
-export function MenuManagement({
-    menu
-} : {
-    menu: CanteenMenu
-}) {
-    const [description, setDescription] = useState(menu?.description);
-    const [allergens, setAllergens] = useState(menu?.allergens ?? 'Ingen');
-    const days = [
-        "Mandag",
-        "Tirsdag",
-        "Onsdag",
-        "Torsdag",
-        "Fredag",
-        "Lørdag",
-        "Søndag"
-    ];
-
-    return (
-        <div className="flex flex-col gap-2 p-2 border-gray-400 rounded-md border border-solid">
-            <Input 
-                label="Dag"
-                type="text"
-                disabled={true}
-                value={days[menu.day]} />
-
-            <Textarea
-                label="Beskrivelse"
-                placeholder="Skriv inn beskrivelse"
-                value={description} 
-                onValueChange={(e) => setDescription(e)}/>
-            <Textarea
-                label="Allergener"
-                placeholder="Skriv inn Allergener"
-                value={allergens} 
-                onValueChange={(e) => setAllergens(e)}/>
-        </div>
-    );
-}
-
 export function CanteenForm({ canteen, setUpdatedCanteen }: {
-    canteen: Canteen | undefined,
+    canteen: Canteen | null,
     setUpdatedCanteen: (canteen: Canteen) => void
 }) {
-    const [name, setName] = useState(canteen?.name ?? '');
+    const [name, setName] = useState<string>('');
 
     const updateName = (name: string) => {
         setName(name);
@@ -221,6 +209,10 @@ export function CanteenForm({ canteen, setUpdatedCanteen }: {
         }
     };
 
+    useEffect(() => {
+        setName(canteen?.name ?? '');
+    }, [canteen]);
+
     return (
         <div className="flex flex-col gap-2">
             <Input 
@@ -229,18 +221,38 @@ export function CanteenForm({ canteen, setUpdatedCanteen }: {
                 type="text"
                 value={name} 
                 onValueChange={(e) => updateName(e)}/>
+        </div>
+    );
+}
 
-            {/* <Input
-                label="Passord"
-                variant="bordered"
-                placeholder="Skriv inn passord"
-                type={"password"}
-                value={password}
-                onValueChange={(e) => updatePassword(e)}/>
+export function MenuManagement({
+    menu,
+    setMenu
+} : {
+    menu: CanteenMenu,
+    setMenu: (menu: CanteenMenu) => void
+}) {
+    const [description, setDescription] = useState<string>('');
 
-            <Checkbox 
-                checked={isAdmin} 
-                onClick={() => updateIsAdmin(!isAdmin)}>Er administrator</Checkbox> */}
+    const descriptionUpdated = (description: string) => {
+        setDescription(description);
+        setMenu({
+            ...menu,
+            description: description
+        });
+    };
+
+    useEffect(() => {
+        setDescription(menu?.description ?? '');
+    }, [menu]);
+
+    return (
+        <div className="flex flex-col gap-2 p-2">
+            <Textarea
+                label="Beskrivelse"
+                placeholder="Skriv inn beskrivelse"
+                value={description} 
+                onValueChange={(e) => descriptionUpdated(e)}/>
         </div>
     );
 }
