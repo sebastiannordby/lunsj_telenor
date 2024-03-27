@@ -29,12 +29,44 @@ export async function getUser(username: string, password: string) {
   return res;
 }
 
+export async function getUserByUsername(username: string) {
+  const database = await openDb();
+
+  const res = await database.get<User>(
+    `SELECT * FROM Users WHERE Username = ?`,
+    [username]);
+
+  console.log('getUserByUsername: ', res);
+
+  return res;
+}
+
+export async function listUsers() {
+  const database = await openDb();
+
+  const res = await database.all<User[]>(
+    `SELECT * FROM Users`);
+
+  console.log('listUsers: ', res);
+
+  return res;
+}
+
 export async function createUser(username: string, password: string, isAdmin: boolean) {
+  const database = await openDb();
+  const res = await database.run(
+    `INSERT INTO Users (username, password, isAdmin) VALUES (?, ?, ?)`,
+    [username, password, isAdmin]);
+
+  return res;
+}
+
+export async function updateUser(user: User) {
   const database = await openDb();
 
   const res = database.run(
-    `INSERT INTO Users (username, password, isAdmin) VALUES (?, ?, ?)`,
-    [username, password, isAdmin]);
+    `UPDATE Users SET username = ?, password = ?, isAdmin = ? WHERE id = ?`,
+    [user.username, user.password, user.isAdmin, user.id]);
 
   return res;
 }
@@ -106,3 +138,17 @@ export async function listCanteenViews() {
 
   return canteenViews;
 }
+
+export async function getCanteenByUser(username: string) {
+  const database = await openDb();
+  const query = `
+    SELECT * FROM Canteens 
+      JOIN Users ON Users.Id = Canteens.adminUserId
+    WHERE Users.username = ?`;
+
+  const canteen = await database
+    .get<Canteen>(query, [username]);
+
+  return canteen;
+}
+

@@ -1,27 +1,19 @@
-import { Listbox, ListboxItem } from "@nextui-org/react";
 import { auth } from "../auth";
-import { Canteen, User } from "@/lib/definitions"
-import { CanteenList } from "@/lib/ui/canteen-list";
+import { getUserByUsername } from "@/lib/database/database";
+import { AdminManagement } from "@/lib/ui/admin-management";
 
 export default async function ManagementPage() {
     const session = await auth();
-    const user = session?.user as User;
+    const user = await getUserByUsername(session?.user?.name ?? '');
 
-    if(user.isAdmin) {
+    if(user?.isAdmin) {
         return (
-            <div className="container my-auto mx-auto p-8 rounded-lg bg-white">
-                <h1 className="text-center mb-2 text-xl">Hei {session?.user?.name}</h1>
-    
-                <div className="flex gap-2">
-                    <div>
-                        <CanteenList></CanteenList>
-                    </div>
-                </div>
-            </div>
+            <AdminManagement session={session} />
         );
     } else {
         return (
-            <h1>Ikke admin</h1>
+            <AdminManagement session={session} />
         );
     }
 }
+
