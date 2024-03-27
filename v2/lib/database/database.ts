@@ -17,6 +17,41 @@ export async function openDb() {
   return connection;
 }
 
+export async function getCateenMenus(canteenId: number) {
+  const database = await openDb();
+
+  const menus = await database.all<CanteenMenu[]>(
+    `SELECT * FROM Menus WHERE canteenId = ?`, [canteenId]);
+
+  for(let i = 0; i <= 6; i++) {
+    const day = menus.find(x => x.day == i);
+
+    if(!day) {
+      menus.push({
+        day: i,
+        description: '',
+        allergens: '',
+        canteenId: canteenId,
+        id: 0
+      });
+    }
+  }
+
+  return menus;
+}
+
+export async function saveCanteenMenu(menus: CanteenMenu[]) {
+  for(let i = 0; i < menus.length; i++) {
+    const menu = menus[i];
+
+    if(menu.id > 0) {
+      // Update
+    } else {
+      // Create
+    }
+  }
+}
+
 export async function getUser(username: string, password: string) {
   const database = await openDb();
 

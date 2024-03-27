@@ -1,6 +1,6 @@
 "use client"
-import { Button, Input, Listbox, ListboxItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@nextui-org/react";
-import { Canteen } from "../definitions";
+import { Button, Input, Listbox, ListboxItem, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Textarea, useDisclosure } from "@nextui-org/react";
+import { Canteen, CanteenMenu } from "../definitions";
 import { useEffect, useState } from "react";
 import { API } from "../api";
 
@@ -8,10 +8,24 @@ export function ManageCanteens() {
     const [canteens, setCanteens ] = useState<Canteen[]>([]);
     const [canteen, setCanteen ] = useState<Canteen>();
     const [isCanteenNew, setIsCanteenNew] = useState<boolean>();
-    const {isOpen, onOpen, onOpenChange} = useDisclosure();
+    const {isOpen: isManageDialogOpen, onOpen: openManageDialog, onOpenChange: manageDialogChange} = useDisclosure();
+    const {isOpen: isMenuDialogOpen, onOpen: openMenuDialog, onOpenChange: menuDialogChange} = useDisclosure();
+
+    const [canteenMenus, setCanteenMenus ] = useState<CanteenMenu[]>([]);
 
     const fetchCanteens = async() => {
         setCanteens(await API.listCanteens());
+    };
+
+    const showMenuDialog = async(canteen: Canteen) => {
+        const menus = await API.listCanteenMenus(canteen.id);
+
+        for(let i = 0; i < menus.length; i++) {
+            menus[i].canteenId = canteen.id;
+        }
+
+        setCanteenMenus(menus);
+        openMenuDialog();
     };
 
     const saveCanteen = async() => {
@@ -31,7 +45,7 @@ export function ManageCanteens() {
     const editCanteen = (toEdit: Canteen) => {
         setCanteen(toEdit);
         setIsCanteenNew(false);
-        onOpen();
+        openManageDialog();
     };
 
     const showNewCanteenDialog = () => {
@@ -41,7 +55,7 @@ export function ManageCanteens() {
             adminUserId: 0
         } satisfies Canteen);
         setIsCanteenNew(true);
-        onOpen();
+        openManageDialog();
     };
 
     useEffect(() => {
@@ -94,7 +108,7 @@ export function ManageCanteens() {
                                     color="secondary"
                                     size="sm"
                                     style={{ marginLeft: 'auto'}}
-                                    onClick={() => editCanteen(item)}
+                                    onClick={() => showMenuDialog(item)}
                                     radius="full">
                                     Meny
                                 </Button>
@@ -105,7 +119,7 @@ export function ManageCanteens() {
                 )}
             </Listbox>
 
-            <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+            <Modal isOpen={isManageDialogOpen} onOpenChange={manageDialogChange}>
                 <ModalContent>
                     {(onClose) => (
                         <>
@@ -123,9 +137,74 @@ export function ManageCanteens() {
                         </>
                     )}
                 </ModalContent>
-            </Modal>                   
+            </Modal>             
+
+            <Modal isOpen={isMenuDialogOpen} onOpenChange={menuDialogChange}>
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <ModalHeader className="flex flex-col gap-1">
+                                Meny for
+                            </ModalHeader>
+                            <ModalBody>
+                                <div 
+                                    style={{height: '310px'}}
+                                    className="flex flex-col gap-4 overflow-auto max-h-[300px] h-[300px]">
+                                    { canteenMenus.map(x => 
+                                        <MenuManagement menu={x} />
+                                    )}
+                                </div>
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button 
+                                    color="secondary"
+                                    onPress={async() =>{  onClose(); }}>Lagre</Button>
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>                       
         </div>
     )
+}
+
+export function MenuManagement({
+    menu
+} : {
+    menu: CanteenMenu
+}) {
+    const [description, setDescription] = useState(menu?.description);
+    const [allergens, setAllergens] = useState(menu?.allergens ?? 'Ingen');
+    const days = [
+        "Mandag",
+        "Tirsdag",
+        "Onsdag",
+        "Torsdag",
+        "Fredag",
+        "Lørdag",
+        "Søndag"
+    ];
+
+    return (
+        <div className="flex flex-col gap-2 p-2 border-gray-400 rounded-md border border-solid">
+            <Input 
+                label="Dag"
+                type="text"
+                disabled={true}
+                value={days[menu.day]} />
+
+            <Textarea
+                label="Beskrivelse"
+                placeholder="Skriv inn beskrivelse"
+                value={description} 
+                onValueChange={(e) => setDescription(e)}/>
+            <Textarea
+                label="Allergener"
+                placeholder="Skriv inn Allergener"
+                value={allergens} 
+                onValueChange={(e) => setAllergens(e)}/>
+        </div>
+    );
 }
 
 export function CanteenForm({ canteen, setUpdatedCanteen }: {
@@ -142,27 +221,26 @@ export function CanteenForm({ canteen, setUpdatedCanteen }: {
         }
     };
 
+    return (
+        <div className="flex flex-col gap-2">
+            <Input 
+                label="Navn"
+                placeholder="Skriv inn navn"
+                type="text"
+                value={name} 
+                onValueChange={(e) => updateName(e)}/>
 
-  return (
-    <div className="flex flex-col gap-2">
-        <Input 
-            label="Navn"
-            placeholder="Skriv inn navn"
-            type="text"
-            value={name} 
-            onValueChange={(e) => updateName(e)}/>
+            {/* <Input
+                label="Passord"
+                variant="bordered"
+                placeholder="Skriv inn passord"
+                type={"password"}
+                value={password}
+                onValueChange={(e) => updatePassword(e)}/>
 
-        {/* <Input
-            label="Passord"
-            variant="bordered"
-            placeholder="Skriv inn passord"
-            type={"password"}
-            value={password}
-            onValueChange={(e) => updatePassword(e)}/>
-
-        <Checkbox 
-            checked={isAdmin} 
-            onClick={() => updateIsAdmin(!isAdmin)}>Er administrator</Checkbox> */}
-    </div>
-  );
+            <Checkbox 
+                checked={isAdmin} 
+                onClick={() => updateIsAdmin(!isAdmin)}>Er administrator</Checkbox> */}
+        </div>
+    );
 }

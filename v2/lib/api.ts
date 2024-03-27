@@ -1,4 +1,4 @@
-import { Canteen, CanteenView, User } from "./definitions";
+import { Canteen, CanteenMenu, CanteenView, User } from "./definitions";
 
 export const API = {
     listCanteensViews: async() => {
@@ -47,6 +47,18 @@ export const API = {
 
         return json as boolean;
     },
+    listCanteenMenus: async(canteenId: number) => {
+        const res = await fetch("/api/canteens/menu", {
+            method: 'GET',
+            headers: {
+                "Content-Type": "application/json",
+                "CanteenId": canteenId.toString()
+            }
+        });
+        const json = await res.json();
+
+        return json as CanteenMenu[];
+    },    
     listUsers: async() => {
         const res = await fetch("/api/users", {
             method: 'GET',
