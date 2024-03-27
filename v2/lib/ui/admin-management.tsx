@@ -1,7 +1,6 @@
 "use client"
 import { Card, CardBody, Tab, Tabs } from "@nextui-org/react";
 import { ManageCanteens } from "@/lib/ui/manage-canteens";
-import { Session } from "next-auth";
 import ManageUsers from "./manage-users";
 
 export function AdminManagement() {

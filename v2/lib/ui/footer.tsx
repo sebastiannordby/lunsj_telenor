@@ -3,36 +3,26 @@ import { Session } from "next-auth";
 import { signIn, signOut } from "next-auth/react"
 import Link from "next/link";
 
-export default function Footer({
+export function SignoutComponent({
     session
 }: {
     session: Session | null
 }){
-
-    return (
-        <footer className="flex p-2 text-white justify-between underline">
-            <a 
-            target="_blank"
-            href="https://no.linkedin.com/in/sebastian-nordby-b45087152">
-                Utviklet av Nordby Solutions
-            </a>
-
-            {session?.user ? 
+    if(session?.user) {
+        return (
+            <>
                 <Link href="/management" className="cursor-pointer">Rediger meny</Link>
-                : 
-                ''
-            }
 
-            {session?.user ? 
                 <a 
                     className="cursor-pointer"
                     onClick={async() => await signOut()}>Logg ut</a>
-                : 
-                <a 
-                    className="cursor-pointer"
-                    onClick={async() => await signIn()}>Logg inn</a> 
-            }
-        </footer>
+            </>
+        );
+    }
+
+    return (
+        <a 
+            className="cursor-pointer"
+            onClick={async() => await signIn()}>Logg inn</a> 
     );
 }
-

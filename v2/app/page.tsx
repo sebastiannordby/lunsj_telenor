@@ -60,11 +60,7 @@ export default function Home() {
   };
 
   const fetchCanteens = async() => {
-    const res = await API.listCanteensViews();
-
-    console.log('Canteens; ', res);
-
-    setCanteens(res);
+    setCanteens(await API.listCanteensViews());
   };
 
   useEffect(() => {
