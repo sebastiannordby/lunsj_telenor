@@ -2,7 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from "@/providers";
-import { SignoutComponent } from "@/lib/ui/footer";
+import { FooterItems } from "@/lib/ui/footer";
 import { auth } from "./auth";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -30,10 +30,10 @@ export default async function RootLayout({
                   <a 
                   target="_blank"
                   href="https://no.linkedin.com/in/sebastian-nordby-b45087152">
-                      Utviklet av Nordby Solutions
+                      Utviklet av Nordby
                   </a>
 
-                  <SignoutComponent session={session}/>
+                  <FooterItems session={session}/>
                 </footer>
             </div>
           </Providers>

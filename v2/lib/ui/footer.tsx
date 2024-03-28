@@ -3,7 +3,7 @@ import { Session } from "next-auth";
 import { signIn, signOut } from "next-auth/react"
 import Link from "next/link";
 
-export function SignoutComponent({
+export function FooterItems({
     session
 }: {
     session: Session | null
@@ -11,7 +11,7 @@ export function SignoutComponent({
     if(session?.user) {
         return (
             <>
-                <Link href="/management" className="cursor-pointer">Rediger meny</Link>
+                <Link href="/management" className="cursor-pointer">Dashboard</Link>
 
                 <a 
                     className="cursor-pointer"

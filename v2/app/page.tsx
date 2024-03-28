@@ -85,14 +85,15 @@ export default function Home() {
   }, [ selectedDay ]);
 
   return (
-    <div className="container my-auto mx-auto p-8 rounded-lg">
-      <h1 className="text-center mb-4 text-2xl font-bold text-white">🥕🥑 Lunsjmeny - Fornebu 🥑🥕</h1>
+    <div className="flex-1 container mx-auto p-8 rounded-lg overflow-auto">
+      <h1 className="text-center mb-4 text-xl font-bold text-white md:text-2xl">🥕🥑 Lunsjmeny - Fornebu 🥑🥕</h1>
       
-      <div className='flex flex-col gap-2 justify-center items-center'>
+      <div className='flex flex-col gap-2 justify-center items-center flex-1'>
         <Select
           label="Viser meny for"
           placeholder="Velg dag for å vise meny"
           className="max-w-xs"
+          size='lg'
           fullWidth={true}
           value={selectedDay}
           onChange={handleDayChange}>
@@ -103,23 +104,25 @@ export default function Home() {
           ))}
         </Select>
 
-        {Object.entries(menu).map(([canteenName, canteenMenu]) => (
-          <Card className="max-w-[400px]" key={canteenName} fullWidth={true}>
-            <CardHeader className="flex gap-3">
-              <div className="flex flex-col">
-                <p className="text-md">{canteenName}</p>
-              </div>
-            </CardHeader>
-            <Divider/>
-            <CardBody>
-              <ul className="list-disc pl-5">
-                {canteenMenu.map((menu, index) => (
-                  <li key={index}>{menu.description}</li>
-                ))}
-              </ul>
-            </CardBody>
-          </Card>          
-        ))}
+        <div className='p-2 flex flex-col gap-2 overflow-auto w-full items-center'>
+          {Object.entries(menu).map(([canteenName, canteenMenu]) => (
+            <Card className="max-w-[400px]" key={canteenName} fullWidth={true}>
+              <CardHeader className="flex gap-3">
+                <div className="flex flex-col">
+                  <p className="text-md">{canteenName}</p>
+                </div>
+              </CardHeader>
+              <Divider/>
+              <CardBody>
+                <div className="pl-5">
+                  {canteenMenu.map((menu, index) => (
+                    <p key={index} dangerouslySetInnerHTML={{ __html: menu.description.replace(/\n/g, '<br/>') }} />
+                  ))}
+                </div>                
+              </CardBody>
+            </Card>          
+          ))}
+        </div>
       </div>
     </div>
   );
