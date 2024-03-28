@@ -33,6 +33,7 @@ html, body {
 
 .bg-primary {
   background: rgb(66 66 66 / 15%);
+  color: black;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -93,7 +93,7 @@ export default function Home() {
   if(menu !== null) {
     return(
        <div className="flex-1 container mx-auto p-4 rounded-lg overflow-auto">
-         <h1 className="text-center mb-6 mt-4 text-4xl font-bold text-white md:text-3xl">Lunsjmeny Fornebu</h1>
+         <h1 className="text-center mb-6 mt-2 text-3xl font-bold text-white">Lunsjmeny Fornebu</h1>
          
          <div className='flex flex-col gap-2 justify-center items-center flex-1'>
            <Select
@@ -139,7 +139,7 @@ export default function Home() {
   } else {
     return (
       <div className="flex-1 container mx-auto p-4 rounded-lg overflow-auto min-w-full w-full">
-      <h1 className="text-center mb-6 mt-4 text-4xl font-bold text-white md:text-3xl">Lunsjmeny Fornebu</h1>
+      <h1 className="text-center mb-6 mt-2 text-3xl font-bold text-white">Lunsjmeny Fornebu</h1>
       
       <div className='flex flex-col gap-2 justify-center flex-1 w-full items-center'>
       <div className="spinner-box">
