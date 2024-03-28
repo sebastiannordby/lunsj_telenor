@@ -86,7 +86,7 @@ export default function Home() {
 
   return (
     <div className="flex-1 container mx-auto p-8 rounded-lg overflow-auto">
-      <h1 className="text-center mb-4 text-xl font-bold text-white md:text-2xl">🥕🥑 Lunsjmeny - Fornebu 🥑🥕</h1>
+      <h1 className="text-center mb-6 text-2xl font-bold text-white md:text-3xl">Lunsjmeny - Fornebu</h1>
       
       <div className='flex flex-col gap-2 justify-center items-center flex-1'>
         <Select
