@@ -8,6 +8,8 @@ authConfig = {
   },
   callbacks: {}
   ...
+
+export const { auth, signIn, signOut } = NextAuth(authConfig);
  
 export const authConfig = {
     pages: {
