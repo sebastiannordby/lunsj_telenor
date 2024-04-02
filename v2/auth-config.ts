@@ -1,4 +1,13 @@
 import type { NextAuthConfig } from 'next-auth';
+
+authConfig = {
+  trustHost: true,
+  trustHostedDomain: true,
+  pages: {
+    signIn: `/login`,
+  },
+  callbacks: {}
+  ...
  
 export const authConfig = {
     pages: {
