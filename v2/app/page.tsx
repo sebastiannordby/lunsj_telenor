@@ -25,8 +25,6 @@ const DAYS = {
     "3": "Onsdag",
     "4": "Torsdag",
     "5": "Fredag",
-    "6": "Lørdag",
-    "7": "Søndag"
 } as any;
 
 const getDayName = () => {
