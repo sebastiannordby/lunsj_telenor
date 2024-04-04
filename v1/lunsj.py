@@ -42,11 +42,11 @@ def print_menu_for_day(day: int):
                     non_middag_menus.append((canteen_name, menu_content))
 
     for menu in non_middag_menus:
-        print(f"\n{menu[0]}: (10:30 - 13:00)")
+        print(f"{menu[0]}: (10:30 - 13:00)")
         print(menu[1])
 
     for menu in middag_menus:
-        print(f"\n{menu[0]} (15:00 - 17:00):")
+        print(f"{menu[0]} (15:00 - 17:00):")
         print(menu[1])
 
 if __name__ == "__main__":
