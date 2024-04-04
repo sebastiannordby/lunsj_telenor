@@ -1,22 +1,24 @@
 import type { NextAuthConfig } from 'next-auth';
- 
-export const authConfig = {
-    pages: {
-      signIn: '/login',
-    },
-    callbacks: {
-      authorized({ auth, request: { nextUrl } }) {
-         const isLoggedIn = !!auth?.user;
-         const isInManagement = nextUrl.pathname.startsWith('/management');
 
-         if (isInManagement) {
-           if (!isLoggedIn){
-             return Response.redirect(new URL('/', nextUrl));
-           }
-         }
+export const authConfig: NextAuthConfig = {
+  pages: {
+    signIn: '/login',
+  },
+  callbacks: {
+    async authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
+      const isInManagement = nextUrl.pathname.startsWith('/management');
 
-        return true;
-      },
+      if (isInManagement && !isLoggedIn) {
+        // Return the URL to redirect to if the user is not logged in
+        return '/';
+      }
+
+      // Return true to allow access
+      return true;
     },
-    providers: [], 
-  } satisfies NextAuthConfig;
+  },
+  providers: [], 
+};
+
+export default authConfig;
