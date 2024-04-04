@@ -13,14 +13,17 @@ const credentialsProvider = Credentials({
     const password = credentials?.password as string;
     const user = await getUser(username, password);
 
-    return user ? { ...user, name: user.username } : null;
+    return {...user, name: user?.username} ?? null;
   }
 });
 
-const options = {
+export const {
+  handlers: { GET, POST },
+  auth,
+  signIn,
+  signOut,
+} = NextAuth({
   providers: [
     credentialsProvider
   ]
-};
-
-export default NextAuth(options);
+});
