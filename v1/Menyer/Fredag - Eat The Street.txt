@@ -1,5 +1,4 @@
 Sist oppdatert: 15.09.23 kl: 22:33
-- Oppdatert for uke 14 2024:
 - Nachos- biff kjøttdeig med salsa og tilbehør
 - Meksinask tomatsuppe
 - Pizza med skinke og ost
