@@ -6,14 +6,14 @@ export const authConfig = {
     },
     callbacks: {
       authorized({ auth, request: { nextUrl } }) {
-        // const isLoggedIn = !!auth?.user;
-        // const isInManagement = nextUrl.pathname.startsWith('/management');
+         const isLoggedIn = !!auth?.user;
+         const isInManagement = nextUrl.pathname.startsWith('/management');
 
-        // if (isInManagement) {
-        //   if (!isLoggedIn){
-        //     return Response.redirect(new URL('/', nextUrl));
-        //   }
-        // }
+         if (isInManagement) {
+           if (!isLoggedIn){
+             return Response.redirect(new URL('/', nextUrl));
+           }
+         }
 
         return true;
       },
