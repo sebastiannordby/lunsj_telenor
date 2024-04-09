@@ -178,7 +178,6 @@ function getPage(req, res, day, language) {
                         padding: 0em 0.1em; /* Adjust padding for screens up to 410px wide */
                     }
                 }
-                }
                 .buttons a.active {
                     background-color: #dfdfdf;
                 }
