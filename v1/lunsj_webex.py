@@ -41,7 +41,7 @@ def print_menu_for_day(day: int):
     for menu in middag_menus:
         emoji_choice = random.choice(range(0, len(emojies)))
         print(f"**_{menu[0]}_** " + emojies[emoji_choice] + " (15:00 - 17:00)\n")
-        print("_" + menu[1] + "_")
+        print(menu[1])
 
 if __name__ == "__main__":
     dag = int(sys.argv[1])
