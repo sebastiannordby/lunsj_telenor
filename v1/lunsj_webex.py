@@ -35,12 +35,12 @@ def print_menu_for_day(day: int):
     
     for menu in non_middag_menus:
         emoji_choice = random.choice(range(0, len(emojies)))
-        print(f"**{menu[0]}** + emojies[emoji_choice] + (10:30 - 13:00)\n")
+        print(f"**{menu[0]}**" + emojies[emoji_choice] + "(10:30 - 13:00)\n")
         print(menu[1])
 
     for menu in middag_menus:
         emoji_choice = random.choice(range(0, len(emojies)))
-        print(f"**_{menu[0]}_** + emojies[emoji_choice] + (15:00 - 17:00)\n")
+        print(f"**_{menu[0]}_**" + emojies[emoji_choice] + "(15:00 - 17:00)\n")
         print(menu[1])
 
 if __name__ == "__main__":
