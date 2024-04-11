@@ -1,4 +1,5 @@
 import os
+import random
 from datetime import datetime
 import sys
 
@@ -25,13 +26,21 @@ def print_menu_for_day(day: int):
                     middag_menus.append((canteen_name, menu_content))
                 else:
                     non_middag_menus.append((canteen_name, menu_content))
+    emojies = [
+        "\U0001f354", "\U0001f356", "\U0001f969", "\U0001f953", "\U0001f96A", "\U0001f32E", "\U0001f959",
+        "\U0001f9C6", "\U0001f958", "\U0001f957", "\U0001f980", "\U0001f967", "\U0001f364", "\U0001f35C",
+        "\U0001f372", "\U0001f32F", "\U0001f355", "\U0001f357"
+    ]
 
+    
     for menu in non_middag_menus:
-        print(f"**{menu[0]}** 🍽️ (10:30 - 13:00)\n")
+        emoji_choice = random.choice(range(0, len(emojies)))
+        print(f"**{menu[0]}** + emoji_choice + (10:30 - 13:00)\n")
         print(menu[1])
 
     for menu in middag_menus:
-        print(f"**_{menu[0]}_** 🍴 (15:00 - 17:00)\n")
+        emoji_choice = random.choice(range(0, len(emojies)))
+        print(f"**_{menu[0]}_** + emoji_choice + (15:00 - 17:00)\n")
         print(menu[1])
 
 if __name__ == "__main__":
