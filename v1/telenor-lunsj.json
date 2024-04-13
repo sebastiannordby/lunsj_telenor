@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "telenor-lunsj",
+  "private_key_id": "186e50a5a8a155505df64075f8237b7aa6801b06",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDBbwaGpaDO9yMr\nK51wDTSYrHvg5buUDUM9YZZuyfAscSOVbUVkeocVNkL1bzQZ+RTcQ6FAXcGqj1fG\nuTezCSORNY7lQ3r7vA5VZuYqUqUXVQFNSPtyzcLmjjbfX4pOjuW0ZYzejcRc3hzU\nlGRGqMrld/1nf6eRt0ZlJINw4ExasFyLpdwWQdgOKIZ6vBvEsPfZCHS3mAbpafWF\nexbxtDd/BWs+n6ZE8lwrZIgX4RREeJ+N1+m6F3/RXrgRqQ2fDyZsNLk2eGMBZlMS\nrM+17AcJFfcETLLQ4cy+5p3768JMv3jz2nqAWR0afg5cNlki2NgOSicK/33Sm/5Y\n/bbWgJ7rAgMBAAECggEAJmMwOlx4U1p8Yj7fmbMlMv9X/kPZPAJ9y5qoTghJX6h8\nVVVAJjaixDTmiOquvlDOMQBC6hExM/YKh2eOhDtWEaU9XIZNy9OATLaFCvUnyj+W\naI4JSLlI6pRik2XUfs6hC3HzyN79jyiNNCrW06b/zRZI9ddBnAtxLvVWGHqK7Jwm\nM1UwIK/M8eArjSlHFJj3PzmgshokV4nJfSAcX+slKXGEq1rdLsM9NUo+Y5KTRB3T\nixSfYlp25FyGIBXDcAcQa8mryDAsy7xD1GZuq64aFZKQcW0gR7P3HK9u1omSJiJf\nM/HcHJwrYgwwWn4PLpg6A4R3wXuz4rcPpXNepC7hkQKBgQD/wGhHKgxRktmJTQe6\nPyhGTvVHN6BP0AkHgZtcN1Wfan77UnT2bmXrREN7mM5sDeZ0ylt6QsmqekO7vtCV\nJiAQnhVBFdPZNeO9QwcIWp0xAdgKLd+0gybc6eUGDjC56FnhYPunaB0BIm0vMPya\nNPCK1sgTfelESRUYupqE+7wxpQKBgQDBnx9wCe6iM7fpbgNYZBxmRFb341n3E26H\nwzPnmuzX15yjPTs/4yM3ECjjmSdi/kt4uw7yu+IkQPQfEnvPtmoYs5aPq+H4TF/9\nm3tcKN1Eu69W7iwVeWH986l2HQqACFkMF5fYhJrnXwSAtyA0Eizx2jM9W/fYpe5O\nNIzr3qyJTwKBgQCs8VJSlSeBXflGdFV+Z0j3ylrojsAUWIxSjB0fzbdTtrMphgfb\nwKmg3yd3A8zKmte1MEWNtm4ins0AvzbTNNXIBu4+deEs59kZ2aJ+zq+vPRz3PTAi\nI/H6vxuE7cGbZXiqBGgIO0opwzrsB4c5TAVBDZ58N8+uwnDGqSDmPkhzlQKBgBnv\nADz3d5kOKFIBxDzwm8Uu3h8xunkXhzRz9t3MqHB4lqheqTLzb2IOrgteFiJyQRWY\nqHXmqHGGqawHw8GcgzVvyHjR4uBpCmpjivBbINf185RHLmxp57AmFMqXNTLU62ht\nOI9to3neBjJfVNbkoFR8j2Rmjxnbj8G11DI7jwyNAoGALbhkVUA3vzLWGAkE6Ytf\nhnY1OZgV3FCaygU7KEntWVPTc+4JihnPnvR8DWjvzEN8eiA76LlV7b85DUm/2tBN\n+om0bDdMgqV6OBQJUmJzesYgFFCQoeXzNiLX+HU13pqurxIVOInoryBUfUQbeab2\nAUU3w+zrSviiYzjflJHPeL8=\n-----END PRIVATE KEY-----\n",
+  "client_email": "lunsjmeny22@telenor-lunsj.iam.gserviceaccount.com",
+  "client_id": "108455917184630526089",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/lunsjmeny22%40telenor-lunsj.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
