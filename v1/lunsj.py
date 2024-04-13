@@ -46,7 +46,7 @@ def read_menu(filename, day, language):
         today = datetime.today()
         print("Dagens lunsj ---", weekday + " " + today.strftime("%d.%m.%Y:") + "\n")
     else:
-        print(f"{weekday}:")
+        print(f"{weekday}:\n")
 
     for sheet_name in ["Eat The Street", "Flow", "Fresh 4 You", "Eat The Street - Middag"]:
         sheet = wb[sheet_name]
