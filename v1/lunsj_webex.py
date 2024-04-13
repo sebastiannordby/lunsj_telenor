@@ -73,7 +73,4 @@ filename = "Lunsj_Fornebu.xlsx"
 day = int(sys.argv[1])
 language = sys.argv[2]
 
-#day = 0
-#language = "no"
-
 read_menu(filename, day, language)
