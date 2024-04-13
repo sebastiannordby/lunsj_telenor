@@ -14,7 +14,8 @@ if os.path.exists(file_path):
     # Convert the timestamp to a human-readable format
     last_modified_time = time.strftime('%d-%m-%Y %H:%M:%S', time.localtime(last_modified_timestamp))
 
-    print(f"Lunsjmenyene ble sist oppdatert: {last_modified_time}")
+    print(f"Lunsjmenyene ble oppdatert {last_modified_time} før oppdateringen som kjøres nå.")
+    print("Oppdaterer menyer...")
 else:
     print("Filen eksisterer ikke.")
 
