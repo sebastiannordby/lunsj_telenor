@@ -1,7 +1,22 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
+import os.path
+import time
 
+file_path = 'Lunsj_Fornebu.xlsx'
+
+# Check if the file exists
+if os.path.exists(file_path):
+    # Get the last modification time
+    last_modified_timestamp = os.path.getmtime(file_path)
+
+    # Convert the timestamp to a human-readable format
+    last_modified_time = time.strftime('%d-%m-%Y %H:%M:%S', time.localtime(last_modified_timestamp))
+
+    print(f"Lunsjmenyene ble sist oppdatert: {last_modified_time}")
+else:
+    print("Filen eksisterer ikke.")
 
 def download_google_spreadsheet_as_xlsx(spreadsheet_id, credentials_file, file_name):
     # Define the scope
