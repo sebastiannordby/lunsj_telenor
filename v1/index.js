@@ -1,5 +1,5 @@
 import express from 'express';
-import {spawn} from 'child_process';
+import { spawn } from 'child_process';
 
 const app = express();
 app.use(express.static('public'));
@@ -52,14 +52,14 @@ const days = [
 ];
 
 function getPage(req, res, day, language) {
-    console.log('getPage: ', day);
+    console.log('getPage: ', day, language);
 
     let dataToSend;
 
     // Determine the Python script based on the selected language
-    const pythonScript = language === 'en' ? 'lunsj_engelsk.py' : 'lunsj.py';
+    const pythonScript = 'lunsj.py';
 
-    const python = spawn('python3', [pythonScript, day]);
+    const python = spawn('python3', [pythonScript, day, language]);
 
     res.set({ 'content-type': 'text/html; charset=utf-8' });
 
@@ -178,6 +178,7 @@ function getPage(req, res, day, language) {
                         padding: 0em 0.1em; /* Adjust padding for screens up to 410px wide */
                     }
                 }
+                }
                 .buttons a.active {
                     background-color: #dfdfdf;
                 }
@@ -224,7 +225,7 @@ function getPage(req, res, day, language) {
 }
 
 app.get('/', (req, res) => {
-    getPage(req, res, -1);
+    getPage(req, res, -1, 'no'); // Default to Norwegian language
 });
 
 app.get('/en', (req, res) => {
@@ -232,13 +233,13 @@ app.get('/en', (req, res) => {
 });
 
 app.get('/om', (req, res) => {
-    getPage(req, res, -2);
+    getPage(req, res, -2, 'no'); // Default to Norwegian language
 });
 
 app.get('/dag/:day', (req, res) => {
     const params = req.params;
     const day = days.find(x => x.name == params["day"]);
-    getPage(req, res, day ? day.number : days[0].number, 'no');
+    getPage(req, res, day ? day.number : days[0].number, 'no'); // Default to Norwegian language
 });
 
 app.get('/en/day/:day', (req, res) => {
@@ -247,9 +248,9 @@ app.get('/en/day/:day', (req, res) => {
     getPage(req, res, day ? day.number : days[0].number, 'en');
 });
 
-app.get('/webex', (req, res) => {
+app.get('/admin', (req, res) => {
     let dataToSend;
-    const python = spawn('python', ['lunsj_webex.py', -1]);
+    const python = spawn('python3', ['lunsj_admin.py']);
     res.set({ 'content-type': 'text/plain; charset=utf-8' });
 
     python.stdout.on('data', function (data) {
@@ -263,9 +264,9 @@ app.get('/webex', (req, res) => {
     });
 });
 
-app.get('/teams', (req, res) => {
+app.get('/webex', (req, res) => {
     let dataToSend;
-    const python = spawn('python', ['lunsj_teams.py', -1]);
+    const python = spawn('python3', ['lunsj_webex.py', -1, 'no']); // Provide valid arguments for day and language
     res.set({ 'content-type': 'text/plain; charset=utf-8' });
 
     python.stdout.on('data', function (data) {
@@ -281,39 +282,7 @@ app.get('/teams', (req, res) => {
 
 app.get('/test', (req, res) => {
     let dataToSend;
-    const python = spawn('python', ['lunsj_test.py', -1]);
-    res.set({ 'content-type': 'text/plain; charset=utf-8' });
-
-    python.stdout.on('data', function (data) {
-        const buffer = Buffer.from(data);
-
-        dataToSend = buffer.toString('utf-8');
-    });
-
-    python.on('close', (code) => {
-        res.send(`${dataToSend}`);
-    });
-});
-
-app.get('/test/mandag', (req, res) => {
-    let dataToSend;
-    const python = spawn('python', ['lunsj_test.py', 0]);
-    res.set({ 'content-type': 'text/plain; charset=utf-8' });
-
-    python.stdout.on('data', function (data) {
-        const buffer = Buffer.from(data);
-
-        dataToSend = buffer.toString('utf-8');
-    });
-
-    python.on('close', (code) => {
-        res.send(`${dataToSend}`);
-    });
-});
-
-app.get('/admin', (req, res) => {
-    let dataToSend;
-    const python = spawn('python', ['lunsj_admin.py']);
+    const python = spawn('python3', ['lunsj_test.py', -1, 'no']);
     res.set({ 'content-type': 'text/plain; charset=utf-8' });
 
     python.stdout.on('data', function (data) {
