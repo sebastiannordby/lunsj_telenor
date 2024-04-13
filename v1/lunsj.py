@@ -14,9 +14,11 @@ def read_menu(filename, day, language):
 
     if day == -1:
         ukedag = datetime.now().weekday()
-        day
-        if day == -1 and ukedag > 4:
+        if day == -1 and ukedag > 4 and language == "no":
             print("Ingen meny på lørdager og søndager. Kom tilbake på mandag, eller velg ukedag.")
+            return
+        if day == -1 and ukedag > 4 and language == "en":
+            print("No menues for saturday or sunday. Come back on monday or select day.")
             return
     if day == -2:
         print("Dette er en mer oversiktlig versjon av NPRO sin Lunsjmeny. Menyen fås direkte fra NPRO gjennom et Google Spreadsheet.")
