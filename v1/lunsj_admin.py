@@ -38,5 +38,5 @@ try:
 except:
   print("Noe gikk galt under oppdatering av meny. Prøv på nytt eller ta kontakt.")
 else:
- print("Lunsjmenyene er oppdatert uten feil!")
+ print("Suksess: Lunsjmenyene er oppdatert!")
     
