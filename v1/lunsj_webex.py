@@ -1,48 +1,79 @@
-import os
-import random
-from datetime import datetime
+import openpyxl
 import sys
+import random
+from datetime import datetime, date, timedelta
 
-def print_menu_for_day(day: int):
-    weekdays = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag']
-    non_middag_menus = []
-    middag_menus = []
+def read_menu(filename, day, language):
+    # Map day index to row index
+    day_row_mapping = {
+        0: 6,
+        1: 12,
+        2: 18,
+        3: 24,
+        4: 30
+    }
 
     if day == -1:
-        today = datetime.today()
-        day = today.weekday()
-        ukedag = weekdays[day]
-        print("## Dagens lunsj -", ukedag + " " + today.strftime("%d.%m.%Y:") + "\n")
+        ukedag = datetime.now().weekday()
+        day
+        if day == -1 and ukedag > 4:
+            print("Ingen meny på lørdager og søndager. Kom tilbake på mandag, eller velg ukedag.")
+            return
 
-    weekday = weekdays[day]
+    # Map language to column index
+    language_column_mapping = {
+        'no': 'A',
+        'en': 'B'
+    }
 
-    for filename in os.listdir("Menyer/"):
-        if filename.startswith(weekday):
-            canteen_name = filename.split(" - ", 1)[1][:-4]  # Henter kantinens navn fra filnavnet
-            with open(os.path.join("Menyer/", filename), "r") as file:
-                menu_content = file.readlines()[1:]  # Fjerner den første linjen
-                menu_content = "".join(line for line in menu_content if line.strip())  # Fjerner tomme linjer
-                if "Middag" in filename:
-                    middag_menus.append((canteen_name, menu_content))
-                else:
-                    non_middag_menus.append((canteen_name, menu_content))
     emojies = [
         "\U0001f354", "\U0001f356", "\U0001f969", "\U0001f953", "\U0001f96A", "\U0001f32E", "\U0001f959",
         "\U0001f9C6", "\U0001f958", "\U0001f957", "\U0001f980", "\U0001f967", "\U0001f364", "\U0001f35C",
         "\U0001f372", "\U0001f32F", "\U0001f355", "\U0001f357"
     ]
 
-    
-    for menu in non_middag_menus:
-        emoji_choice = random.choice(range(0, len(emojies)))
-        print(f"**{menu[0]}** " + emojies[emoji_choice] + " (10:30 - 13:00)\n")
-        print(menu[1])
+    # Map day index to weekday name
+    weekdays_norwegian = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag']
+    weekdays_english = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
-    for menu in middag_menus:
-        emoji_choice = random.choice(range(0, len(emojies)))
-        print(f"**_{menu[0]}_** " + emojies[emoji_choice] + " (15:00 - 17:00)\n")
-        print(menu[1])
+    weekday = weekdays_norwegian[day] if language == 'no' else weekdays_english[day]
 
-if __name__ == "__main__":
-    dag = int(sys.argv[1])
-    print_menu_for_day(dag)
+    # Load the workbook
+    wb = openpyxl.load_workbook(filename)
+
+    # Print the weekday
+    today = datetime.today()
+    print("## Dagens lunsj ---", weekday + " " + today.strftime("%d.%m.%Y:") + "\n")
+
+    for sheet_name in ["Eat The Street", "Flow", "Fresh 4 You", "Eat The Street - Middag"]:
+        sheet = wb[sheet_name]
+
+        # Read canteen details
+        canteen_name = sheet['A2'].value
+        opening_hours = sheet['B3'].value
+        emoji_selection = random.choice(range(0, len(emojies)))
+        emoji = emojies[emoji_selection]
+
+        # Print canteen details
+        print(f"**{canteen_name}** {emoji} ({opening_hours}):")
+
+        # Read and print menu for the specified day and language
+        start_row = day_row_mapping[day]
+        end_row = start_row + 4  # There are 5 menu items for each day
+        for row in range(start_row, end_row):
+            cell = f"{language_column_mapping[language]}{row}"
+            menu_item = sheet[cell].value
+            if menu_item is not None:
+                print(f"- {menu_item}")
+
+        print()
+
+
+filename = "Lunsj_Fornebu.xlsx"
+day = int(sys.argv[1])
+language = sys.argv[2]
+
+#day = 0
+#language = "no"
+
+read_menu(filename, day, language)
