@@ -30,7 +30,7 @@ def download_google_spreadsheet_as_xlsx(spreadsheet_id, credentials_file, file_n
 
 # Example usage
 spreadsheet_id = '1gK9309oX00vC1aeKPgrCpHxoMdJ0jgGj3DGXYDp30tk'
-credentials_file = 'telenor-lunsj.json'
+credentials_file = '../telenor-lunsj.json'
 file_name = 'Lunsj_Fornebu'
 
 download_google_spreadsheet_as_xlsx(spreadsheet_id, credentials_file, file_name)
