@@ -12,6 +12,8 @@ def read_menu(filename, day, language):
         4: 30
     }
 
+    ukedag = day
+
     if day == -1:
         ukedag = datetime.now().weekday()
         if day == -1 and ukedag > 4 and language == "no":
