@@ -13,9 +13,10 @@ def read_menu(filename, day, language):
         4: 30
     }
 
+    ukedag = day
+
     if day == -1:
         ukedag = datetime.now().weekday()
-        day
         if day == -1 and ukedag > 4:
             print("Ingen meny på lørdager og søndager. Kom tilbake på mandag, eller velg ukedag.")
             return
@@ -36,7 +37,7 @@ def read_menu(filename, day, language):
     weekdays_norwegian = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag']
     weekdays_english = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
-    weekday = weekdays_norwegian[day] if language == 'no' else weekdays_english[day]
+    weekday = weekdays_norwegian[ukedag] if language == 'no' else weekdays_english[ukedag]
 
     # Load the workbook
     wb = openpyxl.load_workbook(filename)
@@ -58,7 +59,7 @@ def read_menu(filename, day, language):
         print(f"**{canteen_name}** {emoji} ({opening_hours}):")
 
         # Read and print menu for the specified day and language
-        start_row = day_row_mapping[day]
+        start_row = day_row_mapping[ukedag]
         end_row = start_row + 5  # There are 5 menu items for each day
         for row in range(start_row, end_row):
             cell = f"{language_column_mapping[language]}{row}"
