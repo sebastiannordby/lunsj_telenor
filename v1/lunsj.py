@@ -36,7 +36,7 @@ def read_menu(filename, day, language):
     weekdays_norwegian = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag']
     weekdays_english = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
-    weekday = weekdays_norwegian[day] if language == 'no' else weekdays_english[day]
+    weekday = weekdays_norwegian[ukedag] if language == 'no' else weekdays_english[ukedag]
 
     # Load the workbook
     wb = openpyxl.load_workbook(filename)
