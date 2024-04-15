@@ -60,7 +60,7 @@ def read_menu(filename, day, language):
         print(f"{canteen_name} ({opening_hours}) - Bygg: {building}")
 
         # Read and print menu for the specified day and language
-        start_row = day_row_mapping[day]
+        start_row = day_row_mapping[ukedag]
         end_row = start_row + 5  # There are 5 menu items for each day
         for row in range(start_row, end_row):
             cell = f"{language_column_mapping[language]}{row}"
