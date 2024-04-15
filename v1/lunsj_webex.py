@@ -68,6 +68,7 @@ def read_menu(filename, day, language):
                 print(f"- {menu_item}")
 
         print()
+    print("[Hele ukas lunsjmeny er oppdatert og du finner den på denne linken](https://lunsj.regrettable.solutions/) \U0001f603 ")
 
 
 filename = "Lunsj_Fornebu.xlsx"
