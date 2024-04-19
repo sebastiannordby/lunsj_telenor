@@ -56,7 +56,7 @@ def read_menu(filename, day, language):
         emoji = emojies[emoji_selection]
 
         # Print canteen details
-        print(f"**{canteen_name}** {emoji} ({opening_hours}):")
+        print(f"**{canteen_name}** {emoji} ({opening_hours}) - Bygg: {building}:")
 
         # Read and print menu for the specified day and language
         start_row = day_row_mapping[ukedag]
@@ -68,7 +68,7 @@ def read_menu(filename, day, language):
                 print(f"- {menu_item}")
 
         print()
-    print("[Hele ukas lunsjmeny er oppdatert og du finner den på denne linken](https://lunsj.regrettable.solutions/) \U0001f603 ")
+    print("[Hele ukas lunsjmeny finner du alltid på denne linken](https://lunsj.regrettable.solutions/) \U0001f603 ")
 
 
 filename = "Lunsj_Fornebu.xlsx"
