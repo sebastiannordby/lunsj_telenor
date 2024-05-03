@@ -62,7 +62,10 @@ def read_menu(filename, day, language):
         building = sheet['B2'].value
 
         # Print canteen details
-        print(f"{canteen_name} ({opening_hours}) - Bygg: {building}")
+        if language == "en":
+            print(f"{canteen_name} ({opening_hours}) - Building: {building}")
+        else:
+            print(f"{canteen_name} ({opening_hours}) - Bygg: {building}")
 
         # Read and print menu for the specified day and language
         start_row = day_row_mapping[ukedag]
