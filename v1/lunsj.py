@@ -44,9 +44,12 @@ def read_menu(filename, day, language):
     wb = openpyxl.load_workbook(filename)
 
     # Print the weekday
-    if day == -1:
+    if day == -1 and language == "no":
         today = datetime.today()
         print("Dagens lunsj ---", weekday + " " + today.strftime("%d.%m.%Y:") + "\n")
+    elif day == -1 and language == "en":
+        today = datetime.today()
+        print("Today's lunch ---", weekday + " " + today.strftime("%d.%m.%Y:") + "\n")
     else:
         print(f"{weekday}:\n")
 
