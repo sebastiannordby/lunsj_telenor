@@ -52,6 +52,7 @@ def read_menu(filename, day, language):
         # Read canteen details
         canteen_name = sheet['A2'].value
         opening_hours = sheet['B3'].value
+        building = sheet['B2'].value
         emoji_selection = random.choice(range(0, len(emojies)))
         emoji = emojies[emoji_selection]
 
