@@ -84,7 +84,7 @@ else:
 current_day = datetime.today().weekday()
 
 # Check if today is Saturday (5) or Sunday (6)
-if current_day not in (5, 6):
+if current_day in (5, 6):
     if language == "en":
         print("No menues for saturday or sunday. Come back on monday or select day.")
     else:
