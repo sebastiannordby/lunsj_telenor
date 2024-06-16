@@ -55,9 +55,14 @@ function getPage(req, res, day, language) {
     console.log('getPage: ', day, language);
 
     let dataToSend;
+    let pythonScript;
 
-    // Determine the Python script based on the selected language
-    const pythonScript = 'lunsj.py';
+    // Determine the Python script based on the selected language and route
+    if (req.path === '/' || req.path === '/en') {
+        pythonScript = 'lunsj_test.py';
+    } else {
+        pythonScript = 'lunsj.py';
+    }
 
     const python = spawn('python3', [pythonScript, day, language]);
 
@@ -73,20 +78,30 @@ function getPage(req, res, day, language) {
         if (language === 'en') {
             // English buttons
             buttonsHtml = `
+                <div class="button-group">
+                <a href="/en">Todays lunch</a>
+                </div>
+                <div class="button-group">
                 <a href="/en/day/monday">Monday</a>
                 <a href="/en/day/tuesday">Tuesday</a>
                 <a href="/en/day/wednesday">Wednesday</a>
                 <a href="/en/day/thursday">Thursday</a>
                 <a href="/en/day/friday">Friday</a>
+                </div>
             `;
         } else {
             // Norwegian buttons (default)
             buttonsHtml = `
+                <div class="button-group">
+                <a href="/">Dagens lunsj</a>
+                </div>
+                <div class="button-group">
                 <a href="/dag/mandag">Mandag</a>
                 <a href="/dag/tirsdag">Tirsdag</a>
                 <a href="/dag/onsdag">Onsdag</a>
                 <a href="/dag/torsdag">Torsdag</a>
                 <a href="/dag/fredag">Fredag</a>
+                </div>
             `;
         }
         res.send(`
@@ -165,6 +180,16 @@ function getPage(req, res, day, language) {
                 }
                 .buttons a {
                     padding: 0em 0.4em; /* Default padding value */
+                }
+
+                .button-group {
+                    display: flex;
+                    justify-content: center;
+                    margin-bottom: 0.5rem; /* Adjust as needed */
+                }
+
+                .button-group a {
+                    margin: 0 0.5rem; /* Adjust as needed */
                 }
 
                 @media (max-width: 429px) {
@@ -282,7 +307,7 @@ app.get('/webex', (req, res) => {
 
 app.get('/test', (req, res) => {
     let dataToSend;
-    const python = spawn('python3', ['lunsj_test.py', -1, 'no']);
+    const python = spawn('python3', ['lunsj_test.py']);
     res.set({ 'content-type': 'text/plain; charset=utf-8' });
 
     python.stdout.on('data', function (data) {
