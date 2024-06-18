@@ -1,31 +1,114 @@
-import openpyxl
+import requests
 import sys
 import random
-from datetime import datetime, date, timedelta
+from bs4 import BeautifulSoup
+from datetime import datetime
 
-def read_menu(filename, day, language):
-    # Map day index to row index
-    day_row_mapping = {
-        0: 6,
-        1: 12,
-        2: 18,
-        3: 24,
-        4: 30
+def fetch_menu(url, language='no'):
+    # Send a GET request to the website
+    response = requests.get(url)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        # Parse the HTML content using BeautifulSoup
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Find all elements with the class 'menu-item-holder'
+        menu_item_holders = soup.find_all(class_='menu-item-holder')
+
+        # Create separate lists for Norwegian and English menus
+        norwegian_menu = []
+        english_menu = []
+
+        # Iterate over each menu-item-holder element
+        for holder in menu_item_holders:
+            menu_items = holder.find_all(class_='menu-item')
+            for item in menu_items:
+                # Remove all 'menu-item-allergens' elements from the item
+                for allergen in item.find_all(class_='menu-item-allergens'):
+                    allergen.decompose()
+
+                # Get the text content of the modified item
+                item_text = item.get_text(strip=True)
+
+                # Skip empty or blank items
+                if item_text:
+                    # Append to the appropriate menu list
+                    if 'second-holder' in holder['class']:
+                        english_menu.append(item_text)
+                    else:
+                        norwegian_menu.append(item_text)
+
+        # Return the desired menu based on the language parameter
+        if language == 'no':
+            return norwegian_menu
+        else:
+            return english_menu
+    else:
+        print(f'Failed to retrieve the webpage {url}. Status code: {response.status_code}')
+        return []
+
+# URLs of the websites for the four canteens
+urls = {
+    "Eat The Street": {
+        "url": 'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=59db31f7-6775-43a1-a4bb-76a2bfb197ac&scaleToFit=true',
+        "opening_hours": "10:30 - 14:00",
+        "building": "J/K"
+    },
+    "Flow": {
+        "url": 'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=4a0457f8-dbfa-4783-8ebe-b5ee0486843f&scaleToFit=true',
+        "opening_hours": "10:30 - 13:00",
+        "building": "B"
+    },
+    "Fresh 4 You": {
+        "url": 'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=aa1358ee-d30e-4289-a630-892cd1210857&scaleToFit=true',
+        "opening_hours": "10:30 - 13:00",
+        "building": "C/D"
+    },
+    "Eat The Street - Middag": {
+        "url": 'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=8469c383-d042-4d2d-8b18-30b6f9f90393&scaleToFit=true',
+        "opening_hours": "15:00 - 17:00",
+        "building": "J/K"
     }
+}
 
-    ukedag = day
+# Choose the language of the menu to print ('no' for Norwegian or 'en' for English)
+# day = int(sys.argv[1])
+# language = sys.argv[2]
 
-    if day == -1:
-        ukedag = datetime.now().weekday()
-        if day == -1 and ukedag > 4:
-            print("Ingen meny på lørdager og søndager. Kom tilbake på mandag, eller velg ukedag.")
-            return
+day = -1
+language = "no"
 
-    # Map language to column index
-    language_column_mapping = {
-        'no': 'A',
-        'en': 'B'
-    }
+if language == "en":
+    bygg = "Building"
+else:
+    bygg = "Bygg"
+
+# Get the current day of the week (0: Monday, 1: Tuesday, ..., 6: Sunday)
+current_day = datetime.today().weekday()
+
+# Check if today is Saturday (5) or Sunday (6)
+if current_day in (5, 6):
+    if language == "en":
+        print("No menues for saturday or sunday. Come back on monday or select day.")
+    else:
+        print("Ingen meny på lørdager og søndager. Kom tilbake på mandag, eller velg ukedag.")
+else:
+    # Initialize a dictionary to hold menus for each canteen
+    canteen_menus = {canteen: [] for canteen in urls}
+
+    # Fetch and store menus for all canteens
+    for canteen, info in urls.items():
+        menu = fetch_menu(info["url"], language)
+        canteen_menus[canteen] = menu
+
+    if language == "en":
+        print("Today's lunch:")
+    else:
+        weekdays_norwegian = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag']
+        today = datetime.today()
+        weekday = weekdays_norwegian[today.weekday()]
+        print("## Dagens lunsj ---", weekday + " " + today.strftime("%d.%m.%Y:"))
 
     emojies = [
         "\U0001f354", "\U0001f356", "\U0001f969", "\U0001f953", "\U0001f96A", "\U0001f32E", "\U0001f959",
@@ -33,47 +116,14 @@ def read_menu(filename, day, language):
         "\U0001f372", "\U0001f32F", "\U0001f355", "\U0001f357"
     ]
 
-    # Map day index to weekday name
-    weekdays_norwegian = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag']
-    weekdays_english = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    # Print the menus for each canteen along with additional information
+    for canteen, menu in canteen_menus.items():
+        opening_hours = urls[canteen]['opening_hours']
+        building = urls[canteen]['building']
 
-    weekday = weekdays_norwegian[ukedag] if language == 'no' else weekdays_english[ukedag]
-
-    # Load the workbook
-    wb = openpyxl.load_workbook(filename)
-
-    # Print the weekday
-    today = datetime.today()
-    print("## Dagens lunsj ---", weekday + " " + today.strftime("%d.%m.%Y:") + "\n")
-
-    for sheet_name in ["Eat The Street", "Flow", "Fresh 4 You", "Eat The Street - Middag"]:
-        sheet = wb[sheet_name]
-
-        # Read canteen details
-        canteen_name = sheet['A2'].value
-        opening_hours = sheet['B3'].value
-        building = sheet['B2'].value
         emoji_selection = random.choice(range(0, len(emojies)))
         emoji = emojies[emoji_selection]
 
-        # Print canteen details
-        print(f"**{canteen_name}** {emoji} ({opening_hours}) - Bygg: {building}:")
-
-        # Read and print menu for the specified day and language
-        start_row = day_row_mapping[ukedag]
-        end_row = start_row + 5  # There are 5 menu items for each day
-        for row in range(start_row, end_row):
-            cell = f"{language_column_mapping[language]}{row}"
-            menu_item = sheet[cell].value
-            if menu_item is not None:
-                print(f"- {menu_item}")
-
-        print()
-    print("[Hele ukas lunsjmeny finner du alltid på denne linken](https://lunsj.regrettable.solutions/) \U0001f603 ")
-
-
-filename = "Lunsj_Fornebu.xlsx"
-day = int(sys.argv[1])
-language = sys.argv[2]
-
-read_menu(filename, day, language)
+        print(f"\n**{canteen}** {emoji} ({opening_hours}) - {bygg}: {building}")
+        for item in menu:
+            print("-", item)
