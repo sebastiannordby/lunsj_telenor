@@ -59,7 +59,7 @@ function getPage(req, res, day, language) {
 
     // Determine the Python script based on the selected language and route
     if (req.path === '/' || req.path === '/en') {
-        pythonScript = 'lunsj_test.py';
+        pythonScript = 'lunsj_dagens.py';
     } else {
         pythonScript = 'lunsj.py';
     }
