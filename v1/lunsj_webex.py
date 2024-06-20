@@ -127,3 +127,5 @@ else:
         print(f"\n**{canteen}** {emoji} ({opening_hours}) - {bygg}: {building}")
         for item in menu:
             print("-", item)
+            
+    print("[NB! Menyen endres ofte etter at denne meldingen blir sendt. For oppdatert meny, sjekk linken!!](https://lunsj.regrettable.solutions/)")
