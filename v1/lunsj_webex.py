@@ -128,4 +128,4 @@ else:
         for item in menu:
             print("-", item)
             
-    print("[NB! Menyen endres ofte etter at denne meldingen blir sendt. For oppdatert meny, sjekk linken!!](https://lunsj.regrettable.solutions/)")
+print("\n[NB! Menyen endres ofte etter at denne meldingen blir sendt. For oppdatert meny, sjekk linken!!](https://lunsj.regrettable.solutions/)")
