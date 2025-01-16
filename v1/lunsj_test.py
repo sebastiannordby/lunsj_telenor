@@ -3,6 +3,7 @@ import sys
 from bs4 import BeautifulSoup
 from datetime import datetime
 
+
 def fetch_menu(url, language='no'):
     # Send a GET request to the website
     response = requests.get(url)
@@ -12,33 +13,41 @@ def fetch_menu(url, language='no'):
         # Parse the HTML content using BeautifulSoup
         soup = BeautifulSoup(response.content, 'html.parser')
 
-        # Find all elements with the class 'menu-item-holder'
-        menu_item_holders = soup.find_all(class_='menu-item-holder')
+        # Create separate sets for Norwegian and English menus to avoid duplicates
+        norwegian_menu = set()
+        english_menu = set()
 
-        # Create separate lists for Norwegian and English menus
-        norwegian_menu = []
-        english_menu = []
+        # Find all <div> elements with the class 'menu-item-holder'
+        menu_item_holders = soup.find_all('div', class_='menu-item-holder')
 
         # Iterate over each menu-item-holder element
         for holder in menu_item_holders:
-            menu_items = holder.find_all(class_='menu-item')
-            for item in menu_items:
-                # Remove all 'menu-item-allergens' elements from the item
-                for allergen in item.find_all(class_='menu-item-allergens'):
-                    allergen.decompose()
+            # Determine if this holder is for Norwegian or English menu
+            if 'first-holder' in holder['class']:
+                current_menu = norwegian_menu
+            elif 'second-holder' in holder['class']:
+                current_menu = english_menu
+            else:
+                continue
 
-                # Get the text content of the modified item
-                item_text = item.get_text(strip=True)
+            # Find all <h2> tags within this holder
+            h2_tags = holder.find_all('h2')
 
-                # Skip empty or blank items
-                if item_text:
-                    # Append to the appropriate menu list
-                    if 'second-holder' in holder['class']:
-                        english_menu.append(item_text)
-                    else:
-                        norwegian_menu.append(item_text)
+            # Extract and add menu items to the respective set
+            for tag in h2_tags:
+                # Ensure the tag doesn't contain nested <div> or <span> elements (typically allergen info)
+                if not tag.find('div') and not tag.find('span'):
+                    menu_item = tag.get_text(strip=True)
 
-        # Return the desired menu based on the language parameter
+                    # Skip empty or blank items
+                    if menu_item:
+                        current_menu.add(menu_item)  # Add to set to ensure uniqueness
+
+        # Convert sets back to lists for final output
+        norwegian_menu = list(norwegian_menu)
+        english_menu = list(english_menu)
+
+        # Return the appropriate menu based on the language parameter
         if language == 'no':
             return norwegian_menu
         else:
@@ -73,7 +82,9 @@ urls = {
 
 # Choose the language of the menu to print ('no' for Norwegian or 'en' for English)
 day = int(sys.argv[1])
+# day = -1
 language = sys.argv[2]
+# language = "no"
 
 if language == "en":
     bygg = "Building"
