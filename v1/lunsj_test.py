@@ -81,10 +81,10 @@ urls = {
 }
 
 # Choose the language of the menu to print ('no' for Norwegian or 'en' for English)
-day = int(sys.argv[1])
-# day = -1
-language = sys.argv[2]
-# language = "no"
+# day = int(sys.argv[1])
+day = -1
+# language = sys.argv[2]
+language = "no"
 
 if language == "en":
     bygg = "Building"
