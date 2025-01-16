@@ -59,7 +59,7 @@ def fetch_menu(url, language='no'):
 # URLs of the websites for the four canteens
 urls = {
     "Eat The Street": {
-        "url": 'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=59db31f7-6775-43a1-a4bb-76a2bfb197ac&scaleToFit=true',
+        "url": 'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=bbf807d7-b1ed-4493-8853-e40077f6adde&scaleToFit=true',
         "opening_hours": "10:30 - 14:00",
         "building": "J/K"
     },
