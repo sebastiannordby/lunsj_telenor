@@ -83,11 +83,11 @@ def send_to_chatgpt(html_content):
 
 
 # Hvilken dag skal menyen hentes for? (default: dagens dag)
-# day = -1
-# language = "no"
+day = -1
+language = "no"
 
-day = int(sys.argv[1])
-language = sys.argv[2]
+# day = int(sys.argv[1])
+# language = sys.argv[2]
 
 if language == "en":
     bygg = "Building"
