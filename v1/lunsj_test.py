@@ -4,7 +4,7 @@ from datetime import datetime
 import openai  # Husk å installere med: pip install openai
 
 # OpenAI API-nøkkel (sett inn din egen nøkkel her)
-key_file_path = "/git/key.txt"
+key_file_path = "/home/marius/git/key.txt"
 
 with open(key_file_path, "r") as file:
     OPENAI_API_KEY = file.read().strip()
