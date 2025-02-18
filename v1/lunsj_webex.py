@@ -1,67 +1,18 @@
 import requests
 import sys
-import random
-from bs4 import BeautifulSoup
 from datetime import datetime
+import openai  # Husk å installere med: pip install openai
 
+# OpenAI API-nøkkel (sett inn din egen nøkkel her)
+key_file_path = "/home/marius/git/key.txt"
 
-def fetch_menu(url, language='no'):
-    # Send a GET request to the website
-    response = requests.get(url)
+with open(key_file_path, "r") as file:
+    OPENAI_API_KEY = file.read().strip()
 
-    # Check if the request was successful
-    if response.status_code == 200:
-        # Parse the HTML content using BeautifulSoup
-        soup = BeautifulSoup(response.content, 'html.parser')
-
-        # Create separate sets for Norwegian and English menus to avoid duplicates
-        norwegian_menu = set()
-        english_menu = set()
-
-        # Find all <div> elements with the class 'menu-item-holder'
-        menu_item_holders = soup.find_all('div', class_='menu-item-holder')
-
-        # Iterate over each menu-item-holder element
-        for holder in menu_item_holders:
-            # Determine if this holder is for Norwegian or English menu
-            if 'first-holder' in holder['class']:
-                current_menu = norwegian_menu
-            elif 'second-holder' in holder['class']:
-                current_menu = english_menu
-            else:
-                continue
-
-            # Find all <h2> tags within this holder
-            h2_tags = holder.find_all('h2')
-
-            # Extract and add menu items to the respective set
-            for tag in h2_tags:
-                # Ensure the tag doesn't contain nested <div> or <span> elements (typically allergen info)
-                if not tag.find('div') and not tag.find('span'):
-                    menu_item = tag.get_text(strip=True)
-
-                    # Skip empty or blank items
-                    if menu_item:
-                        current_menu.add(menu_item)  # Add to set to ensure uniqueness
-
-        # Convert sets back to lists for final output
-        norwegian_menu = list(norwegian_menu)
-        english_menu = list(english_menu)
-
-        # Return the appropriate menu based on the language parameter
-        if language == 'no':
-            return norwegian_menu
-        else:
-            return english_menu
-    else:
-        print(f'Failed to retrieve the webpage {url}. Status code: {response.status_code}')
-        return []
-
-
-# URLs of the websites for the four canteens
+# URLs for kantiner
 urls = {
     "Eat The Street": {
-        "url": 'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=bbf807d7-b1ed-4493-8853-e40077f6adde&scaleToFit=true',
+        "url": 'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=59db31f7-6775-43a1-a4bb-76a2bfb197ac&scaleToFit=true',
         "opening_hours": "10:30 - 14:00",
         "building": "J/K"
     },
@@ -82,61 +33,89 @@ urls = {
     }
 }
 
-# Choose the language of the menu to print ('no' for Norwegian or 'en' for English)
-# day = int(sys.argv[1])
-# language = sys.argv[2]
 
+def fetch_html(url):
+    """
+    Henter HTML fra kantine-nettsiden.
+    """
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()  # Sjekk for HTTP-feil
+        return response.text
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching {url}: {e}")
+        return None
+
+
+def send_to_chatgpt(html_content):
+    """
+    Sender HTML til ChatGPT og ber om en strukturert meny i samme format som tidligere.
+    """
+    prompt = f"""
+    Her er HTML-en fra en kantine-meny. Ekstraher menyen på norsk, formater den i følgende struktur, sett inn en passende emoji bak hver matrett og returner KUN menyen:
+
+    * [Matrett 1]
+    * [Matrett 2]
+       
+    HTML:
+    {html_content}
+    """
+
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "model": "gpt-4o-mini",
+        "messages": [{"role": "system", "content": "Du er en assistent som ekstraherer menydata fra HTML."},
+                     {"role": "user", "content": prompt}],
+        "temperature": 0.5
+    }
+
+    response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
+
+    if response.status_code == 200:
+        return response.json()["choices"][0]["message"]["content"]
+    else:
+        print(f"Error from OpenAI API: {response.text}")
+        return None
+
+
+# Hvilken dag skal menyen hentes for? (default: dagens dag)
 day = -1
 language = "no"
+
+# day = int(sys.argv[1])
+# language = sys.argv[2]
 
 if language == "en":
     bygg = "Building"
 else:
     bygg = "Bygg"
 
-# Get the current day of the week (0: Monday, 1: Tuesday, ..., 6: Sunday)
+# Sjekk om det er helg (lørdag eller søndag)
 current_day = datetime.today().weekday()
-
-# Check if today is Saturday (5) or Sunday (6)
 if current_day in (5, 6):
     if language == "en":
-        print("No menues for saturday or sunday. Come back on monday or select day.")
+        print("No menus for Saturday or Sunday. Come back on Monday or select a weekday.")
     else:
         print("Ingen meny på lørdager og søndager. Kom tilbake på mandag, eller velg ukedag.")
 else:
-    # Initialize a dictionary to hold menus for each canteen
-    canteen_menus = {canteen: [] for canteen in urls}
+    # Gå gjennom alle kantiner
+    weekdays_norwegian = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag']
+    today = datetime.today()
+    weekday = weekdays_norwegian[today.weekday()]
+    print("## Dagens lunsj ---", weekday + " " + today.strftime("%d.%m.%Y:"))
 
-    # Fetch and store menus for all canteens
     for canteen, info in urls.items():
-        menu = fetch_menu(info["url"], language)
-        canteen_menus[canteen] = menu
+        html_content = fetch_html(info["url"])
 
-    if language == "en":
-        print("Today's lunch:")
-    else:
-        weekdays_norwegian = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag']
-        today = datetime.today()
-        weekday = weekdays_norwegian[today.weekday()]
-        print("## Dagens lunsj ---", weekday + " " + today.strftime("%d.%m.%Y:"))
+        if html_content:
+            menu = send_to_chatgpt(html_content)
+            if menu:
 
-    emojies = [
-        "\U0001f354", "\U0001f356", "\U0001f969", "\U0001f953", "\U0001f96A", "\U0001f32E", "\U0001f959",
-        "\U0001f9C6", "\U0001f958", "\U0001f957", "\U0001f980", "\U0001f967", "\U0001f364", "\U0001f35C",
-        "\U0001f372", "\U0001f32F", "\U0001f355", "\U0001f357"
-    ]
-
-    # Print the menus for each canteen along with additional information
-    for canteen, menu in canteen_menus.items():
-        opening_hours = urls[canteen]['opening_hours']
-        building = urls[canteen]['building']
-
-        emoji_selection = random.choice(range(0, len(emojies)))
-        emoji = emojies[emoji_selection]
-
-        print(f"\n**{canteen}** {emoji} ({opening_hours}) - {bygg}: {building}")
-        for item in menu:
-            print("-", item)
-
-print(
-    "\n[NB! Menyen endres ofte etter at denne meldingen blir sendt. For oppdatert meny, sjekk linken!!](https://lunsj.regrettable.solutions/)")
+                print(f"\n**{canteen}** ({info['opening_hours']}) - {bygg}: {info['building']}")
+                print(menu)
+        else:
+            print(f"Kunne ikke hente HTML for {canteen}.")
