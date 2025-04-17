@@ -60,6 +60,8 @@ function getPage(req, res, day, language) {
     // Determine the Python script based on the selected language and route
     if (req.path === '/' || req.path === '/en') {
         pythonScript = 'lunsj_dagens.py';
+    } else if (req.path === '/with-allergies') {
+        pythonScript = 'lunsj_dagens.py';
     } else {
         pythonScript = 'lunsj.py';
     }
@@ -237,10 +239,16 @@ function getPage(req, res, day, language) {
                     <div class="content">
                         <p style="white-space: break-spaces;">${dataToSend}</p>
                     </div>
-
                     <div class="buttons" style="gap: .1em;">
-                        <a href="/" style="font-size: 0.8em;">Nor</a>
-                        <a href="/en" style="font-size: 0.8em;">Eng</a>
+                      <a href="/" style="font-size: 0.8em;">Nor</a>
+                      <a href="/en" style="font-size: 0.8em;">Eng</a>
+                    </div>
+
+                    <!-- Ny knapp på egen linje -->
+                    <div class="buttons" style="gap: .1em; margin-top: 0.5em;">
+                      <a href="/with-allergies" style="font-size: 0.8em;">
+                        ${language === 'en' ? 'With Allergies' : 'Med allergier'}
+                      </a>
                     </div>
                 </div>
             </body>
@@ -255,6 +263,10 @@ app.get('/', (req, res) => {
 
 app.get('/en', (req, res) => {
     getPage(req, res, -1, 'en');
+});
+
+app.get('/with-allergies', (req, res) => {
+    getPage(req, res, -1, 'al');
 });
 
 app.get('/om', (req, res) => {
