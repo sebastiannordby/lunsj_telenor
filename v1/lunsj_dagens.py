@@ -27,8 +27,6 @@ def main(langs=None, offset=None):
                  for fname in os.listdir(outputs_dir)
                  if fname.startswith("menus_") and fname.endswith(".txt")]
 
-    print(f"Using offset: {offset}") if offset is not None else None
-
     for filepath in files:
         content = read_menu_file(filepath)
         if content is not None:
