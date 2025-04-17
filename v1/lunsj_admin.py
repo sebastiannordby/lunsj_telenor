@@ -1,59 +1,127 @@
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-import pandas as pd
-import os.path
-import time
+import requests
+import os
+from datetime import datetime
 
-file_path = 'Lunsj_Fornebu.xlsx'
+# OpenAI API-nøkkel (sett inn din egen nøkkel her)
+key_file_path = "/home/marius/git/key.txt"
 
-# Check if the file exists
-if os.path.exists(file_path):
-    # Get the last modification time
-    last_modified_timestamp = os.path.getmtime(file_path)
+with open(key_file_path, "r") as file:
+    OPENAI_API_KEY = file.read().strip()
 
-    # Convert the timestamp to a human-readable format
-    last_modified_time = time.strftime('%d-%m-%Y %H:%M:%S', time.localtime(last_modified_timestamp))
+# URLs for kantiner
+urls = {
+    "Eat The Street": {
+        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=bbf807d7-b1ed-4493-8853-e40077f6adde&scaleToFit=true",
+        "opening_hours": "10:30 - 14:00",
+        "building": "J/K"
+    },
+    "Flow": {
+        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=4a0457f8-dbfa-4783-8ebe-b5ee0486843f&scaleToFit=true",
+        "opening_hours": "10:30 - 13:00",
+        "building": "B"
+    },
+    "Fresh 4 You": {
+        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=aa1358ee-d30e-4289-a630-892cd1210857&scaleToFit=true",
+        "opening_hours": "10:30 - 13:00",
+        "building": "C/D"
+    },
+    "Eat The Street - Middag": {
+        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=8469c383-d042-4d2d-8b18-30b6f9f90393&scaleToFit=true",
+        "opening_hours": "15:00 - 17:00",
+        "building": "J/K"
+    }
+}
 
-    print(f"Lunsjmenyene ble oppdatert {last_modified_time} før oppdateringen som kjøres nå.")
-    print("Oppdaterer menyer...")
-else:
-    print("Filen eksisterer ikke.")
+def fetch_html(url):
+    """
+    Henter HTML fra kantine-nettsiden.
+    """
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        return response.text
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching {url}: {e}")
+        return None
 
-def download_google_spreadsheet_as_xlsx(spreadsheet_id, credentials_file, file_name):
-    # Define the scope
-    scope = ['https://spreadsheets.google.com/feeds',
-             'https://www.googleapis.com/auth/drive']
+def send_to_chatgpt(html_content, system_prompt):
+    """
+    Sender HTML til ChatGPT med angitt system-instruks og returnerer meny.
+    """
+    prompt = f"""
+    Her er HTML-en fra en kantine-meny. Ekstraher menyen, formater den i følgende struktur, sett inn en passende emoji bak hver matrett og returner KUN menyen:
 
-    # Load credentials
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_file, scope)
+    - [Matrett 1]
+    - [Matrett 2]
 
-    # Authorize the client
-    client = gspread.authorize(credentials)
+    HTML:
+    {html_content}
+    """
 
-    # Open the spreadsheet
-    spreadsheet = client.open_by_key(spreadsheet_id)
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json"
+    }
 
-    # Create a Pandas Excel writer using XlsxWriter as the engine
-    writer = pd.ExcelWriter(f"{file_name}.xlsx", engine='xlsxwriter')
+    data = {
+        "model": "gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.5
+    }
 
-    # Iterate over each worksheet and write its data to the Excel file
-    for worksheet in spreadsheet.worksheets():
-        data = worksheet.get_all_values()
-        df = pd.DataFrame(data)
-        df.to_excel(writer, sheet_name=worksheet.title, index=False)
+    response = requests.post(
+        "https://api.openai.com/v1/chat/completions",
+        headers=headers,
+        json=data
+    )
 
-    # Close the Pandas Excel writer
-    writer._save()
+    if response.status_code == 200:
+        return response.json()["choices"][0]["message"]["content"]
+    else:
+        print(f"Error from OpenAI API: {response.text}")
+        return None
 
+if __name__ == "__main__":
+    # Finn dagens dato og ukedag
+    weekdays_norwegian = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag']
+    today = datetime.today()
+    weekday = weekdays_norwegian[today.weekday()]
+    date_str = today.strftime("%d.%m.%Y")
 
-# Example usage
-spreadsheet_id = '1gK9309oX00vC1aeKPgrCpHxoMdJ0jgGj3DGXYDp30tk'
-credentials_file = '../telenor-lunsj.json'
-file_name = 'Lunsj_Fornebu'
+    # System-instrukser per språk
+    system_prompts = {
+        "no": "Du er en hjelpsom assistent som svarer på norsk.",
+        "en": "You are a helpful assistant that responds in English.",
+        "al": "You are an assistant that responds in English, and includes the allergies in words behind each meal in parenteces. These are the allergies: 1Egg    5Nøtter / Nuts    9Sesamfrø / Sesame seed    13Bløtdyr / Mulluscs 2Fisk / Fish  6Peanøtter / Peanuts    10Skalldyr / Shellfish    14Lupin / Lupine 3Gluten    7Selleri / Celery  11Soya / Soy 4Melk / Milk    8Sennep / Mustard    12Sulfitter / Sulfites"
+    }
 
-try:
-    download_google_spreadsheet_as_xlsx(spreadsheet_id, credentials_file, file_name)
-except:
-    print("Noe gikk galt under oppdatering av meny. Prøv på nytt eller ta kontakt.")
-else:
-    print("Suksess: Lunsjmenyene er oppdatert!")
+    # Sørg for at outputs-mappe finnes
+    os.makedirs("outputs", exist_ok=True)
+
+    # Loop over språk og hent menyer
+    for lang, system_prompt in system_prompts.items():
+        # Start tekst for fil
+        output_text = f"Dagens lunsj --- {weekday} {date_str}\n\n"
+
+        for canteen, info in urls.items():
+            html_content = fetch_html(info["url"])
+            if html_content:
+                menu = send_to_chatgpt(html_content, system_prompt)
+                if menu:
+                    output_text += f"{canteen} ({info['opening_hours']}) - Bygg: {info['building']}\n"
+                    output_text += f"{menu}\n\n"
+                else:
+                    output_text += f"Kunne ikke ekstrahere meny for {canteen}.\n\n"
+            else:
+                output_text += f"Kunne ikke hente HTML for {canteen}.\n\n"
+
+        # Skriv til fil
+        filename = f"menus_{lang}.txt"
+        filepath = os.path.join("outputs", filename)
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(output_text)
+
+        print(f"[{lang}] Lagret meny i {filepath}")
