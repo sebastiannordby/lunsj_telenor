@@ -67,8 +67,8 @@ def send_to_chatgpt(html_content):
     }
 
     data = {
-        "model": "gpt-4.1-mini",
-        "messages": [{"role": "system", "content": "Du er en assistent som ekstraherer menydata fra HTML."},
+        "model": "gpt-4o-mini",
+        "messages": [{"role": "system", "content": "Du er en assistent som ekstraherer menydata fra HTML respons og returnerer meny på Norsk. Ikke gjenta matretter"},
                      {"role": "user", "content": prompt}],
         "temperature": 0.5
     }
