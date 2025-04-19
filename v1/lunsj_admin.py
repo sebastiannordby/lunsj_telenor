@@ -87,15 +87,17 @@ def send_to_chatgpt(html_content, system_prompt):
 if __name__ == "__main__":
     # Finn dagens dato og ukedag
     weekdays_norwegian = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag']
+    weekdays_english = ['Monday', 'Tueday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     today = datetime.today()
     weekday = weekdays_norwegian[today.weekday()]
+    weekday_en = weekdays_english[today.weekday()]
     date_str = today.strftime("%d.%m.%Y")
 
     # System-instrukser per språk
     system_prompts = {
         "no": "Du er en hjelpsom assistent som svarer på norsk.",
-        "en": "You are a helpful assistant that responds in English.",
-        "al": "You are an assistant that responds in English, and includes the allergies in words behind each meal in parenteces. These are the allergies: 1Egg    5Nøtter / Nuts    9Sesamfrø / Sesame seed    13Bløtdyr / Mulluscs 2Fisk / Fish  6Peanøtter / Peanuts    10Skalldyr / Shellfish    14Lupin / Lupine 3Gluten    7Selleri / Celery  11Soya / Soy 4Melk / Milk    8Sennep / Mustard    12Sulfitter / Sulfites"
+        "en": "You are a helpful assistant that responds menu items in English.",
+        "al": "You are an assistant that responds menu items in English, and includes the allergies in words behind each meal in parenteces. These are the allergies: 1Egg    5Nøtter / Nuts    9Sesamfrø / Sesame seed    13Bløtdyr / Mulluscs 2Fisk / Fish  6Peanøtter / Peanuts    10Skalldyr / Shellfish    14Lupin / Lupine 3Gluten    7Selleri / Celery  11Soya / Soy 4Melk / Milk    8Sennep / Mustard    12Sulfitter / Sulfites"
     }
 
     # Sørg for at outputs-mappe finnes
@@ -104,14 +106,20 @@ if __name__ == "__main__":
     # Loop over språk og hent menyer
     for lang, system_prompt in system_prompts.items():
         # Start tekst for fil
-        output_text = f"Dagens lunsj --- {weekday} {date_str}\n\n"
+        if system_prompt == "no":
+            output_text = f"Dagens lunsj --- {weekday} {date_str}\n\n"
+        else:
+            output_text = f"Todays lunch --- {weekday_en} {date_str}\n\n"
 
         for canteen, info in urls.items():
             html_content = fetch_html(info["url"])
             if html_content:
                 menu = send_to_chatgpt(html_content, system_prompt)
                 if menu:
-                    output_text += f"{canteen} ({info['opening_hours']}) - Bygg: {info['building']}\n"
+                    if system_prompt == "no":
+                        output_text += f"{canteen} ({info['opening_hours']}) - Bygg: {info['building']}\n"
+                    else:
+                        output_text += f"{canteen} ({info['opening_hours']}) - Building: {info['building']}\n"
                     output_text += f"{menu}\n\n"
                 else:
                     output_text += f"Kunne ikke ekstrahere meny for {canteen}.\n\n"
