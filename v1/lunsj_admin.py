@@ -106,7 +106,7 @@ if __name__ == "__main__":
     # Loop over språk og hent menyer
     for lang, system_prompt in system_prompts.items():
         # Start tekst for fil
-        if system_prompt == "no":
+        if lang == "no":
             output_text = f"Dagens lunsj --- {weekday} {date_str}\n\n"
         else:
             output_text = f"Todays lunch --- {weekday_en} {date_str}\n\n"
@@ -116,7 +116,7 @@ if __name__ == "__main__":
             if html_content:
                 menu = send_to_chatgpt(html_content, system_prompt)
                 if menu:
-                    if system_prompt == "no":
+                    if lang == "no":
                         output_text += f"{canteen} ({info['opening_hours']}) - Bygg: {info['building']}\n"
                     else:
                         output_text += f"{canteen} ({info['opening_hours']}) - Building: {info['building']}\n"
