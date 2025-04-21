@@ -32,6 +32,7 @@ def send_to_chatgpt(weekday, html_content):
     prompt = f"""
     Her er HTML-en fra en kantine-meny. Ekstraher hele menyen for kantinen både norsk og engelsk. 
     Fjern tall, sett måltider på egne linjer. Thuesday = Tuesday.
+    Alle kantiner skal ha meny for alle 5 ukedager.
     sett inn en passende emoji bak hver matrett, returner KUN menyen i følgende format:
 
     Ukedag
@@ -76,7 +77,7 @@ def save_menu_to_file(canteen, menu):
     Lagre menyen til en .txt-fil per kantine med både norsk og engelsk versjon i samme fil.
     """
     filename = f"{canteen.replace(' ', '_').lower()}.txt"
-    filepath = f"/home/marius/git/lunsj_telenor/v1/Menyer/{filename}"
+    filepath = f"/Users/mariusbrathen/Desktop/GIT/Github/lunsj_telenor/v1/Menyer/{filename}"
 
     with open(filepath, "w", encoding="utf-8") as file:
         file.write(menu + "\n\n")
@@ -116,8 +117,7 @@ for canteen, info in urls.items():
     if html_content:
         menu = send_to_chatgpt(weekday, html_content)
         if menu:
-            print(f"\n{canteen} ({info['opening_hours']}) - Bygg: {info['building']}")
-            print(menu)
+            print(f"\n{canteen} lagret")
             save_menu_to_file(canteen, menu)
         else:
             print(f"Kunne ikke ekstrahere meny for {canteen}.")
