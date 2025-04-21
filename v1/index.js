@@ -287,7 +287,7 @@ app.get('/en/day/:day', (req, res) => {
 
 app.get('/update-day', (req, res) => {
     let dataToSend;
-    const python = spawn('python3', ['lunsj_fetch_day.py']);
+    const python = spawn('python3', ['lunsj_fetch_daymenu.py']);
     res.set({ 'content-type': 'text/plain; charset=utf-8' });
 
     python.stdout.on('data', function (data) {
@@ -303,7 +303,7 @@ app.get('/update-day', (req, res) => {
 
 app.get('/update-week', (req, res) => {
     let dataToSend;
-    const python = spawn('python3', ['lunsj_fetch_week.py']);
+    const python = spawn('python3', ['lunsj_fetch_weekmenu.py']);
     res.set({ 'content-type': 'text/plain; charset=utf-8' });
 
     python.stdout.on('data', function (data) {
