@@ -335,7 +335,7 @@ app.get('/webex', (req, res) => {
 
 app.get('/test', (req, res) => {
     let dataToSend;
-    const python = spawn('python3', ['lunsj_test.py']);
+    const python = spawn('python3', ['lunsj_test.py', -1, 'no']);
     res.set({ 'content-type': 'text/plain; charset=utf-8' });
 
     python.stdout.on('data', function (data) {
