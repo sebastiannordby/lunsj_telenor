@@ -285,9 +285,25 @@ app.get('/en/day/:day', (req, res) => {
     getPage(req, res, day ? day.number : days[0].number, 'en');
 });
 
-app.get('/admin', (req, res) => {
+app.get('/update-day', (req, res) => {
     let dataToSend;
-    const python = spawn('python3', ['lunsj_admin.py']);
+    const python = spawn('python3', ['lunsj_fetch_day.py']);
+    res.set({ 'content-type': 'text/plain; charset=utf-8' });
+
+    python.stdout.on('data', function (data) {
+        const buffer = Buffer.from(data);
+
+        dataToSend = buffer.toString('utf-8');
+    });
+
+    python.on('close', (code) => {
+        res.send(`${dataToSend}`);
+    });
+});
+
+app.get('/update-week', (req, res) => {
+    let dataToSend;
+    const python = spawn('python3', ['lunsj_fetch_week.py']);
     res.set({ 'content-type': 'text/plain; charset=utf-8' });
 
     python.stdout.on('data', function (data) {
