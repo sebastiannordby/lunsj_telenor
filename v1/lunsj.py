@@ -78,6 +78,11 @@ urls = {
         "url": 'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=a8923cdb-9d92-46bc-b6a4-d026c2cf9a89&scaleToFit=true',
         "opening_hours": "10:30 - 13:00",
         "building": "C/D"
+    },
+    "Eat The Street - Middag": {
+        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=9b060d7e-6658-4d96-b953-23079d7df3b2&scaleToFit=true",
+        "opening_hours": "15:00 - 17:00",
+        "building": "J/K"
     }
 }
 
