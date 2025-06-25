@@ -64,7 +64,7 @@ def send_to_chatgpt(html_content, system_prompt):
     }
 
     data = {
-        "model": "gpt-4o-mini",
+        "model": "gpt-4.1-mini",
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
