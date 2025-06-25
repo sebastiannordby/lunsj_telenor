@@ -37,7 +37,7 @@ def fetch_html(url):
     Henter HTML fra kantine-nettsiden.
     """
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=10, verify=False)
         response.raise_for_status()
         return response.text
     except requests.exceptions.RequestException as e:
