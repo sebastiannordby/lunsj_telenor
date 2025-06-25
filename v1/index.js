@@ -63,7 +63,7 @@ function getPage(req, res, day, language) {
     } else if (req.path === '/with-allergies') {
         pythonScript = 'lunsj_read_daymenu.py';
     } else {
-        pythonScript = 'lunsj.py';
+        pythonScript = 'lunsj_read_weekmenu.py';
     }
 
     const python = spawn('python3', [pythonScript, day, language]);
