@@ -25,7 +25,7 @@ def fetch_menu(url, language, day):
         lang_class = 'right-item'
 
     # Send a GET request to the website
-    response = requests.get(url)
+    response = requests.get(url, verify=False, timeout=10)
     if response.status_code != 200:
         print(f'Failed to retrieve the webpage {url}. Status code: {response.status_code}')
         return []
