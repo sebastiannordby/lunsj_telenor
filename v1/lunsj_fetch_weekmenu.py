@@ -80,7 +80,7 @@ def save_menu_to_file(canteen, menu):
     Lagre menyen til en .txt-fil per kantine med både norsk og engelsk versjon i samme fil.
     """
     filename = f"{canteen.replace(' ', '_').lower()}.txt"
-    filepath = f"/Users/mariusbrathen/Desktop/GIT/Github/lunsj_telenor/v1/Menyer/{filename}"
+    filepath = f"/home/marius/git/lunsj_telenor/v1/Menyer/{filename}"
 
     with open(filepath, "w", encoding="utf-8") as file:
         file.write(menu + "\n\n")
