@@ -17,7 +17,7 @@ def fetch_html(url):
     Henter HTML fra kantine-nettsiden.
     """
     try:
-        response = requests.get(url, timeout=10, verify=False)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()  # Sjekk for HTTP-feil
         return response.text
     except requests.exceptions.RequestException as e:
@@ -31,21 +31,6 @@ def send_to_chatgpt(weekday, html_content):
     """
     prompt = f"""
     Her er HTML-en fra en kantine-meny. Ekstraher hele menyen for kantinen både norsk og engelsk. 
-    Fjern tall, sett måltider på egne linjer. Thuesday = Tuesday.
-    Alle kantiner skal ha meny for alle 5 ukedager.
-    sett inn en passende emoji bak hver matrett, returner KUN menyen i følgende format:
-
-    Ukedag
-    - [Matrett 1]
-    - [Matrett 2]
-    - [Matrett 3]
-    - [Matrett 4]
-
-    Weekday
-    - [Meal 1]
-    - [Meal 2]
-    - [Meal 3]
-    - [Meal 4]
 
     HTML:
     {html_content}
@@ -57,8 +42,26 @@ def send_to_chatgpt(weekday, html_content):
     }
 
     data = {
-        "model": "gpt-4o-mini",
-        "messages": [{"role": "system", "content": "Du er en assistent som ekstraherer menydata fra HTML, og returner menyen på norsk og engelsk"},
+        "model": "gpt-4.1-mini",
+        "messages": [{"role": "system", "content":
+            """Du er en assistent som ekstraherer menydata fra HTML, og returner menyen på norsk og engelsk. 
+             Fjern tall, sett måltider på egne linjer. Thuesday = Tuesday.
+    Alle kantiner skal ha meny for alle 5 ukedager.
+    Sett inn 1 passende emoji bak hver matrett, returner KUN menyen i følgende format:
+
+    Ukedag
+    - [Matrett 1]
+    - [Matrett 2]
+    - [Matrett 3]
+    - [Matrett 4]
+
+    Weekday
+    - [Meal 1]
+    - [Meal 2]
+    - [Meal 3]
+    - [Meal 4]   
+            
+            """},
                      {"role": "user", "content": prompt}],
         "temperature": 0.5
     }
@@ -77,7 +80,7 @@ def save_menu_to_file(canteen, menu):
     Lagre menyen til en .txt-fil per kantine med både norsk og engelsk versjon i samme fil.
     """
     filename = f"{canteen.replace(' ', '_').lower()}.txt"
-    filepath = f"/home/marius/git/lunsj_telenor/v1/Menyer/{filename}"
+    filepath = f"/Users/mariusbrathen/Desktop/GIT/Github/lunsj_telenor/v1/Menyer/{filename}"
 
     with open(filepath, "w", encoding="utf-8") as file:
         file.write(menu + "\n\n")
