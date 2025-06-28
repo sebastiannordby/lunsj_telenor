@@ -131,6 +131,3 @@ if __name__ == "__main__":
         filepath = os.path.join("outputs", filename)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(output_text)
-
-print("Menyer oppdatert")
-
