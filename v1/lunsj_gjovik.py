@@ -143,27 +143,29 @@ def read_menu(filename: str, day: int = -1):
     today_date = datetime.today().strftime("%d.%m.%Y")
     items, soup = menus[day]
 
-    print(f"Dagens lunsj - {today_name} {today_date}")
+    print(f"Dagens lunsj - {today_name} {today_date}:")
     for it in items[:2]:
-        print(it)
-    print(f"Dagens suppe: {soup}" if soup else "Dagens suppe: (ikke oppgitt)")
+        print("- " + it)
+    if soup:
+        print(f"Dagens suppe: {soup}")
     print()
 
     # Insert diverse info between today's menu and rest of week
     if diverse_info:
-        print("Diverse info:")
         for line in diverse_info:
             print(line)
         print()
 
     # Full week
+    print("UKENS MENY:")
     for i in range(5):
         day_name = WEEKDAYS_NO[i]
         items, soup = menus[i]
         print(f"{day_name}:")
         for it in items[:2]:
-            print(it)
-        print(soup if soup else "(ikke oppgitt)")
+            print("- " + it)
+        if soup:
+            print("- Dagens suppe: " + soup)
         print()
 
 # Example usage
