@@ -167,5 +167,5 @@ def read_menu(filename: str, day: int = -1):
         print()
 
 # Example usage
-filename = "Lunsj_Gjovik.xlsx"
+filename = "Gjovik/Lunsj_Gjovik.xlsx"
 read_menu(filename, day=-1)
