@@ -317,6 +317,22 @@ app.get('/update-week', (req, res) => {
     });
 });
 
+app.get('/gjovik', (req, res) => {
+    let dataToSend;
+    const python = spawn('python3', ['Gjovik/lunsj_gjovik.py']);
+    res.set({ 'content-type': 'text/plain; charset=utf-8' });
+
+    python.stdout.on('data', function (data) {
+        const buffer = Buffer.from(data);
+
+        dataToSend = buffer.toString('utf-8');
+    });
+
+    python.on('close', (code) => {
+        res.send(`${dataToSend}`);
+    });
+});
+
 app.get('/webex', (req, res) => {
     let dataToSend;
     const python = spawn('python3', ['lunsj_webex.py', -1, 'no']); // Provide valid arguments for day and language
