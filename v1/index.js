@@ -319,7 +319,7 @@ app.get('/update-week', (req, res) => {
 
 app.get('/gjovik', (req, res) => {
     let dataToSend;
-    const python = spawn('python3', ['Gjovik/lunsj_gjovik.py']);
+    const python = spawn('python3', ['/home/marius/git/lunsj_telenor/v1/Gjovik/lunsj_gjovik.py']);
     res.set({ 'content-type': 'text/plain; charset=utf-8' });
 
     python.stdout.on('data', function (data) {
