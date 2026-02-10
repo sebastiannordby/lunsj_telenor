@@ -262,6 +262,15 @@ app.get('/update-week', async (req, res) => {
   }
 });
 
+app.get('/update-gjovik', async (req, res) => {
+  try {
+    const out = await runPython(['Gjovik/fetch_menu_google-spreadsheet.py']);
+    res.set({ 'content-type': 'text/plain; charset=utf-8' }).send(out);
+  } catch (e) {
+    res.status(500).set({ 'content-type': 'text/plain; charset=utf-8' }).send(`Feil: ${e.message}`);
+  }
+});
+
 // Gjøvik route: same app/background, but NO buttons
 app.get('/gjovik', async (req, res) => {
   try {
