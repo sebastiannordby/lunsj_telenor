@@ -90,7 +90,7 @@ function renderAppPage({ title, heading, buttonsHtml = '', content = '' }) {
     .content { flex: 1; overflow: auto; }
     html, body { height: 100vh; width: 100vw; }
     body {
-      background: url(/mat.jpg);
+      background: url(/ai-wallpaper.jpeg);
       background-size: cover;
       background-position: center center;
       background-repeat: no-repeat;
