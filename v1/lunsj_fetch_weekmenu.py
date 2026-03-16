@@ -282,6 +282,7 @@ Regler:
 - Behold meningsinnholdet i rettene, men rens opp formatering.
 - Legg inn én passende emoji bak hver matrett.
 - Ikke legg til forklaring, intro eller oppsummering.
+- For Bakern gjelder den samme retten for alle ukedager.
 - Svar kun i dette formatet:
 
 Mandag
