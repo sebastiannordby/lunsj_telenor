@@ -26,6 +26,11 @@ urls = {
         "opening_hours": "10:30 - 13:00",
         "building": "C/D"
     },
+        "Bakern": {
+        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=e7420bcd-79cf-4268-abb6-08ccca3a7e89&scaleToFit=true",
+        "opening_hours": "10:30 - 13:00",
+        "building": "C"
+    },
     "Eat The Street - Middag": {
         "url": 'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=8469c383-d042-4d2d-8b18-30b6f9f90393&scaleToFit=true',
         "opening_hours": "15:00 - 17:00",
