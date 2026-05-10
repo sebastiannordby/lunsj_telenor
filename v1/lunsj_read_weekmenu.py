@@ -48,6 +48,16 @@ def extract_menu(filepath, day_name):
     meals = []
     found = False
 
+    # Bestem hvilken "statisk" header vi leter etter basert på språk
+    static_header = "Norsk" if day_name in ['Mandag','Tirsdag','Onsdag','Torsdag','Fredag'] else "Engelsk"
+
+    lines = open(filepath, encoding='utf-8').readlines()
+
+    # Sjekk om filen bruker statisk format (Norsk/Engelsk)
+    headers = [l.strip() for l in lines]
+    if "Norsk" in headers or "Engelsk" in headers:
+        day_name = static_header
+
     with open(filepath, encoding='utf-8') as f:
         for line in f:
             if not found:
