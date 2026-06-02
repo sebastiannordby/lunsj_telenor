@@ -15,11 +15,11 @@ urls = {
         "opening_hours": "10:30 - 14:00",
         "building": "J/K"
     },
-    # "Flow": {
-    #    "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=4a0457f8-dbfa-4783-8ebe-b5ee0486843f&scaleToFit=true",
-    #    "opening_hours": "10:30 - 13:00",
-    #    "building": "B"
-    # },
+    "Flow": {
+       "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=4a0457f8-dbfa-4783-8ebe-b5ee0486843f&scaleToFit=true",
+       "opening_hours": "10:30 - 13:00",
+       "building": "B"
+    },
     "Fresh 4 You": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=aa1358ee-d30e-4289-a630-892cd1210857&scaleToFit=true",
         "opening_hours": "10:30 - 13:00",
