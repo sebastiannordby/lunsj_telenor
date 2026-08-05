@@ -121,6 +121,11 @@ a:hover { color: var(--blue-900); }
 
 .old-switch { margin-left: auto; }
 
+/* Ikon-knapp: skal ikke dele bredde likt med tekstknappene */
+.install-btn { flex: 0 0 auto; }
+.install-btn[hidden] { display: none; }
+.footer-links .install-btn svg { display: block; }
+
 #themeToggle svg { display: none; }
 :root[data-theme="dark"] #themeToggle .ico-sun { display: block; }
 :root:not([data-theme="dark"]) #themeToggle .ico-moon { display: block; }
@@ -152,7 +157,6 @@ a:hover { color: var(--blue-900); }
 
 .btn-block { width: 100%; }
 .btn-sm { font-size: 13px; padding: var(--s1) var(--s3); }
-.section-row .btn-sm { font-size: 12px; padding: 3px var(--s2); }
 .btn-xs { font-size: 13px; padding: 2px 10px; }
 
 .icon-btn {
@@ -256,14 +260,15 @@ svg.ico-18 { width: 18px; height: 18px; }
   vertical-align: middle;
 }
 
+/* Samme vertikale padding som .btn-sm, så hele section-row får én høyde */
 .btn-icon-only {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--s2);
-  width: 40px;
-  height: 40px;
+  padding: var(--s1) var(--s2);
+  line-height: 1;
 }
+.btn-icon-only svg { width: 14px; height: 14px; }
 
 .weekend-card {
   display: flex;
@@ -319,6 +324,7 @@ svg.ico-18 { width: 18px; height: 18px; }
   align-items: center;
   margin-bottom: var(--s6);
 }
+.section-row .btn { font-size: 13px; padding: var(--s1) var(--s3); }
 
 .copy-fallback {
   display: flex;
@@ -667,8 +673,11 @@ svg.ico-18 { width: 18px; height: 18px; }
   bottom: var(--s8);
   transform: translate(-50%, 12px);
   z-index: 300;
-  padding: var(--s3) var(--s6);
-  border-radius: 999px;
+  padding: var(--s3) var(--s4);
+  max-width: min(420px, calc(100vw - 32px));
+  text-align: center;
+  text-wrap: pretty;
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
   font-size: 15px;

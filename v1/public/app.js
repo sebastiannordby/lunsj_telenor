@@ -20,6 +20,9 @@ const UI = {
     staticMenu: 'Fast meny hele uken', buildingLabel: 'Bygg',
     topUpCard: 'Fyll på kantinekort', issOriginal: 'Original ISS-meny',
     copyMenu: 'Kopier hele menyen', copied: 'Kopiert!',
+    install: 'Legg til på Hjem-skjerm',
+    installIos: 'Trykk Del-ikonet nederst, og velg «Legg til på Hjem-skjerm».',
+    installed: 'Snarveien er lagt til',
     copyManual: 'Marker teksten og kopier (Ctrl/Cmd + C):', close: 'Lukk',
     noMenu: 'Ingen meny publisert.',
     fbButton: 'Gi tilbakemelding', fbTitle: 'Hva synes du om endringen på nettsiden?',
@@ -47,6 +50,9 @@ const UI = {
     staticMenu: 'Same menu all week', buildingLabel: 'Building',
     topUpCard: 'Top up canteen card', issOriginal: 'Original ISS menu',
     copyMenu: 'Copy whole menu', copied: 'Copied!',
+    install: 'Add to Home Screen',
+    installIos: 'Tap the Share icon at the bottom, then choose “Add to Home Screen”.',
+    installed: 'Shortcut added',
     copyManual: 'Select the text and copy (Ctrl/Cmd + C):', close: 'Close',
     noMenu: 'No menu published.',
     fbButton: 'Give feedback', fbTitle: 'What do you think of the new site?',
@@ -192,6 +198,11 @@ function renderStrings() {
   $$('[data-t]').forEach(n => { n.textContent = t()[n.dataset.t] || ''; });
   $('#copyBtn').title = t().copyMenu;
   $('#copyBtn').setAttribute('aria-label', t().copyMenu);
+  const inst = $('#installBtn');
+  if (inst) {
+    inst.title = t().install;
+    inst.setAttribute('aria-label', t().install);
+  }
   $('#fbMessage').placeholder = t().fbPlaceholder;
   $('#datestamp').textContent = new Date().toLocaleDateString(
     state.lang === 'en' ? 'en-GB' : 'nb-NO',
@@ -537,9 +548,9 @@ function menuAsText() {
 
 let toastTimer = null;
 
-function flashCopied() {
+function showToast(message) {
   const toast = $('#toast');
-  toast.textContent = t().copiedToast;
+  toast.textContent = message;
   toast.hidden = false;
   // to frames så overgangen faktisk kjører
   requestAnimationFrame(() => toast.classList.add('on'));
@@ -548,6 +559,10 @@ function flashCopied() {
     toast.classList.remove('on');
     setTimeout(() => { toast.hidden = true; }, 250);
   }, 2400);
+}
+
+function flashCopied() {
+  showToast(t().copiedToast);
 }
 
 function copyMenu() {
@@ -716,6 +731,54 @@ $('#fbSend').onclick = () => {
   const msg = $('#fbMessage').value.trim();
   if (msg) sendFeedback('text', msg);
 };
+
+// ------------------------------------------------------------------ install
+//
+// Chrome/Edge/Android gir oss beforeinstallprompt og en ekte installdialog.
+// iOS Safari har ikke noe API, så der forklarer vi framgangsmåten i stedet.
+
+const installBtn = $('#installBtn');
+let installPrompt = null;
+
+const isStandalone = () =>
+  window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+const isIos = () =>
+  /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+if (installBtn) {
+  if (isIos() && !isStandalone()) installBtn.hidden = false;
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    installPrompt = e;
+    installBtn.hidden = false;
+  });
+
+  window.addEventListener('appinstalled', () => {
+    installPrompt = null;
+    installBtn.hidden = true;
+    showToast(t().installed);
+  });
+
+  installBtn.onclick = async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      installPrompt = null;
+      if (outcome === 'accepted') installBtn.hidden = true;
+    } else {
+      showToast(t().installIos);
+    }
+  };
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
 
 // ------------------------------------------------------------------ boot
 
