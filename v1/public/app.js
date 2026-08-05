@@ -5,11 +5,12 @@ const UI = {
   no: {
     heading: 'LUNSJMENY FORNEBU',
     sub: 'Tre kantiner og et bakeri — dagens meny på ett sted.',
-    showingToday: 'Viser dagens meny',
+    showingToday: 'Viser dagens meny', oldSite: 'Gamle siden',
     weekendKicker: 'Helg', weekendTitle: 'Kantinene er stengt',
     weekendBody: 'Det serveres ingen lunsj i helgen. Kom tilbake på mandag — eller se menyen for en ukedag nå.',
     weekendCta: 'Se mandagens meny',
     mon: 'Mandag', tue: 'Tirsdag', wed: 'Onsdag', thu: 'Torsdag', fri: 'Fredag',
+    monShort: 'Man', tueShort: 'Tir', wedShort: 'Ons', thuShort: 'Tor', friShort: 'Fre',
     lunch: 'Lunsj', dinner: 'Middag', allergyToggle: 'Allergener',
     voteLabel: '🙋 Jeg spiser her', votedLabel: '✓ Du spiser her', votesLabel: 'stemmer i dag',
     mapTitle: 'Hvor i bygget?',
@@ -30,11 +31,12 @@ const UI = {
   en: {
     heading: 'LUNCH MENU FORNEBU',
     sub: 'Three canteens and a bakery — today\u2019s menu in one place.',
-    showingToday: 'Showing today\u2019s menu',
+    showingToday: 'Showing today\u2019s menu', oldSite: 'Old site',
     weekendKicker: 'Weekend', weekendTitle: 'The canteens are closed',
     weekendBody: 'No lunch is served at the weekend. Come back on Monday — or browse a weekday menu now.',
     weekendCta: 'See Monday\u2019s menu',
     mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday',
+    monShort: 'Mon', tueShort: 'Tue', wedShort: 'Wed', thuShort: 'Thu', friShort: 'Fri',
     lunch: 'Lunch', dinner: 'Dinner', allergyToggle: 'Allergens',
     voteLabel: '🙋 Eating here', votedLabel: '✓ You\u2019re eating here', votesLabel: 'votes today',
     mapTitle: 'Where in the building?',
@@ -139,17 +141,16 @@ function dishesFor(id) {
 
   // Dagfilene er ferskere enn ukesmenyen — bruk dem når valgt dag er i dag
   if (showingToday()) {
+    // Allergenfila er menyen med allergener påført hver rett
+    if (state.allergens) {
+      const al = data.todayOverride?.allergens?.[id]?.items;
+      if (al && al.length) return al;
+    }
     const override = data.todayOverride?.[state.lang]?.[id]?.items;
     if (override && override.length) return override;
   }
 
   return data.places[id].week?.[state.lang]?.[activeDay()] || [];
-}
-
-/** Allergener finnes bare for i dag (menus_al.txt). */
-function allergensFor(id) {
-  if (!state.allergens || !showingToday()) return [];
-  return state.data?.todayOverride?.allergens?.[id]?.items || [];
 }
 
 function placeInfo(id) {
@@ -163,8 +164,7 @@ function placeInfo(id) {
     color: geo.color || '#1c16c5',
     left: geo.left,
     top: geo.top,
-    dishes: dishesFor(id),
-    allergens: allergensFor(id)
+    dishes: dishesFor(id)
   };
 }
 
@@ -198,15 +198,19 @@ function renderTabs() {
   $$('[data-lang]').forEach(b => {
     b.className = 'btn btn-sm ' + (b.dataset.lang === state.lang ? 'btn-secondary' : 'btn-ghost');
   });
-  $('#allergyToggle').className =
-    'btn btn-sm icon-btn ' + (state.allergens ? 'btn-secondary' : 'btn-ghost');
+  const allergyBtn = $('#allergyToggle');
+  allergyBtn.className = 'btn btn-sm icon-btn ' + (state.allergens ? 'btn-secondary' : 'btn-ghost');
+  // Allergenene finnes bare i dagsfila, så knappen gjelder kun dagens meny
+  allergyBtn.hidden = !showingToday();
 
   const active = activeDay();
   const group = $('#weekTabs');
   group.textContent = '';
   DAY_KEYS.forEach(k => {
-    const b = el('button', 'btn ' + (active === k ? 'btn-primary' : 'btn-ghost'), t()[k]);
+    const b = el('button', 'btn ' + (active === k ? 'btn-primary' : 'btn-ghost'));
     b.type = 'button';
+    b.appendChild(el('span', 'd-long', t()[k]));
+    b.appendChild(el('span', 'd-short', t()[k + 'Short']));
     b.onclick = () => { state.day = k; state.selected = null; writeUrl(); render(); };
     group.appendChild(b);
   });
@@ -241,13 +245,6 @@ function dishList(info) {
   return box;
 }
 
-function tagRow(items) {
-  if (!items.length) return null;
-  const box = el('div', 'tags');
-  items.forEach(a => box.appendChild(el('span', 'tag tag-outline', a)));
-  return box;
-}
-
 function canteenCard(info, withVote) {
   const card = el('div', 'card elev-sm canteen');
   card.style.borderTopColor = info.color;
@@ -260,8 +257,6 @@ function canteenCard(info, withVote) {
   card.appendChild(hours);
 
   card.appendChild(dishList(info));
-  const tags = tagRow(info.allergens);
-  if (tags) card.appendChild(tags);
 
   if (withVote) {
     const count = state.votes[info.id] || 0;
@@ -314,9 +309,6 @@ function renderBakery() {
   }
   main.appendChild(dishes);
   card.appendChild(main);
-
-  const tags = tagRow(info.allergens);
-  if (tags) card.appendChild(tags);
   card.appendChild(el('span', 'tag tag-neutral', t().staticMenu));
 }
 
