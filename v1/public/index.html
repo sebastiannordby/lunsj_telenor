@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lunsjmeny Fornebu</title>
+<meta name="description" content="Dagens lunsjmeny for kantinene på Fornebu.">
+
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" href="/android-chrome-192x192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="152x152">
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<meta name="theme-color" content="#1c16c5">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ZB3ZXQX08B"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-ZB3ZXQX08B');
+</script>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="nav-brand">🍽️ Lunsjmeny</span>
+  <span class="spacer"></span>
+  <div class="lang-group">
+    <button type="button" class="btn btn-ghost btn-sm" data-lang="no">NOR</button>
+    <button type="button" class="btn btn-ghost btn-sm" data-lang="en">ENG</button>
+  </div>
+  <button type="button" class="btn btn-ghost btn-sm icon-btn" id="allergyToggle">
+    <svg viewBox="0 0 24 24" class="ico-14"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+    <span data-t="allergyToggle"></span>
+  </button>
+  <a href="https://iss.kantinebetaling.no/" target="_blank" rel="noopener" class="btn btn-secondary btn-sm icon-btn">
+    <svg viewBox="0 0 24 24" class="ico-14"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
+    <span data-t="topUpCard"></span>
+  </a>
+</nav>
+
+<main class="wrap">
+
+  <div class="friday-banner" id="fridayBanner" hidden>
+    <span class="friday-emoji">🎉</span>
+    <span id="fridayLine"></span>
+  </div>
+
+  <header class="page-head">
+    <div class="datestamp" id="datestamp"></div>
+    <h1 data-t="heading"></h1>
+    <p class="lede" data-t="sub"></p>
+  </header>
+
+  <div class="day-row">
+    <div class="day-group" id="weekTabs"></div>
+    <span class="tag tag-neutral" id="todayBadge" data-t="showingToday"></span>
+  </div>
+
+  <div class="section-row">
+    <button type="button" class="btn btn-ghost" data-section="lunch" data-t="lunch"></button>
+    <button type="button" class="btn btn-ghost" data-section="dinner" data-t="dinner"></button>
+    <span class="spacer"></span>
+    <button type="button" class="btn btn-ghost icon-btn" id="copyBtn">
+      <svg viewBox="0 0 24 24" class="ico-16"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      <span id="copyLabel"></span>
+    </button>
+  </div>
+
+  <div class="copy-fallback" id="copyFallback" hidden>
+    <div class="copy-fallback-head">
+      <span data-t="copyManual"></span>
+      <button type="button" class="btn btn-ghost btn-xs" id="closeFallback" data-t="close"></button>
+    </div>
+    <textarea class="input" rows="10" readonly id="copyFallbackText"></textarea>
+  </div>
+
+  <div class="card elev-sm weekend-card" id="weekendCard" hidden>
+    <div class="card-kicker" data-t="weekendKicker"></div>
+    <div class="card-title" data-t="weekendTitle"></div>
+    <p class="card-body" data-t="weekendBody"></p>
+    <button type="button" class="btn btn-primary" id="weekendCta" data-t="weekendCta"></button>
+  </div>
+
+  <section id="lunchSection">
+    <div class="card-grid" id="canteenCards"></div>
+    <div class="card elev-sm bakery" id="bakeryCard"></div>
+  </section>
+
+  <section id="dinnerSection" hidden>
+    <div class="dinner-wrap" id="dinnerCard"></div>
+  </section>
+
+  <div class="card elev-sm map-card">
+    <div class="card-kicker" data-t="mapTitle"></div>
+    <p class="card-body" data-t="mapSub"></p>
+    <div class="map" id="map"></div>
+    <div id="mapDetail"></div>
+  </div>
+
+  <div class="footer-links">
+    <a href="https://widget.inisign.com/Widget/Customers/Customer.aspx?token=c5a641de-e74e-48eb-be4e-d847f261ec11"
+       target="_blank" rel="noopener" class="btn btn-ghost icon-btn">
+      <svg viewBox="0 0 24 24" class="ico-16"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+      <span data-t="issOriginal"></span>
+    </a>
+  </div>
+
+  <p class="footnote" data-t="footerNote"></p>
+</main>
+
+<div class="fb-dock">
+  <div class="fb-panel" id="fbPanel" hidden>
+    <div class="fb-head">
+      <div class="fb-title" data-t="fbTitle"></div>
+      <button type="button" class="btn btn-ghost btn-xs" id="fbClose" aria-label="Lukk">×</button>
+    </div>
+    <div class="fb-votes" id="fbVotes">
+      <button type="button" class="btn btn-secondary icon-btn" data-fb="up">
+        <svg viewBox="0 0 24 24" class="ico-18"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88z"/></svg>
+        <span data-t="fbUp"></span>
+      </button>
+      <button type="button" class="btn btn-ghost icon-btn" data-fb="down">
+        <svg viewBox="0 0 24 24" class="ico-18"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88z"/></svg>
+        <span data-t="fbDown"></span>
+      </button>
+    </div>
+    <div class="fb-text" id="fbText" hidden>
+      <textarea class="input" rows="4" id="fbMessage"></textarea>
+      <button type="button" class="btn btn-primary btn-block" id="fbSend" data-t="fbSend"></button>
+    </div>
+    <button type="button" class="btn btn-ghost btn-xs fb-detail" id="fbDetail" data-t="fbDetail"></button>
+    <div class="fb-status" id="fbStatus"></div>
+  </div>
+
+  <button type="button" class="btn btn-primary icon-btn fb-launch" id="fbLaunch">
+    <svg viewBox="0 0 24 24" class="ico-16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span data-t="fbButton"></span>
+  </button>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
