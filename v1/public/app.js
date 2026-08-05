@@ -5,12 +5,13 @@ const UI = {
   no: {
     heading: 'LUNSJMENY FORNEBU',
     sub: 'Tre kantiner og et bakeri — dagens meny på ett sted.',
-    showingToday: 'Viser dagens meny', oldSite: 'Gamle siden',
+    showingToday: 'Viser dagens meny', oldSite: 'Bytt til gammel side',
     weekendKicker: 'Helg', weekendTitle: 'Kantinene er stengt',
     weekendBody: 'Det serveres ingen lunsj i helgen. Kom tilbake på mandag — eller se menyen for en ukedag nå.',
     weekendCta: 'Se mandagens meny',
     mon: 'Mandag', tue: 'Tirsdag', wed: 'Onsdag', thu: 'Torsdag', fri: 'Fredag',
     monShort: 'Man', tueShort: 'Tir', wedShort: 'Ons', thuShort: 'Tor', friShort: 'Fre',
+    todaySuffix: '(dagens)', copiedToast: 'Hele menyen er kopiert', voteTodayOnly: 'Du kan bare stemme på dagens meny.',
     lunch: 'Lunsj', dinner: 'Middag', allergyToggle: 'Allergener',
     voteLabel: '🙋 Jeg spiser her', votedLabel: '✓ Du spiser her', votesLabel: 'stemmer i dag',
     mapTitle: 'Hvor i bygget?',
@@ -31,12 +32,13 @@ const UI = {
   en: {
     heading: 'LUNCH MENU FORNEBU',
     sub: 'Three canteens and a bakery — today\u2019s menu in one place.',
-    showingToday: 'Showing today\u2019s menu', oldSite: 'Old site',
+    showingToday: 'Showing today\u2019s menu', oldSite: 'Switch to the old site',
     weekendKicker: 'Weekend', weekendTitle: 'The canteens are closed',
     weekendBody: 'No lunch is served at the weekend. Come back on Monday — or browse a weekday menu now.',
     weekendCta: 'See Monday\u2019s menu',
     mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday',
     monShort: 'Mon', tueShort: 'Tue', wedShort: 'Wed', thuShort: 'Thu', friShort: 'Fri',
+    todaySuffix: '(today)', copiedToast: 'The whole menu was copied', voteTodayOnly: 'You can only vote on today\u2019s menu.',
     lunch: 'Lunch', dinner: 'Dinner', allergyToggle: 'Allergens',
     voteLabel: '🙋 Eating here', votedLabel: '✓ You\u2019re eating here', votesLabel: 'votes today',
     mapTitle: 'Where in the building?',
@@ -83,6 +85,9 @@ const state = {
   myVote: null,
   hovered: null,
   selected: null,
+  zoom: 1,
+  panX: 0,
+  panY: 0,
   copied: false
 };
 
@@ -181,7 +186,8 @@ const CLOCK = '<svg viewBox="0 0 24 24" class="ico-14"><circle cx="12" cy="12" r
 
 function renderStrings() {
   $$('[data-t]').forEach(n => { n.textContent = t()[n.dataset.t] || ''; });
-  $('#copyLabel').textContent = state.copied ? t().copied : t().copyMenu;
+  $('#copyBtn').title = t().copyMenu;
+  $('#copyBtn').setAttribute('aria-label', t().copyMenu);
   $('#fbMessage').placeholder = t().fbPlaceholder;
   $('#datestamp').textContent = new Date().toLocaleDateString(
     state.lang === 'en' ? 'en-GB' : 'nb-NO',
@@ -206,15 +212,24 @@ function renderTabs() {
   const active = activeDay();
   const group = $('#weekTabs');
   group.textContent = '';
+  const today = todayWeekKey();
   DAY_KEYS.forEach(k => {
     const b = el('button', 'btn ' + (active === k ? 'btn-primary' : 'btn-ghost'));
     b.type = 'button';
-    b.appendChild(el('span', 'd-long', t()[k]));
-    b.appendChild(el('span', 'd-short', t()[k + 'Short']));
+    const isToday = k === today;
+    if (isToday) b.classList.add('is-today');
+
+    const long = el('span', 'd-long', t()[k]);
+    const short = el('span', 'd-short', t()[k + 'Short']);
+    if (isToday) {
+      long.appendChild(el('span', 'today-suffix', ' ' + t().todaySuffix));
+      short.appendChild(el('span', 'today-dot'));
+    }
+    b.appendChild(long);
+    b.appendChild(short);
     b.onclick = () => { state.day = k; state.selected = null; writeUrl(); render(); };
     group.appendChild(b);
   });
-  $('#todayBadge').hidden = !showingToday();
 
   const weekend = isWeekend();
   $('.day-row').hidden = weekend;
@@ -283,7 +298,7 @@ function canteenCard(info, withVote) {
 function renderCanteens() {
   const grid = $('#canteenCards');
   grid.textContent = '';
-  LUNCH_IDS.forEach(id => grid.appendChild(canteenCard(placeInfo(id), true)));
+  LUNCH_IDS.forEach(id => grid.appendChild(canteenCard(placeInfo(id), showingToday())));
 }
 
 function renderBakery() {
@@ -320,9 +335,51 @@ function renderDinner() {
   wrap.appendChild(canteenCard(info, false));
 }
 
+function applyMapTransform() {
+  const inner = $('#mapInner');
+  inner.style.transform =
+    `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
+  $('#mapZoomOut').disabled = state.zoom <= 1;
+  $('#mapZoomIn').disabled = state.zoom >= 4;
+  $('#map').classList.toggle('zoomed', state.zoom > 1);
+}
+
+/** Holder kartet innenfor rammen når man zoomer eller drar. */
+function clampPan() {
+  const box = $('#map').getBoundingClientRect();
+  const maxX = (box.width * (state.zoom - 1)) / 2;
+  const maxY = (box.height * (state.zoom - 1)) / 2;
+  state.panX = Math.max(-maxX, Math.min(maxX, state.panX));
+  state.panY = Math.max(-maxY, Math.min(maxY, state.panY));
+}
+
+function setZoom(next, originX, originY) {
+  const prev = state.zoom;
+  state.zoom = Math.max(1, Math.min(4, next));
+  if (state.zoom === 1) {
+    state.panX = 0;
+    state.panY = 0;
+  } else if (originX != null) {
+    // Zoom mot punktet under pekeren
+    const k = state.zoom / prev;
+    state.panX = originX - k * (originX - state.panX);
+    state.panY = originY - k * (originY - state.panY);
+    clampPan();
+  } else {
+    clampPan();
+  }
+  applyMapTransform();
+}
+
 function renderMap() {
-  const map = $('#map');
+  const map = $('#mapInner');
   map.textContent = '';
+
+  const img = el('img');
+  img.src = '/fornebu-kart.png';
+  img.alt = 'Kart over Fornebu';
+  img.draggable = false;
+  map.appendChild(img);
 
   Object.keys(GEO).forEach(id => {
     const info = placeInfo(id);
@@ -345,6 +402,9 @@ function renderMap() {
     pin.onblur = () => setHover(null);
     holder.appendChild(pin);
 
+    // Motvirk skaleringen så markørene beholder lesbar størrelse
+    holder.style.setProperty('--pin-scale', (1 / state.zoom).toFixed(3));
+
     const above = parseFloat(info.top) >= 45;
     const pop = el('div', 'pin-pop ' + (above ? 'above' : 'below'));
     pop.appendChild(el('div', 'pin-pop-kicker', t().buildingLabel + ' ' + info.building));
@@ -361,6 +421,8 @@ function renderMap() {
 
     map.appendChild(holder);
   });
+
+  applyMapTransform();
 
   const detail = $('#mapDetail');
   detail.textContent = '';
@@ -446,13 +508,19 @@ function menuAsText() {
   return lines.join('\n').trim();
 }
 
+let toastTimer = null;
+
 function flashCopied() {
-  state.copied = true;
-  $('#copyLabel').textContent = t().copied;
-  setTimeout(() => {
-    state.copied = false;
-    $('#copyLabel').textContent = t().copyMenu;
-  }, 2000);
+  const toast = $('#toast');
+  toast.textContent = t().copiedToast;
+  toast.hidden = false;
+  // to frames så overgangen faktisk kjører
+  requestAnimationFrame(() => toast.classList.add('on'));
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.classList.remove('on');
+    setTimeout(() => { toast.hidden = true; }, 250);
+  }, 2400);
 }
 
 function copyMenu() {
@@ -532,6 +600,51 @@ $('#weekendCta').onclick = () => {
   writeUrl();
   render();
 };
+
+$('#mapZoomIn').onclick = () => setZoom(state.zoom + 0.5);
+$('#mapZoomOut').onclick = () => setZoom(state.zoom - 0.5);
+$('#mapZoomReset').onclick = () => setZoom(1);
+
+const mapBox = $('#map');
+
+mapBox.addEventListener('wheel', e => {
+  if (!e.ctrlKey && Math.abs(e.deltaY) < 2) return;
+  e.preventDefault();
+  const box = mapBox.getBoundingClientRect();
+  const ox = e.clientX - box.left - box.width / 2;
+  const oy = e.clientY - box.top - box.height / 2;
+  setZoom(state.zoom + (e.deltaY < 0 ? 0.3 : -0.3), ox, oy);
+}, { passive: false });
+
+let drag = null;
+
+mapBox.addEventListener('pointerdown', e => {
+  if (state.zoom <= 1 || e.target.closest('.pin')) return;
+  drag = { x: e.clientX, y: e.clientY, px: state.panX, py: state.panY };
+  mapBox.setPointerCapture(e.pointerId);
+  mapBox.classList.add('dragging');
+});
+
+mapBox.addEventListener('pointermove', e => {
+  if (!drag) return;
+  state.panX = drag.px + (e.clientX - drag.x);
+  state.panY = drag.py + (e.clientY - drag.y);
+  clampPan();
+  applyMapTransform();
+});
+
+mapBox.addEventListener('pointerup', () => {
+  drag = null;
+  mapBox.classList.remove('dragging');
+});
+
+// Dobbelttrykk = zoom inn/ut
+mapBox.addEventListener('dblclick', e => {
+  const box = mapBox.getBoundingClientRect();
+  const ox = e.clientX - box.left - box.width / 2;
+  const oy = e.clientY - box.top - box.height / 2;
+  setZoom(state.zoom > 1 ? 1 : 2, ox, oy);
+});
 
 $('#copyBtn').onclick = copyMenu;
 $('#closeFallback').onclick = () => { $('#copyFallback').hidden = true; };
