@@ -317,11 +317,10 @@ function renderBakery() {
   const main = el('div', 'bakery-main');
   const head = el('div', 'bakery-head');
   head.appendChild(el('span', 'bakery-name', info.name));
-  head.appendChild(el('span', 'bakery-building', t().buildingLabel + ' ' + info.building));
-  const hours = el('span', 'hours');
-  hours.innerHTML = CLOCK;
-  hours.appendChild(el('span', null, info.hours));
-  head.appendChild(hours);
+  head.appendChild(el('span', 'sep', '–'));
+  head.appendChild(el('span', null, t().buildingLabel + ' ' + info.building));
+  head.appendChild(el('span', 'sep', '–'));
+  head.appendChild(el('span', null, info.hours));
   main.appendChild(head);
 
   const dishes = el('div', 'bakery-dishes');
