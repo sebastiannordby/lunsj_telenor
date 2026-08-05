@@ -120,7 +120,6 @@ a:hover { color: var(--blue-900); }
 .lang-group { display: flex; gap: var(--s1); }
 
 .old-switch { margin-left: auto; }
-.footer-links .btn span { white-space: nowrap; }
 
 #themeToggle svg { display: none; }
 :root[data-theme="dark"] #themeToggle .ico-sun { display: block; }
@@ -153,6 +152,7 @@ a:hover { color: var(--blue-900); }
 
 .btn-block { width: 100%; }
 .btn-sm { font-size: 13px; padding: var(--s1) var(--s3); }
+.section-row .btn-sm { font-size: 12px; padding: 3px var(--s2); }
 .btn-xs { font-size: 13px; padding: 2px 10px; }
 
 .icon-btn {
@@ -309,8 +309,6 @@ svg.ico-18 { width: 18px; height: 18px; }
   .nav .btn-sm { padding: var(--s1) var(--s2); }
   .nav #allergyToggle span { display: none; }
 
-  .footer-links { flex-wrap: nowrap; gap: var(--s1); overflow-x: auto; }
-  .footer-links .btn { flex-shrink: 0; }
   .old-switch { margin-left: 0; }
 }
 
@@ -572,6 +570,33 @@ svg.ico-18 { width: 18px; height: 18px; }
 .pin-pop.centered { left: 50%; transform: translateX(-50%); }
 .pin-pop.to-left { left: 0; }
 .pin-pop.to-right { right: 0; }
+
+/* Kompakt popup på mobil: kartet er bare ~170px høyt, så kicker og
+   åpningstid utgår (de står i detaljkortet under) og skriften krymper. */
+.pin-pop.compact {
+  width: 158px;
+  max-width: 46vw;
+  padding: 7px 9px;
+  border-radius: 12px;
+}
+.pin-pop.compact .pin-pop-name {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0 0 3px;
+}
+.pin-pop.compact .pin-pop-dishes { gap: 2px; }
+/* Maks to linjer per rett — full tekst står i detaljkortet under kartet */
+.pin-pop.compact .pin-pop-dishes > div {
+  font-size: 11px;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pin-pop.compact.below { top: calc(100% + 6px); }
+.pin-pop.compact.above { bottom: calc(100% + 6px); }
 .pin-holder.hot .pin-pop { opacity: 1; visibility: visible; }
 
 .pin-pop-kicker {
@@ -587,7 +612,11 @@ svg.ico-18 { width: 18px; height: 18px; }
 
 .map-hint { font-size: 13px; color: var(--muted); margin: var(--s3) 0 0; }
 
-.map-detail { margin-top: var(--s3); background: var(--n-100); }
+.map-detail {
+  margin-top: var(--s3);
+  background: var(--n-100);
+  border-left: 4px solid var(--blue-500);
+}
 .map-detail .detail-hours { font-size: 13px; font-weight: 700; margin-bottom: var(--s1); }
 .map-detail .detail-dishes { display: flex; flex-direction: column; gap: var(--s1); font-size: 14px; }
 .card-meta { font-size: 12px; color: var(--muted); margin-top: var(--s2); }
@@ -596,11 +625,30 @@ svg.ico-18 { width: 18px; height: 18px; }
 
 .footer-links {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--s3);
-  align-items: center;
+  flex-wrap: nowrap;
+  gap: var(--s2);
+  align-items: stretch;
   padding-top: var(--s4);
   border-top: 1px solid var(--n-300);
+}
+.footer-links .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+  font-size: 13px;
+  padding: var(--s2) var(--s2);
+  line-height: 1.2;
+}
+.footer-links .btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .footer-links { gap: var(--s1); }
+  .footer-links .btn { font-size: 11px; padding: var(--s2) 6px; gap: 5px; }
+  .footer-links .btn svg { display: none; }
 }
 
 .footnote {
