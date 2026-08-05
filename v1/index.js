@@ -27,6 +27,47 @@ const VOTE_PLACES = new Set(['street', 'm', 'fresh4you']);
 
 app.use(express.json({ limit: '8kb' }));
 
+// ---------------------------------------------------------------- cache
+//
+// index.html caches aldri, og app.js/styles.css får en ?v= som følger filenes
+// endringstidspunkt. Da henter nettleseren nye filer så snart du deployer,
+// uten at noen må tømme cache — og uten at du bumper versjonsnummer manuelt.
+
+const PUBLIC_DIR = path.join(__dirname, 'public');
+
+async function assetStamp() {
+  const files = ['app.js', 'styles.css', 'fornebu-kart.png'];
+  const stamps = await Promise.all(files.map(async f => {
+    try {
+      return (await fs.stat(path.join(PUBLIC_DIR, f))).mtimeMs;
+    } catch {
+      return 0;
+    }
+  }));
+  return Math.max(...stamps).toString(36);
+}
+
+async function sendIndex(res) {
+  const [html, v] = await Promise.all([
+    fs.readFile(path.join(PUBLIC_DIR, 'index.html'), 'utf-8'),
+    assetStamp()
+  ]);
+  res.set('Cache-Control', 'no-cache, must-revalidate');
+  res.type('text/html; charset=utf-8').send(
+    html
+      .replace('href="/styles.css"', `href="/styles.css?v=${v}"`)
+      .replace('src="/app.js"', `src="/app.js?v=${v}"`)
+  );
+}
+
+app.get('/', async (req, res, next) => {
+  try {
+    await sendIndex(res);
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ---------------------------------------------------------------- python
 
 function runPython(args) {
@@ -302,6 +343,19 @@ app.get('/test', async (req, res) => {
 // ---------------------------------------------------------------- statiske filer
 // Til slutt, så rutene over alltid vinner.
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(PUBLIC_DIR, {
+  index: false,           // '/' håndteres over, med ?v= injisert
+  etag: true,
+  lastModified: true,
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('.html') || filePath.endsWith('menu.json')) {
+      // Innhold som endres gjennom dagen må alltid revalideres
+      res.set('Cache-Control', 'no-cache, must-revalidate');
+    } else {
+      // Versjonerte filer kan caches lenge — ?v= endres når filen endres
+      res.set('Cache-Control', 'public, max-age=604800');
+    }
+  }
+}));
 
 app.listen(port, () => console.log(`LunsjApp kjører på port: ${port}!`));
