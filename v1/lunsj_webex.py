@@ -269,8 +269,6 @@ else:
             print(f"Kunne ikke trimme HTML for {canteen}.")
             continue
 
-        print(f"  [debug] Trimmet HTML for {canteen}: {len(trimmed_html)} tegn")
-
         menu = send_to_chatgpt(canteen, trimmed_html)
         if menu:
             print(f"\n**{canteen}** ({info['opening_hours']}) - {bygg}: {info['building']}")
