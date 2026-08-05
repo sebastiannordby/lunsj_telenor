@@ -11,6 +11,16 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="152x152">
 <link rel="icon" href="/favicon.ico" type="image/x-icon">
 <meta name="theme-color" content="#1c16c5">
+<script>
+  // Settes før rendering så siden ikke blinker hvitt
+  (function () {
+    var saved = null;
+    try { saved = localStorage.getItem('lunsj-theme'); } catch (e) {}
+    var dark = saved ? saved === 'dark'
+      : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (dark) document.documentElement.dataset.theme = 'dark';
+  })();
+</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,20 +38,20 @@
 <body>
 
 <nav class="nav">
-  <span class="nav-brand">🍽️ Lunsjmeny</span>
+  <a href="/" class="nav-brand">🍽️ Lunsjmeny Fornebu</a>
   <span class="spacer"></span>
   <div class="lang-group">
     <button type="button" class="btn btn-ghost btn-sm" data-lang="no">NOR</button>
     <button type="button" class="btn btn-ghost btn-sm" data-lang="en">ENG</button>
   </div>
+  <button type="button" class="btn btn-ghost btn-sm btn-icon-only" id="themeToggle">
+    <svg viewBox="0 0 24 24" class="ico-16 ico-moon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+    <svg viewBox="0 0 24 24" class="ico-16 ico-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.3 17.7-1.4 1.4"/><path d="m19.1 4.9-1.4 1.4"/></svg>
+  </button>
   <button type="button" class="btn btn-ghost btn-sm icon-btn" id="allergyToggle">
     <svg viewBox="0 0 24 24" class="ico-14"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
     <span data-t="allergyToggle"></span>
   </button>
-  <a href="https://iss.kantinebetaling.no/" target="_blank" rel="noopener" class="btn btn-secondary btn-sm icon-btn">
-    <svg viewBox="0 0 24 24" class="ico-14"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
-    <span data-t="topUpCard"></span>
-  </a>
 </nav>
 
 <main class="wrap">
@@ -53,7 +63,6 @@
 
   <header class="page-head">
     <div class="datestamp" id="datestamp"></div>
-    <h1 data-t="heading"></h1>
     <p class="lede" data-t="sub"></p>
   </header>
 
@@ -62,8 +71,8 @@
   </div>
 
   <div class="section-row">
-    <button type="button" class="btn btn-ghost" data-section="lunch" data-t="lunch"></button>
-    <button type="button" class="btn btn-ghost" data-section="dinner" data-t="dinner"></button>
+    <button type="button" class="btn btn-ghost btn-sm" data-section="lunch" data-t="lunch"></button>
+    <button type="button" class="btn btn-ghost btn-sm" data-section="dinner" data-t="dinner"></button>
     <span class="spacer"></span>
     <button type="button" class="btn btn-ghost btn-icon-only" id="copyBtn">
       <svg viewBox="0 0 24 24" class="ico-16"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -111,6 +120,10 @@
   </div>
 
   <div class="footer-links">
+    <a href="https://iss.kantinebetaling.no/" target="_blank" rel="noopener" class="btn btn-secondary btn-sm icon-btn">
+      <svg viewBox="0 0 24 24" class="ico-14"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
+      <span data-t="topUpCard"></span>
+    </a>
     <a href="https://widget.inisign.com/Widget/Customers/Customer.aspx?token=c5a641de-e74e-48eb-be4e-d847f261ec11"
        target="_blank" rel="noopener" class="btn btn-ghost icon-btn">
       <svg viewBox="0 0 24 24" class="ico-16"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
