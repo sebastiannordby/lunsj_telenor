@@ -79,8 +79,7 @@ a:hover { color: var(--blue-900); }
 
 .lang-group { display: flex; gap: var(--s1); }
 
-.old-link { font-size: 13px; color: var(--muted); text-decoration: none; }
-.old-link:hover { color: var(--blue-700); text-decoration: underline; }
+.old-switch { margin-left: auto; }
 
 /* ---------------------------------------------------------------- buttons */
 
@@ -199,8 +198,27 @@ svg.ico-18 { width: 18px; height: 18px; }
   margin-bottom: var(--s4);
 }
 
-#todayBadge[hidden] { display: none; }
 .day-row[hidden], .section-row[hidden] { display: none; }
+
+.day-group .btn.is-today { font-weight: 700; }
+.today-suffix { font-weight: 400; opacity: 0.7; font-size: 12px; }
+.today-dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.btn-icon-only {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s2);
+  width: 40px;
+  height: 40px;
+}
 
 .weekend-card {
   display: flex;
@@ -391,10 +409,64 @@ svg.ico-18 { width: 18px; height: 18px; }
   aspect-ratio: 16 / 9;
   border-radius: var(--radius);
   overflow: hidden;
-  background: var(--n-200) url('/fornebu-kart.png') center / cover no-repeat;
+  background: var(--n-200);
+  touch-action: none;
+}
+.map.zoomed { cursor: grab; }
+.map.dragging { cursor: grabbing; }
+
+.map-inner {
+  position: absolute;
+  inset: 0;
+  transform-origin: center center;
+  transition: transform 0.18s ease-out;
+}
+.map-inner img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  pointer-events: none;
+}
+.map.dragging .map-inner { transition: none; }
+
+.map-zoom {
+  position: absolute;
+  right: var(--s3);
+  bottom: var(--s3);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.pin-holder { position: absolute; transform: translate(-50%, -50%); z-index: 10; }
+.zoom-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--blue-900);
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(7, 4, 82, 0.25);
+}
+.zoom-btn:hover:not(:disabled) { background: #fff; }
+.zoom-btn:disabled { opacity: 0.4; cursor: default; }
+
+.pin-holder {
+  position: absolute;
+  --pin-scale: 1;
+  transform: translate(-50%, -50%) scale(var(--pin-scale));
+  z-index: 10;
+}
 .pin-holder.hot { z-index: 30; }
 
 .pin {
@@ -416,6 +488,7 @@ svg.ico-18 { width: 18px; height: 18px; }
 .pin .dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; }
 .pin-holder.hot .pin {
   transform: scale(1.12);
+  
   box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.85), 0 6px 18px rgba(7, 4, 82, 0.5);
 }
 
@@ -476,6 +549,25 @@ svg.ico-18 { width: 18px; height: 18px; }
 }
 
 /* ---------------------------------------------------------------- feedback */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: var(--s8);
+  transform: translate(-50%, 12px);
+  z-index: 300;
+  padding: var(--s3) var(--s6);
+  border-radius: 999px;
+  background: var(--blue-900);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(7, 4, 82, 0.35);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.toast[hidden] { display: none; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
 
 .fb-dock {
   position: fixed;
