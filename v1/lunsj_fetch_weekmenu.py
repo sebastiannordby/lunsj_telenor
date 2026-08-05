@@ -32,7 +32,7 @@ urls = {
         "opening_hours": "10:30 - 14:00",
         "building": "J/K"
     },
-    "Flow": {
+    "Kantine M": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=756a5aa2-a95f-4d15-ad5a-59829741075b&scaleToFit=true",
         "opening_hours": "10:30 - 13:00",
         "building": "M 2. etasje"
