@@ -418,12 +418,13 @@ svg.ico-18 { width: 18px; height: 18px; }
 .bakery-head {
   display: flex;
   align-items: baseline;
-  gap: var(--s3);
+  gap: var(--s2);
   flex-wrap: wrap;
   margin-bottom: var(--s1);
+  font-size: 13px;
 }
-.bakery-name { font-weight: 700; }
-.bakery-building { font-size: 13px; color: var(--muted); }
+.bakery-head .bakery-name { font-size: 16px; font-weight: 700; }
+.bakery-head .sep { opacity: 0.4; }
 .bakery-dishes {
   display: flex;
   flex-wrap: wrap;
