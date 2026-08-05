@@ -79,6 +79,9 @@ a:hover { color: var(--blue-900); }
 
 .lang-group { display: flex; gap: var(--s1); }
 
+.old-link { font-size: 13px; color: var(--muted); text-decoration: none; }
+.old-link:hover { color: var(--blue-700); text-decoration: underline; }
+
 /* ---------------------------------------------------------------- buttons */
 
 .btn {
@@ -218,7 +221,23 @@ svg.ico-18 { width: 18px; height: 18px; }
   padding: var(--s1);
   border-radius: var(--radius);
 }
-.day-group .btn { font-size: 14px; padding: var(--s1) var(--s3); white-space: nowrap; }
+.day-group {
+  flex-wrap: nowrap;
+  width: 100%;
+}
+.day-group .btn {
+  font-size: 14px;
+  padding: var(--s1) var(--s3);
+  white-space: nowrap;
+  flex: 1;
+}
+.d-short { display: none; }
+
+@media (max-width: 620px) {
+  .d-long { display: none; }
+  .d-short { display: inline; }
+  .day-group .btn { padding: var(--s1) var(--s2); }
+}
 
 .section-row {
   display: flex;
