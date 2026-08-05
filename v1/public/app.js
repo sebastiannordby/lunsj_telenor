@@ -69,7 +69,7 @@ const GEO = {
   street:    { color: '#1c16c5', dark: '#6f92ff', left: '30%', top: '80%', vote: true },
   m:         { color: '#0080a6', dark: '#38c9e8', left: '74%', top: '56%', vote: true },
   fresh4you: { color: '#070452', dark: '#a08cff', left: '78%', top: '21%', vote: true },
-  bakern:    { color: '#8a5a2b', dark: '#e0a066', left: '65%', top: '21%', vote: false }
+  bakern:    { color: '#8a5a2b', dark: '#e0a066', left: '61%', top: '21%', vote: false }
 };
 
 function isDark() {
@@ -404,8 +404,10 @@ function renderMap() {
     pin.appendChild(el('span', null, info.name));
     if (state.myVote === id) pin.appendChild(el('span', 'pin-star', '★'));
     pin.onclick = () => {
-      state.selected = state.selected === id ? null : id;
+      const narrow = window.matchMedia('(max-width: 620px)').matches;
+      state.selected = !narrow && state.selected === id ? null : id;
       setHover(id);
+      renderMap();
     };
     pin.onfocus = () => setHover(id);
     pin.onblur = () => setHover(null);
@@ -414,14 +416,23 @@ function renderMap() {
     // Motvirk skaleringen så markørene beholder lesbar størrelse
     holder.style.setProperty('--pin-scale', (1 / state.zoom).toFixed(3));
 
+    const narrow = window.matchMedia('(max-width: 620px)').matches;
     const above = parseFloat(info.top) >= 45;
     // Ankre popupen mot nærmeste kartkant, ellers stikker den utenfor bildet
     const left = parseFloat(info.left);
     const side = left > 60 ? 'to-right' : (left < 40 ? 'to-left' : 'centered');
-    const pop = el('div', 'pin-pop ' + (above ? 'above' : 'below') + ' ' + side);
-    pop.appendChild(el('div', 'pin-pop-kicker', t().buildingLabel + ' ' + info.building));
+    const pop = el('div', 'pin-pop ' + (above ? 'above' : 'below') + ' ' + side +
+      (narrow ? ' compact' : ''));
+
+    // På mobil er kartet lavt — kicker og åpningstid utgår, de står i
+    // detaljkortet under kartet. Bare navn og retter får plass.
+    if (!narrow) {
+      pop.appendChild(el('div', 'pin-pop-kicker', t().buildingLabel + ' ' + info.building));
+    }
     pop.appendChild(el('div', 'pin-pop-name', info.name));
-    pop.appendChild(el('div', 'pin-pop-hours', info.hours));
+    if (!narrow) {
+      pop.appendChild(el('div', 'pin-pop-hours', info.hours));
+    }
     const dishes = el('div', 'pin-pop-dishes');
     if (info.dishes.length) {
       info.dishes.forEach(d => dishes.appendChild(el('div', null, d)));
@@ -435,14 +446,18 @@ function renderMap() {
   });
 
   applyMapTransform();
+  renderMapDetail();
+}
 
+function renderMapDetail() {
   const detail = $('#mapDetail');
   detail.textContent = '';
-  if (!state.selected) {
+  const shownId = state.selected || state.hovered;
+  if (!shownId) {
     detail.appendChild(el('p', 'map-hint', t().mapEmpty));
     return;
   }
-  const info = placeInfo(state.selected);
+  const info = placeInfo(shownId);
   const card = el('div', 'card map-detail');
   card.appendChild(el('div', 'card-kicker', t().buildingLabel + ' ' + info.building));
   card.appendChild(el('div', 'card-title', info.name));
@@ -450,9 +465,9 @@ function renderMap() {
   const dishes = el('div', 'detail-dishes');
   info.dishes.forEach(d => dishes.appendChild(el('div', null, d)));
   card.appendChild(dishes);
-  if (GEO[state.selected]?.vote) {
+  if (GEO[shownId]?.vote) {
     card.appendChild(el('div', 'card-meta',
-      (state.votes[state.selected] || 0) + ' ' + t().votesLabel));
+      (state.votes[shownId] || 0) + ' ' + t().votesLabel));
   }
   detail.appendChild(card);
 }
@@ -462,6 +477,7 @@ function setHover(id) {
   $$('.pin-holder').forEach((n, i) => {
     n.classList.toggle('hot', Object.keys(GEO)[i] === id);
   });
+  renderMapDetail();
 }
 
 function render() {
@@ -717,5 +733,11 @@ async function boot() {
   render();
   loadTraffic();
 }
+
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(renderMap, 200);
+});
 
 boot();
