@@ -236,7 +236,7 @@ const oldDayMap = {
  */
 async function renderOldPage(day, lang) {
   // Bruker de gamle lese-skriptene, uendret.
-  const script = day === '-1' ? 'lunsj_les_dagens.py' : 'lunsj_les_ukesmeny.py';
+  const script = day === '-1' ? 'lunsj_read_daymenu.py' : 'lunsj_read_weekmenu.py';
   const menu = await runPython([script, day, lang]);
 
   const links = OLD_DAYS.map(d => {
