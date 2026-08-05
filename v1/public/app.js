@@ -5,7 +5,7 @@ const UI = {
   no: {
     heading: 'LUNSJMENY FORNEBU',
     sub: 'Tre kantiner og et bakeri — dagens meny på ett sted.',
-    showingToday: 'Viser dagens meny', oldSite: 'Bytt til gammel side',
+    showingToday: 'Viser dagens meny', oldSite: 'Bytt til gammel side', themeDark: 'Bytt til mørk modus', themeLight: 'Bytt til lys modus',
     weekendKicker: 'Helg', weekendTitle: 'Kantinene er stengt',
     weekendBody: 'Det serveres ingen lunsj i helgen. Kom tilbake på mandag — eller se menyen for en ukedag nå.',
     weekendCta: 'Se mandagens meny',
@@ -14,7 +14,7 @@ const UI = {
     todaySuffix: '(dagens)', copiedToast: 'Hele menyen er kopiert', voteTodayOnly: 'Du kan bare stemme på dagens meny.',
     lunch: 'Lunsj', dinner: 'Middag', allergyToggle: 'Allergener',
     voteLabel: '🙋 Jeg spiser her', votedLabel: '✓ Du spiser her', votesLabel: 'stemmer i dag',
-    mapTitle: 'Hvor i bygget?',
+    mapTitle: 'Hvor er kantinene?',
     mapSub: 'Hold musepekeren over en markør for å se menyen — eller trykk på den på mobil.',
     mapEmpty: 'Velg et sted i kartet over.',
     staticMenu: 'Fast meny hele uken', buildingLabel: 'Bygg',
@@ -32,7 +32,7 @@ const UI = {
   en: {
     heading: 'LUNCH MENU FORNEBU',
     sub: 'Three canteens and a bakery — today\u2019s menu in one place.',
-    showingToday: 'Showing today\u2019s menu', oldSite: 'Switch to the old site',
+    showingToday: 'Showing today\u2019s menu', oldSite: 'Switch to the old site', themeDark: 'Switch to dark mode', themeLight: 'Switch to light mode',
     weekendKicker: 'Weekend', weekendTitle: 'The canteens are closed',
     weekendBody: 'No lunch is served at the weekend. Come back on Monday — or browse a weekday menu now.',
     weekendCta: 'See Monday\u2019s menu',
@@ -41,7 +41,7 @@ const UI = {
     todaySuffix: '(today)', copiedToast: 'The whole menu was copied', voteTodayOnly: 'You can only vote on today\u2019s menu.',
     lunch: 'Lunch', dinner: 'Dinner', allergyToggle: 'Allergens',
     voteLabel: '🙋 Eating here', votedLabel: '✓ You\u2019re eating here', votesLabel: 'votes today',
-    mapTitle: 'Where in the building?',
+    mapTitle: 'Where are the canteens?',
     mapSub: 'Hover a marker to see its menu — or tap it on mobile.',
     mapEmpty: 'Pick a spot on the map above.',
     staticMenu: 'Same menu all week', buildingLabel: 'Building',
@@ -66,11 +66,15 @@ const FRIDAY_IDX = Math.floor(Math.random() * 4);
 
 // Kartposisjon og farge per sted. Juster left/top for å flytte markørene.
 const GEO = {
-  street:    { color: '#1c16c5', left: '30%', top: '80%', vote: true },
-  m:         { color: '#00c8ff', left: '74%', top: '56%', vote: true },
-  fresh4you: { color: '#070452', left: '78%', top: '21%', vote: true },
-  bakern:    { color: '#0080a6', left: '65%', top: '21%', vote: false }
+  street:    { color: '#1c16c5', dark: '#6f92ff', left: '30%', top: '80%', vote: true },
+  m:         { color: '#0080a6', dark: '#38c9e8', left: '74%', top: '56%', vote: true },
+  fresh4you: { color: '#070452', dark: '#a08cff', left: '78%', top: '21%', vote: true },
+  bakern:    { color: '#8a5a2b', dark: '#e0a066', left: '65%', top: '21%', vote: false }
 };
+
+function isDark() {
+  return document.documentElement.dataset.theme === 'dark';
+}
 
 const LUNCH_IDS = ['street', 'm', 'fresh4you'];
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
@@ -166,7 +170,7 @@ function placeInfo(id) {
     name: p?.name || id,
     hours: p?.hours || '',
     building: p?.building || '',
-    color: geo.color || '#1c16c5',
+    color: (isDark() ? geo.dark : geo.color) || '#1c16c5',
     left: geo.left,
     top: geo.top,
     dishes: dishesFor(id)
@@ -194,6 +198,10 @@ function renderStrings() {
     { weekday: 'long', day: 'numeric', month: 'long' }
   );
   document.title = state.lang === 'en' ? 'Lunch Menu Fornebu' : 'Lunsjmeny Fornebu';
+  syncThemeLabel();
+
+  const brand = $('.nav-brand');
+  if (brand) brand.textContent = '🍽️ ' + (state.lang === 'en' ? 'Lunch Menu Fornebu' : 'Lunsjmeny Fornebu');
 
   const lines = FRIDAY_LINES[state.lang];
   $('#fridayLine').textContent = lines[FRIDAY_IDX % lines.length];
@@ -394,6 +402,7 @@ function renderMap() {
     pin.style.background = info.color;
     pin.appendChild(el('span', 'dot'));
     pin.appendChild(el('span', null, info.name));
+    if (state.myVote === id) pin.appendChild(el('span', 'pin-star', '★'));
     pin.onclick = () => {
       state.selected = state.selected === id ? null : id;
       setHover(id);
@@ -406,7 +415,10 @@ function renderMap() {
     holder.style.setProperty('--pin-scale', (1 / state.zoom).toFixed(3));
 
     const above = parseFloat(info.top) >= 45;
-    const pop = el('div', 'pin-pop ' + (above ? 'above' : 'below'));
+    // Ankre popupen mot nærmeste kartkant, ellers stikker den utenfor bildet
+    const left = parseFloat(info.left);
+    const side = left > 60 ? 'to-right' : (left < 40 ? 'to-left' : 'centered');
+    const pop = el('div', 'pin-pop ' + (above ? 'above' : 'below') + ' ' + side);
     pop.appendChild(el('div', 'pin-pop-kicker', t().buildingLabel + ' ' + info.building));
     pop.appendChild(el('div', 'pin-pop-name', info.name));
     pop.appendChild(el('div', 'pin-pop-hours', info.hours));
@@ -645,6 +657,29 @@ mapBox.addEventListener('dblclick', e => {
   const oy = e.clientY - box.top - box.height / 2;
   setZoom(state.zoom > 1 ? 1 : 2, ox, oy);
 });
+
+const themeBtn = $('#themeToggle');
+
+function syncThemeLabel() {
+  const dark = document.documentElement.dataset.theme === 'dark';
+  const label = dark ? t().themeLight : t().themeDark;
+  themeBtn.title = label;
+  themeBtn.setAttribute('aria-label', label);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = dark ? '#16181d' : '#1c16c5';
+}
+
+themeBtn.onclick = () => {
+  const dark = document.documentElement.dataset.theme === 'dark';
+  if (dark) {
+    delete document.documentElement.dataset.theme;
+  } else {
+    document.documentElement.dataset.theme = 'dark';
+  }
+  try { localStorage.setItem('lunsj-theme', dark ? 'light' : 'dark'); } catch {}
+  syncThemeLabel();
+  render(); // markørfarger og kort må tegnes på nytt for det nye temaet
+};
 
 $('#copyBtn').onclick = copyMenu;
 $('#closeFallback').onclick = () => { $('#copyFallback').hidden = true; };
