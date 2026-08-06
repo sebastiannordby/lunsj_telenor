@@ -22,7 +22,7 @@ const UI = {
     expoFriday: 'Fredager: gratis kaffe frem til kl. 11 for Telenor-ansatte',
     topUpCard: 'Fyll på kantinekort', issOriginal: 'Original ISS-meny',
     copyMenu: 'Kopier hele menyen', copied: 'Kopiert!',
-    install: 'Legg til på Hjem-skjerm',
+    install: 'Installer app',
     installIos: 'Trykk Del-ikonet nederst, og velg «Legg til på Hjem-skjerm».',
     installed: 'Snarveien er lagt til',
     copyManual: 'Marker teksten og kopier (Ctrl/Cmd + C):', close: 'Lukk',
@@ -54,7 +54,7 @@ const UI = {
     expoFriday: 'Fridays: free coffee until 11:00 for Telenor employees',
     topUpCard: 'Top up canteen card', issOriginal: 'Original ISS menu',
     copyMenu: 'Copy whole menu', copied: 'Copied!',
-    install: 'Add to Home Screen',
+    install: 'Install app',
     installIos: 'Tap the Share icon at the bottom, then choose “Add to Home Screen”.',
     installed: 'Shortcut added',
     copyManual: 'Select the text and copy (Ctrl/Cmd + C):', close: 'Close',
@@ -424,7 +424,7 @@ function renderMap() {
   map.textContent = '';
 
   const img = el('img');
-  img.src = '/fornebu-kart.png';
+  img.src = 'fornebu-kart.png';
   img.alt = 'Kart over Fornebu';
   img.draggable = false;
   map.appendChild(img);
@@ -858,7 +858,7 @@ async function boot() {
   writeUrl();
   renderStrings();
   try {
-    const r = await fetch('/menu.json?v=' + Date.now());
+    const r = await fetch('menu.json?v=' + Date.now());
     state.data = await r.json();
   } catch (e) {
     console.error('Kunne ikke laste menu.json', e);
