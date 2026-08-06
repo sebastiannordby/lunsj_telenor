@@ -551,7 +551,7 @@ svg.ico-18 { width: 18px; height: 18px; }
   box-shadow: 0 2px 8px rgba(var(--shadow-tint), 0.45);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.pin .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: 0.85; }
+.pin .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: 0.85; flex: none; }
 .pin-star { font-size: 12px; line-height: 1; }
 .pin-holder.hot .pin {
   transform: scale(1.12);
@@ -604,6 +604,20 @@ svg.ico-18 { width: 18px; height: 18px; }
 }
 .pin-pop.compact.below { top: calc(100% + 6px); }
 .pin-pop.compact.above { bottom: calc(100% + 6px); }
+
+/* På mobil er kartet lite og markørene ligger tætt — vis bare prikken.
+   Navnet dukker opp på den aktive markøren, og står i kortet under kartet. */
+@media (max-width: 620px) {
+  .pin { position: relative; padding: 5px; gap: 0; }
+  .pin::before { content: ''; position: absolute; inset: -10px; border-radius: 999px; }
+  .pin .dot { width: 10px; height: 10px; }
+  .pin .pin-label { display: none; }
+  .pin .pin-star { position: absolute; top: -5px; right: -5px; font-size: 11px; }
+  .pin-holder.hot .pin { padding: 5px 10px 5px 6px; gap: 6px; }
+  .pin-holder.hot .pin::before { inset: -6px; }
+  .pin-holder.hot .pin .pin-label { display: block; }
+  .pin-holder.hot .pin .pin-star { position: static; }
+}
 .pin-holder.hot .pin-pop { opacity: 1; visibility: visible; }
 
 .pin-pop-kicker {
@@ -619,6 +633,34 @@ svg.ico-18 { width: 18px; height: 18px; }
 .pin-pop-note { font-size: 12px; line-height: 1.35; font-weight: 600; opacity: .85; }
 
 .map-hint { font-size: 13px; color: var(--muted); margin: var(--s3) 0 0; }
+
+/* Fargeforklaring til høyre for kartteksten */
+.map-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s3);
+  flex-wrap: wrap;
+}
+.map-head-text { flex: 1 1 260px; min-width: 0; }
+.map-legend { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.legend-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--pin-ring);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(var(--shadow-tint), 0.3);
+}
+@media (max-width: 620px) {
+  .legend-chip { font-size: 11px; padding: 3px 8px; }
+  .map-legend { gap: 6px; }
+}
 
 .map-detail {
   margin-top: var(--s3);
