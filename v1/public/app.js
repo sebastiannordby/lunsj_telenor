@@ -17,7 +17,8 @@ const UI = {
     mapTitle: 'Hvor er kantinene?',
     mapSub: 'Hold musepekeren over en markør for å se menyen — eller trykk på den på mobil.',
     mapEmpty: 'Velg et sted i kartet over.',
-    staticMenu: 'Fast meny hele uken', buildingLabel: 'Bygg',
+    staticMenu: 'Fast meny hele uken', buildingLabel: 'Bygg', cafeLabel: 'Kafé',
+    expoFriday: 'Fredager: gratis kaffe frem til kl. 11 for Telenor-ansatte',
     topUpCard: 'Fyll på kantinekort', issOriginal: 'Original ISS-meny',
     copyMenu: 'Kopier hele menyen', copied: 'Kopiert!',
     install: 'Legg til på Hjem-skjerm',
@@ -47,7 +48,8 @@ const UI = {
     mapTitle: 'Where are the canteens?',
     mapSub: 'Hover a marker to see its menu — or tap it on mobile.',
     mapEmpty: 'Pick a spot on the map above.',
-    staticMenu: 'Same menu all week', buildingLabel: 'Building',
+    staticMenu: 'Same menu all week', buildingLabel: 'Building', cafeLabel: 'Café',
+    expoFriday: 'Fridays: free coffee until 11:00 for Telenor employees',
     topUpCard: 'Top up canteen card', issOriginal: 'Original ISS menu',
     copyMenu: 'Copy whole menu', copied: 'Copied!',
     install: 'Add to Home Screen',
@@ -75,7 +77,14 @@ const GEO = {
   street:    { color: '#1c16c5', dark: '#6f92ff', left: '30%', top: '80%', vote: true },
   m:         { color: '#0080a6', dark: '#38c9e8', left: '74%', top: '56%', vote: true },
   fresh4you: { color: '#070452', dark: '#a08cff', left: '78%', top: '21%', vote: true },
-  bakern:    { color: '#8a5a2b', dark: '#e0a066', left: '61%', top: '21%', vote: false }
+  bakern:    { color: '#8a5a2b', dark: '#e0a066', left: '61%', top: '21%', vote: false },
+  // Kafeer uten meny — bare navn og åpningstid
+  expo:      { color: '#7a8a5e', dark: '#b3c48c', left: '86%', top: '30%', vote: false, cafe: true,
+               name: 'Café Expo', hours: '08:00 – 15:00', noteKey: 'expoFriday' },
+  hotspot:   { color: '#7a8a5e', dark: '#b3c48c', left: '45%', top: '50%', vote: false, cafe: true,
+               name: 'Hot Spot', hours: '07:30 – 14:30' },
+  cafem:     { color: '#7a8a5e', dark: '#b3c48c', left: '74%', top: '62%', vote: false, cafe: true,
+               name: 'Cafe M', hours: '08:30 – 15:30' }
 };
 
 function isDark() {
@@ -173,13 +182,15 @@ function placeInfo(id) {
   const geo = GEO[id] || {};
   return {
     id,
-    name: p?.name || id,
-    hours: p?.hours || '',
+    name: p?.name || geo.name || id,
+    hours: p?.hours || geo.hours || '',
     building: p?.building || '',
     color: (isDark() ? geo.dark : geo.color) || '#1c16c5',
     left: geo.left,
     top: geo.top,
-    dishes: dishesFor(id)
+    cafe: !!geo.cafe,
+    note: geo.noteKey ? t()[geo.noteKey] : '',
+    dishes: geo.cafe ? [] : dishesFor(id)
   };
 }
 
@@ -437,19 +448,24 @@ function renderMap() {
     // På mobil er kartet lavt — kicker og åpningstid utgår, de står i
     // detaljkortet under kartet. Bare navn og retter får plass.
     if (!narrow) {
-      pop.appendChild(el('div', 'pin-pop-kicker', t().buildingLabel + ' ' + info.building));
+      pop.appendChild(el('div', 'pin-pop-kicker',
+        info.cafe ? t().cafeLabel : t().buildingLabel + ' ' + info.building));
     }
     pop.appendChild(el('div', 'pin-pop-name', info.name));
-    if (!narrow) {
+    if (!narrow || info.cafe) {
       pop.appendChild(el('div', 'pin-pop-hours', info.hours));
     }
-    const dishes = el('div', 'pin-pop-dishes');
-    if (info.dishes.length) {
-      info.dishes.forEach(d => dishes.appendChild(el('div', null, d)));
+    if (info.cafe) {
+      if (info.note) pop.appendChild(el('div', 'pin-pop-note', info.note));
     } else {
-      dishes.appendChild(el('div', 'empty', t().noMenu));
+      const dishes = el('div', 'pin-pop-dishes');
+      if (info.dishes.length) {
+        info.dishes.forEach(d => dishes.appendChild(el('div', null, d)));
+      } else {
+        dishes.appendChild(el('div', 'empty', t().noMenu));
+      }
+      pop.appendChild(dishes);
     }
-    pop.appendChild(dishes);
     holder.appendChild(pop);
 
     map.appendChild(holder);
@@ -469,12 +485,17 @@ function renderMapDetail() {
   }
   const info = placeInfo(shownId);
   const card = el('div', 'card map-detail');
-  card.appendChild(el('div', 'card-kicker', t().buildingLabel + ' ' + info.building));
+  card.appendChild(el('div', 'card-kicker',
+    info.cafe ? t().cafeLabel : t().buildingLabel + ' ' + info.building));
   card.appendChild(el('div', 'card-title', info.name));
   card.appendChild(el('div', 'detail-hours', info.hours));
-  const dishes = el('div', 'detail-dishes');
-  info.dishes.forEach(d => dishes.appendChild(el('div', null, d)));
-  card.appendChild(dishes);
+  if (info.cafe) {
+    if (info.note) card.appendChild(el('div', 'detail-note', info.note));
+  } else {
+    const dishes = el('div', 'detail-dishes');
+    info.dishes.forEach(d => dishes.appendChild(el('div', null, d)));
+    card.appendChild(dishes);
+  }
   if (GEO[shownId]?.vote) {
     card.appendChild(el('div', 'card-meta',
       (state.votes[shownId] || 0) + ' ' + t().votesLabel));
@@ -605,16 +626,25 @@ async function sendFeedback(kind, message) {
     });
     if (!r.ok) throw new Error(r.status);
     status.textContent = t().fbThanks;
-    $('#fbVotes').hidden = true;
-    $('#fbText').hidden = true;
-    $('#fbDetail').hidden = true;
-    $('#fbMessage').value = '';
+    if (message) {
+      // Fritekst er sendt — da er vi ferdige
+      $('#fbVotes').hidden = true;
+      $('#fbText').hidden = true;
+      $('#fbDetail').hidden = true;
+      $('#fbMessage').value = '';
+    } else {
+      // Tommelen er registrert, men fritekstfeltet skal bli stående
+      $('#fbText').hidden = false;
+      $('#fbDetail').hidden = true;
+    }
   } catch {
     status.textContent = t().fbError;
   }
 }
 
 function resetFeedback() {
+  state.fbKind = null;
+  $$('[data-fb]').forEach(b => b.classList.remove('picked'));
   $('#fbVotes').hidden = false;
   $('#fbText').hidden = true;
   $('#fbDetail').hidden = false;
@@ -726,10 +756,16 @@ $('#fbDetail').onclick = () => {
   $('#fbDetail').hidden = true;
   $('#fbMessage').focus();
 };
-$$('[data-fb]').forEach(b => { b.onclick = () => sendFeedback(b.dataset.fb); });
+$$('[data-fb]').forEach(b => {
+  b.onclick = () => {
+    state.fbKind = b.dataset.fb;
+    $$('[data-fb]').forEach(x => x.classList.toggle('picked', x === b));
+    sendFeedback(b.dataset.fb);
+  };
+});
 $('#fbSend').onclick = () => {
   const msg = $('#fbMessage').value.trim();
-  if (msg) sendFeedback('text', msg);
+  if (msg) sendFeedback(state.fbKind || 'text', msg);
 };
 
 // ------------------------------------------------------------------ install
