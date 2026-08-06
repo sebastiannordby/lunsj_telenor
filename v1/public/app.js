@@ -18,6 +18,7 @@ const UI = {
     mapSub: 'Hold musepekeren over en markør for å se menyen — eller trykk på den på mobil.',
     mapEmpty: 'Velg et sted i kartet over.',
     staticMenu: 'Fast meny hele uken', buildingLabel: 'Bygg', cafeLabel: 'Kafé',
+    legendCanteens: 'Kantiner', legendBakery: 'Baker', legendCafes: 'Kafeer',
     expoFriday: 'Fredager: gratis kaffe frem til kl. 11 for Telenor-ansatte',
     topUpCard: 'Fyll på kantinekort', issOriginal: 'Original ISS-meny',
     copyMenu: 'Kopier hele menyen', copied: 'Kopiert!',
@@ -49,6 +50,7 @@ const UI = {
     mapSub: 'Hover a marker to see its menu — or tap it on mobile.',
     mapEmpty: 'Pick a spot on the map above.',
     staticMenu: 'Same menu all week', buildingLabel: 'Building', cafeLabel: 'Café',
+    legendCanteens: 'Canteens', legendBakery: 'Bakery', legendCafes: 'Cafés',
     expoFriday: 'Fridays: free coffee until 11:00 for Telenor employees',
     topUpCard: 'Top up canteen card', issOriginal: 'Original ISS menu',
     copyMenu: 'Copy whole menu', copied: 'Copied!',
@@ -83,7 +85,7 @@ const GEO = {
                name: 'Café Expo', hours: '08:00 – 15:00', noteKey: 'expoFriday' },
   hotspot:   { color: '#7a8a5e', dark: '#b3c48c', left: '45%', top: '50%', vote: false, cafe: true,
                name: 'Hot Spot', hours: '07:30 – 14:30' },
-  cafem:     { color: '#7a8a5e', dark: '#b3c48c', left: '74%', top: '62%', vote: false, cafe: true,
+  cafem:     { color: '#7a8a5e', dark: '#b3c48c', left: '68%', top: '63%', vote: false, cafe: true,
                name: 'Cafe M', hours: '08:30 – 15:30' }
 };
 
@@ -400,6 +402,23 @@ function setZoom(next, originX, originY) {
   applyMapTransform();
 }
 
+function renderLegend() {
+  const box = $('#mapLegend');
+  if (!box) return;
+  box.textContent = '';
+  const c = id => placeInfo(id).color;
+  const groups = [
+    { label: t().legendCanteens, fill: 'linear-gradient(100deg, ' + c('street') + ' 0 34%, ' + c('m') + ' 34% 67%, ' + c('fresh4you') + ' 67% 100%)' },
+    { label: t().legendBakery, fill: c('bakern') },
+    { label: t().legendCafes, fill: c('expo') }
+  ];
+  groups.forEach(g => {
+    const chip = el('span', 'legend-chip', g.label);
+    chip.style.background = g.fill;
+    box.appendChild(chip);
+  });
+}
+
 function renderMap() {
   const map = $('#mapInner');
   map.textContent = '';
@@ -422,12 +441,17 @@ function renderMap() {
     pin.type = 'button';
     pin.style.background = info.color;
     pin.appendChild(el('span', 'dot'));
-    pin.appendChild(el('span', null, info.name));
+    pin.appendChild(el('span', 'pin-label', info.name));
     if (state.myVote === id) pin.appendChild(el('span', 'pin-star', '★'));
     pin.onclick = () => {
-      const narrow = window.matchMedia('(max-width: 620px)').matches;
-      state.selected = !narrow && state.selected === id ? null : id;
-      setHover(id);
+      // Trykk på samme markør igjen lukker den — både på mobil og PC
+      if (state.selected === id) {
+        state.selected = null;
+        setHover(null);
+      } else {
+        state.selected = id;
+        setHover(id);
+      }
       renderMap();
     };
     pin.onfocus = () => setHover(id);
@@ -518,6 +542,7 @@ function render() {
   renderBakery();
   renderDinner();
   renderMap();
+  renderLegend();
 }
 
 // ------------------------------------------------------------------ voting
@@ -655,6 +680,16 @@ function resetFeedback() {
 
 $$('[data-lang]').forEach(b => {
   b.onclick = () => { state.lang = b.dataset.lang; writeUrl(); render(); };
+});
+
+// Trykk utenfor en markør lukker popupen og detaljkortet
+document.addEventListener('pointerdown', e => {
+  if (e.target.closest && e.target.closest('.pin-holder')) return;
+  if (state.selected || state.hovered) {
+    state.selected = null;
+    state.hovered = null;
+    renderMap();
+  }
 });
 
 $('#allergyToggle').onclick = () => {
