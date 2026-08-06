@@ -616,6 +616,7 @@ svg.ico-18 { width: 18px; height: 18px; }
 .pin-pop-name { font-family: var(--font-head); font-size: 17px; margin: 2px 0 4px; }
 .pin-pop-hours { font-size: 12px; font-weight: 700; margin-bottom: var(--s2); }
 .pin-pop-dishes { display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 1.35; }
+.pin-pop-note { font-size: 12px; line-height: 1.35; font-weight: 600; opacity: .85; }
 
 .map-hint { font-size: 13px; color: var(--muted); margin: var(--s3) 0 0; }
 
@@ -626,6 +627,7 @@ svg.ico-18 { width: 18px; height: 18px; }
 }
 .map-detail .detail-hours { font-size: 13px; font-weight: 700; margin-bottom: var(--s1); }
 .map-detail .detail-dishes { display: flex; flex-direction: column; gap: var(--s1); font-size: 14px; }
+.map-detail .detail-note { font-size: 13px; line-height: 1.4; font-weight: 600; }
 .card-meta { font-size: 12px; color: var(--muted); margin-top: var(--s2); }
 
 /* ---------------------------------------------------------------- footer */
@@ -721,6 +723,7 @@ svg.ico-18 { width: 18px; height: 18px; }
 .fb-votes { display: flex; gap: var(--s2); }
 .fb-votes[hidden] { display: none; }
 .fb-votes .btn { flex: 1; justify-content: center; }
+.fb-votes .btn.picked { outline: 2px solid currentColor; outline-offset: 2px; }
 .fb-text { display: flex; flex-direction: column; gap: var(--s2); }
 .fb-text[hidden] { display: none; }
 .fb-detail { align-self: flex-start; }
