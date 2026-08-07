@@ -211,7 +211,15 @@ svg.ico-18 { width: 18px; height: 18px; }
 .wrap {
   max-width: 1080px;
   margin: 0 auto;
-  padding: var(--s6) var(--s4) 0;
+  padding: var(--s6) var(--s4) 88px;
+}
+
+/* Den faste tilbakemeldingsknappen ligger nede til høyre. Så lenge vinduet er
+   smalere enn innholdet pluss dokkens bredde, gir vi innholdet en høyre-gutter
+   slik at ingen kontroll kan havne under den. Bunnpolstring alene hjelper ikke:
+   dokken er fixed og følger rullingen. */
+@media (min-width: 621px) and (max-width: 1264px) {
+  .wrap { padding-right: 84px; }
 }
 
 .friday-banner {
@@ -228,6 +236,23 @@ svg.ico-18 { width: 18px; height: 18px; }
 }
 .friday-banner[hidden] { display: none; }
 .friday-emoji { font-size: 18px; }
+.friday-coffee {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: color-mix(in oklab, currentColor 18%, transparent);
+  font-size: 13px;
+  font-weight: 700;
+}
+.friday-coffee[hidden] { display: none; }
+.friday-coffee::before { content: '\2615'; }
+@media (max-width: 620px) {
+  .friday-banner { flex-wrap: wrap; }
+  .friday-coffee { margin-left: 0; flex-basis: 100%; justify-content: center; }
+}
 
 .page-head { margin-bottom: var(--s6); }
 
@@ -636,6 +661,14 @@ svg.ico-18 { width: 18px; height: 18px; }
 .pin-pop-hours { font-size: 12px; font-weight: 700; margin-bottom: var(--s2); }
 .pin-pop-dishes { display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 1.35; }
 .pin-pop-note { font-size: 12px; line-height: 1.35; font-weight: 600; opacity: .85; }
+.pin-pop-note.hot {
+  opacity: 1;
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: color-mix(in oklab, currentColor 14%, transparent);
+}
+.pin-pop-note.hot::before { content: '\2615\00a0'; }
 
 .map-hint { font-size: 13px; color: var(--muted); margin: var(--s3) 0 0; }
 
@@ -675,6 +708,13 @@ svg.ico-18 { width: 18px; height: 18px; }
 .map-detail .detail-hours { font-size: 13px; font-weight: 700; margin-bottom: var(--s1); }
 .map-detail .detail-dishes { display: flex; flex-direction: column; gap: var(--s1); font-size: 14px; }
 .map-detail .detail-note { font-size: 13px; line-height: 1.4; font-weight: 600; }
+.map-detail .detail-note.hot {
+  margin-top: var(--s2);
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: color-mix(in oklab, currentColor 12%, transparent);
+}
+.map-detail .detail-note.hot::before { content: '\2615\00a0'; }
 .card-meta { font-size: 12px; color: var(--muted); margin-top: var(--s2); }
 
 /* ---------------------------------------------------------------- footer */
@@ -752,6 +792,12 @@ svg.ico-18 { width: 18px; height: 18px; }
 
 .fb-launch { box-shadow: 0 8px 24px rgba(var(--shadow-tint), 0.3); }
 
+/* Ikon-only når plassen er trang, slik at gutteren kan holdes smal */
+@media (max-width: 1264px) {
+  .fb-launch span { display: none; }
+  .fb-launch { width: 52px; height: 52px; padding: 0; border-radius: 999px; justify-content: center; }
+}
+
 .fb-panel {
   width: 320px;
   max-width: calc(100vw - 32px);
@@ -781,4 +827,30 @@ svg.ico-18 { width: 18px; height: 18px; }
 @media (max-width: 520px) {
   .fb-launch span { display: none; }
   .fb-launch { padding: var(--s3); }
+}
+
+/* Mikrokonfetti ved stemmegivning */
+.confetti {
+  position: fixed;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 90;
+}
+.confetti i {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 1.5px;
+  opacity: 0;
+  animation: confetti-pop 900ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+@keyframes confetti-pop {
+  0%   { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(0.5); }
+  35%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 22px)) rotate(var(--rot)) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti { display: none; }
 }
