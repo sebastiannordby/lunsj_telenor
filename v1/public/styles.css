@@ -754,6 +754,61 @@ svg.ico-18 { width: 18px; height: 18px; }
   margin: var(--s6) 0 var(--s8);
 }
 
+/* ---------------------------------------------------------------- om siden */
+
+.about-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(var(--shadow-tint), 0.45);
+  backdrop-filter: blur(2px);
+}
+.about-backdrop[hidden] { display: none; }
+
+.about-modal {
+  position: fixed;
+  z-index: 401;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 60px rgba(var(--shadow-tint), 0.35);
+  padding: var(--s6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+.about-modal[hidden] { display: none; }
+
+.about-head { display: flex; align-items: flex-start; gap: var(--s2); }
+.about-body { display: flex; flex-direction: column; gap: var(--s4); }
+.about-item { display: flex; flex-direction: column; gap: 6px; }
+.about-item h3 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+.about-item p { margin: 0; font-size: 15px; line-height: 1.5; text-wrap: pretty; }
+.about-item .btn { margin-top: var(--s2); }
+.about-alt {
+  align-self: flex-start;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.about-alt:hover { color: var(--text); }
+.about-note { margin: 0; font-size: 12px; color: var(--muted); text-wrap: pretty; }
+
 /* ---------------------------------------------------------------- feedback */
 
 .toast {
