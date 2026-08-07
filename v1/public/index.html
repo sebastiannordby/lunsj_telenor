@@ -143,12 +143,44 @@
       <svg viewBox="0 0 24 24" class="ico-14"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
       <span data-t="oldSite"></span>
     </a>
+    <button type="button" class="btn btn-ghost btn-sm icon-btn" id="aboutBtn">
+      <svg viewBox="0 0 24 24" class="ico-14"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5"/><path d="M12 8h.01"/></svg>
+      <span data-t="aboutBtn"></span>
+    </button>
   </div>
 
   <p class="footnote" data-t="footerNote"></p>
 </main>
 
 <div class="toast" id="toast" role="status" hidden></div>
+
+<div class="about-backdrop" id="aboutBackdrop" hidden></div>
+<div class="about-modal" id="aboutModal" role="dialog" aria-modal="true" aria-labelledby="aboutTitle" hidden>
+  <div class="about-head">
+    <div class="fb-title" id="aboutTitle" data-t="aboutTitle"></div>
+    <button type="button" class="btn btn-ghost btn-xs" id="aboutClose" aria-label="Lukk">×</button>
+  </div>
+  <div class="about-body">
+    <section class="about-item">
+      <h3 data-t="aboutMadeH"></h3>
+      <p data-t="aboutMadeP"></p>
+    </section>
+    <section class="about-item">
+      <h3 data-t="aboutHostH"></h3>
+      <p data-t="aboutHostP"></p>
+    </section>
+    <section class="about-item">
+      <h3 data-t="aboutWebexH"></h3>
+      <p data-t="aboutWebexP"></p>
+      <a class="btn btn-primary btn-block icon-btn" id="aboutWebexLink" href="webexteams://im?email=marius.brathen@telenor.no">
+        <svg viewBox="0 0 24 24" class="ico-16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span data-t="aboutWebexCta"></span>
+      </a>
+      <a class="about-alt" href="mailto:marius.brathen@telenor.no?subject=Webex-gruppe%20lunsjmeny" data-t="aboutWebexAlt"></a>
+    </section>
+  </div>
+  <p class="about-note" data-t="aboutNote"></p>
+</div>
 
 <div class="fb-dock">
   <div class="fb-panel" id="fbPanel" hidden>
