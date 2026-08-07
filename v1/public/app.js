@@ -13,13 +13,15 @@ const UI = {
     monShort: 'Man', tueShort: 'Tir', wedShort: 'Ons', thuShort: 'Tor', friShort: 'Fre',
     todaySuffix: '(dagens)', copiedToast: 'Hele menyen er kopiert', voteTodayOnly: 'Du kan bare stemme på dagens meny.',
     lunch: 'Lunsj', dinner: 'Middag', allergyToggle: 'Allergener',
-    voteLabel: '🙋 Jeg spiser her', votedLabel: '✓ Du spiser her', votesLabel: 'stemmer i dag',
+    voteLabel: '🙋 Jeg spiser her', votedLabel: '✓ Du spiser her', votesLabel: 'stemmer i dag', votesLabelOne: 'stemme i dag',
     mapTitle: 'Hvor er kantinene?',
     mapSub: 'Hold musepekeren over en markør for å se menyen — eller trykk på den på mobil.',
     mapEmpty: 'Velg et sted i kartet over.',
     staticMenu: 'Fast meny hele uken', buildingLabel: 'Bygg', cafeLabel: 'Kafé',
     legendCanteens: 'Kantiner', legendBakery: 'Baker', legendCafes: 'Kafeer',
     expoFriday: 'Fredager: gratis kaffe frem til kl. 11 for Telenor-ansatte',
+    expoFridayToday: 'I dag: gratis kaffe frem til kl. 11 for Telenor-ansatte',
+    fridayCoffee: 'Gratis kaffe på Café Expo frem til kl. 11',
     topUpCard: 'Fyll på kantinekort', issOriginal: 'Original ISS-meny',
     copyMenu: 'Kopier hele menyen', copied: 'Kopiert!',
     install: 'Installer app',
@@ -45,13 +47,15 @@ const UI = {
     monShort: 'Mon', tueShort: 'Tue', wedShort: 'Wed', thuShort: 'Thu', friShort: 'Fri',
     todaySuffix: '(today)', copiedToast: 'The whole menu was copied', voteTodayOnly: 'You can only vote on today\u2019s menu.',
     lunch: 'Lunch', dinner: 'Dinner', allergyToggle: 'Allergens',
-    voteLabel: '🙋 Eating here', votedLabel: '✓ You\u2019re eating here', votesLabel: 'votes today',
+    voteLabel: '🙋 Eating here', votedLabel: '✓ You\u2019re eating here', votesLabel: 'votes today', votesLabelOne: 'vote today',
     mapTitle: 'Where are the canteens?',
     mapSub: 'Hover a marker to see its menu — or tap it on mobile.',
     mapEmpty: 'Pick a spot on the map above.',
     staticMenu: 'Same menu all week', buildingLabel: 'Building', cafeLabel: 'Café',
     legendCanteens: 'Canteens', legendBakery: 'Bakery', legendCafes: 'Cafés',
     expoFriday: 'Fridays: free coffee until 11:00 for Telenor employees',
+    expoFridayToday: 'Today: free coffee until 11:00 for Telenor employees',
+    fridayCoffee: 'Free coffee at Café Expo until 11:00',
     topUpCard: 'Top up canteen card', issOriginal: 'Original ISS menu',
     copyMenu: 'Copy whole menu', copied: 'Copied!',
     install: 'Install app',
@@ -160,6 +164,11 @@ function showingToday() {
   return !!today && activeDay() === today;
 }
 
+/** Stemmetelling med riktig entalls-/flertallsform. */
+function votesText(n) {
+  return n + ' ' + (n === 1 ? t().votesLabelOne : t().votesLabel);
+}
+
 /** Rettene for et sted på valgt dag, i valgt språk. */
 function dishesFor(id) {
   const data = state.data;
@@ -227,9 +236,15 @@ function renderStrings() {
   const brand = $('.nav-brand');
   if (brand) brand.textContent = '🍽️ ' + (state.lang === 'en' ? 'Lunch Menu Fornebu' : 'Lunsjmeny Fornebu');
 
+  const isFriday = todayWeekKey() === 'fri';
   const lines = FRIDAY_LINES[state.lang];
   $('#fridayLine').textContent = lines[FRIDAY_IDX % lines.length];
-  $('#fridayBanner').hidden = todayWeekKey() !== 'fri';
+  $('#fridayBanner').hidden = !isFriday;
+  const coffee = $('#fridayCoffee');
+  if (coffee) {
+    coffee.textContent = t().fridayCoffee;
+    coffee.hidden = !isFriday;
+  }
 }
 
 function renderTabs() {
@@ -310,12 +325,12 @@ function canteenCard(info, withVote) {
     const mine = state.myVote === info.id;
 
     const foot = el('div', 'vote-foot');
-    foot.appendChild(el('span', 'vote-count', count + ' ' + t().votesLabel));
+    foot.appendChild(el('span', 'vote-count', votesText(count)));
 
     const btn = el('button', 'btn btn-sm ' + (mine ? 'btn-secondary' : 'btn-ghost'),
       mine ? t().votedLabel : t().voteLabel);
     btn.type = 'button';
-    btn.onclick = () => castVote(info.id);
+    btn.onclick = () => castVote(info.id, btn);
     btn.onmouseenter = () => setHover(info.id);
     btn.onmouseleave = () => setHover(null);
     btn.onfocus = () => setHover(info.id);
@@ -480,7 +495,11 @@ function renderMap() {
       pop.appendChild(el('div', 'pin-pop-hours', info.hours));
     }
     if (info.cafe) {
-      if (info.note) pop.appendChild(el('div', 'pin-pop-note', info.note));
+      if (info.note) {
+        const fri = todayWeekKey() === 'fri';
+        pop.appendChild(el('div', 'pin-pop-note' + (fri ? ' hot' : ''),
+          fri ? t().expoFridayToday : info.note));
+      }
     } else {
       const dishes = el('div', 'pin-pop-dishes');
       if (info.dishes.length) {
@@ -514,15 +533,18 @@ function renderMapDetail() {
   card.appendChild(el('div', 'card-title', info.name));
   card.appendChild(el('div', 'detail-hours', info.hours));
   if (info.cafe) {
-    if (info.note) card.appendChild(el('div', 'detail-note', info.note));
+    if (info.note) {
+      const fri = todayWeekKey() === 'fri';
+      card.appendChild(el('div', 'detail-note' + (fri ? ' hot' : ''),
+        fri ? t().expoFridayToday : info.note));
+    }
   } else {
     const dishes = el('div', 'detail-dishes');
     info.dishes.forEach(d => dishes.appendChild(el('div', null, d)));
     card.appendChild(dishes);
   }
   if (GEO[shownId]?.vote) {
-    card.appendChild(el('div', 'card-meta',
-      (state.votes[shownId] || 0) + ' ' + t().votesLabel));
+    card.appendChild(el('div', 'card-meta', votesText(state.votes[shownId] || 0)));
   }
   detail.appendChild(card);
 }
@@ -550,29 +572,72 @@ function render() {
 async function loadTraffic() {
   try {
     const r = await fetch('/api/traffic');
-    if (!r.ok) return;
+    if (!r.ok) { state.offline = true; return; }
     const d = await r.json();
     state.votes = d.votes || {};
     state.myVote = d.myVote || null;
     renderCanteens();
     renderMap();
+    if (!wasMine && state.myVote === id) microConfetti(anchor);
   } catch { /* trafikk er ikke kritisk */ }
 }
 
-async function castVote(id) {
+/** Liten konfettifontene fra stemmeknappen — 14 biter, ~900 ms, ryddes bort. */
+function microConfetti(anchor) {
+  if (!anchor || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r = anchor.getBoundingClientRect();
+  const box = el('div', 'confetti');
+  box.style.left = (r.left + r.width / 2) + 'px';
+  box.style.top = (r.top + r.height / 2) + 'px';
+  const tones = ['#c67139', '#7a8a5e', '#1c16c5', '#e0a066', '#0080a6'];
+  for (let i = 0; i < 14; i++) {
+    const bit = el('i');
+    const ang = (-90 + (Math.random() * 120 - 60)) * Math.PI / 180;
+    const dist = 26 + Math.random() * 34;
+    bit.style.background = tones[i % tones.length];
+    bit.style.setProperty('--dx', Math.cos(ang) * dist + 'px');
+    bit.style.setProperty('--dy', Math.sin(ang) * dist + 'px');
+    bit.style.setProperty('--rot', (Math.random() * 540 - 270) + 'deg');
+    bit.style.animationDelay = (Math.random() * 70) + 'ms';
+    box.appendChild(bit);
+  }
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 1100);
+}
+
+/** Teller stemmen lokalt når API-et ikke svarer (forhåndsvisning uten server). */
+function voteOffline(id) {
+  const v = { ...state.votes };
+  if (state.myVote) v[state.myVote] = Math.max(0, (v[state.myVote] || 1) - 1);
+  if (state.myVote === id) {
+    state.myVote = null;
+  } else {
+    v[id] = (v[id] || 0) + 1;
+    state.myVote = id;
+  }
+  state.votes = v;
+}
+
+async function castVote(id, anchor) {
+  const wasMine = state.myVote === id;
   try {
+    if (state.offline) throw new Error('offline');
     const r = await fetch('/api/vote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ place: id })
     });
-    if (!r.ok) return;
+    if (!r.ok) throw new Error(r.status);
     const d = await r.json();
     state.votes = d.votes || {};
     state.myVote = d.myVote || null;
-    renderCanteens();
-    renderMap();
-  } catch { /* stille */ }
+  } catch {
+    state.offline = true;
+    voteOffline(id);
+  }
+  renderCanteens();
+  renderMap();
+  if (!wasMine && state.myVote === id) microConfetti(anchor);
 }
 
 // ------------------------------------------------------------------ copy
