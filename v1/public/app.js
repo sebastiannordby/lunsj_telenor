@@ -34,6 +34,13 @@ const UI = {
     fbPlaceholder: 'Hva fungerer bra, hva kan bli bedre?', fbSend: 'Send',
     fbThanks: 'Takk for tilbakemeldingen!', fbSending: 'Sender …',
     fbError: 'Kunne ikke sende — prøv igjen.',
+    aboutBtn: 'Om', aboutTitle: 'Om denne løsningen',
+    aboutMadeH: 'Laget av', aboutMadeP: 'Siden er laget på fritiden av Marius Bråthen, som et hobbyprosjekt. Den er ikke et offisielt ISS- eller bedriftsverktøy.',
+    aboutHostH: 'Drift og hosting', aboutHostP: 'Løsningen kjører på en egen server utenfor bedriftens nettverk. Takk til Mats Danielsen. Menyene hentes automatisk fra ISS sine nettsider.',
+    aboutWebexH: 'Bli med i Webex-gruppen', aboutWebexP: 'Det finnes en åpen Webex-gruppe som varsler når dagens meny er klar. Ta kontakt, så legges du til automatisk.',
+    aboutWebexCta: 'Send melding på Webex',
+    aboutWebexAlt: 'Eller send e-post i stedet',
+    aboutNote: 'Forslag og feil? Bruk «Gi tilbakemelding» nede til høyre.',
     footerNote: 'Menyene hentes automatisk fra kjøkkenets egne filer, som før.'
   },
   en: {
@@ -68,6 +75,13 @@ const UI = {
     fbPlaceholder: 'What works well, what could be better?', fbSend: 'Send',
     fbThanks: 'Thanks for the feedback!', fbSending: 'Sending \u2026',
     fbError: 'Could not send — please try again.',
+    aboutBtn: 'About', aboutTitle: 'About this site',
+    aboutMadeH: 'Made by', aboutMadeP: 'Built in spare time by a colleague at Fornebu as a hobby project. It is not an official ISS or company tool.',
+    aboutHostH: 'Hosting and operations', aboutHostP: 'The site runs on a small private server outside the company network. Menus are pulled automatically from the kitchen\u2019s own files several times each morning — no personal data is stored, only anonymous votes and feedback.',
+    aboutWebexH: 'Join the Webex group', aboutWebexP: 'There is an open Webex space that pings when today\u2019s menu is ready, and where you can send wishes and bug reports. Get in touch and you are added automatically.',
+    aboutWebexCta: 'Message on Webex',
+    aboutWebexAlt: 'Or send an email instead',
+    aboutNote: 'Suggestions or bugs? Use “Give feedback” in the bottom right.',
     footerNote: 'Menus are still pulled automatically from the kitchen\u2019s own files, same as before.'
   }
 };
@@ -912,6 +926,28 @@ if (installBtn) {
       showToast(t().installIos);
     }
   };
+}
+
+// ------------------------------------------------------------------ om siden
+
+const aboutModal = $('#aboutModal');
+const aboutBackdrop = $('#aboutBackdrop');
+
+function toggleAbout(open) {
+  if (!aboutModal) return;
+  aboutModal.hidden = !open;
+  aboutBackdrop.hidden = !open;
+  if (open) $('#aboutClose').focus();
+  else $('#aboutBtn').focus();
+}
+
+if (aboutModal) {
+  $('#aboutBtn').onclick = () => toggleAbout(true);
+  $('#aboutClose').onclick = () => toggleAbout(false);
+  aboutBackdrop.onclick = () => toggleAbout(false);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !aboutModal.hidden) toggleAbout(false);
+  });
 }
 
 if ('serviceWorker' in navigator) {
