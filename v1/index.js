@@ -55,8 +55,10 @@ async function sendIndex(res) {
   res.set('Cache-Control', 'no-cache, must-revalidate');
   res.type('text/html; charset=utf-8').send(
     html
-      .replace('href="/styles.css"', `href="/styles.css?v=${v}"`)
-      .replace('src="/app.js"', `src="/app.js?v=${v}"`)
+      // Godtar både "/styles.css" og "styles.css" — forhåndsvisning bruker
+      // relative stier, serveren bryr seg ikke, men stemplet må treffe begge.
+      .replace(/href="\/?styles\.css"/, `href="styles.css?v=${v}"`)
+      .replace(/src="\/?app\.js"/, `src="app.js?v=${v}"`)
   );
 }
 
