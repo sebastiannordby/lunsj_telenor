@@ -37,7 +37,7 @@ const UI = {
     aboutBtn: 'Om', aboutTitle: 'Om denne løsningen',
     aboutMadeH: 'Laget av', aboutMadeP: 'Siden er laget på fritiden av Marius Bråthen, som et hobbyprosjekt. Den er ikke et offisielt ISS- eller bedriftsverktøy.',
     aboutHostH: 'Drift og hosting', aboutHostP: 'Løsningen kjører på en egen server utenfor bedriftens nettverk. Takk til Mats Danielsen. Menyene hentes automatisk fra ISS sine nettsider.',
-    aboutWebexH: 'Bli med i Webex-gruppen', aboutWebexP: 'Det finnes en åpen Webex-gruppe som varsler når dagens meny er klar. Ta kontakt, så legges du til automatisk.',
+    aboutWebexH: 'Bli med i Webex-gruppen', aboutWebexP: 'Det finnes en åpen Webex-gruppe som automatisk sender dagens meny. Ta kontakt, så legges du til.',
     aboutWebexCta: 'Send melding på Webex',
     aboutWebexAlt: 'Eller send e-post i stedet',
     aboutNote: 'Forslag og feil? Bruk «Gi tilbakemelding» nede til høyre.',
