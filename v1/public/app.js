@@ -4,10 +4,10 @@
 const UI = {
   no: {
     heading: 'LUNSJMENY FORNEBU',
-    sub: 'Tre kantiner og et bakeri — dagens meny på ett sted.',
+    sub: 'Tre kantiner og et bakeri - dagens meny på ett sted.',
     showingToday: 'Viser dagens meny', oldSite: 'Bytt til gammel side', themeDark: 'Bytt til mørk modus', themeLight: 'Bytt til lys modus',
     weekendKicker: 'Helg', weekendTitle: 'Kantinene er stengt',
-    weekendBody: 'Det serveres ingen lunsj i helgen. Kom tilbake på mandag — eller se menyen for en ukedag nå.',
+    weekendBody: 'Det serveres ingen lunsj i helgen. Kom tilbake på mandag, eller se menyen for en ukedag nå.',
     weekendCta: 'Se mandagens meny',
     mon: 'Mandag', tue: 'Tirsdag', wed: 'Onsdag', thu: 'Torsdag', fri: 'Fredag',
     monShort: 'Man', tueShort: 'Tir', wedShort: 'Ons', thuShort: 'Tor', friShort: 'Fre',
