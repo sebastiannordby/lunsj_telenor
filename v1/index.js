@@ -311,14 +311,48 @@ app.get('/gjovik', async (req, res) => {
     res.type('text/html; charset=utf-8').send(`<!DOCTYPE html>
 <html lang="no"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="refresh" content="900">
 <title>Lunsjmeny Gjøvik</title>
 <style>
-  body { font-family: system-ui, sans-serif; background: #f5ead8; color: #201e1d;
-         display: grid; place-items: center; min-height: 100vh; margin: 0; }
-  .app { background: #fff; border-radius: 16px; padding: 2rem; margin: 1rem;
-         max-width: 480px; box-shadow: 0 8px 30px rgba(7,4,82,.12); }
-  h1 { margin-top: 0; }
-  p { white-space: break-spaces; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, sans-serif;
+    background: #f5ead8;
+    color: #201e1d;
+    margin: 0;
+    padding: 3vmin;
+    min-height: 100vh;
+    display: flex;
+  }
+  .app {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(7,4,82,.12);
+    padding: 4vmin;
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2vmin;
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(24px, 3vmin, 44px);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+  p {
+    margin: 0;
+    white-space: break-spaces;
+    overflow-wrap: anywhere;
+    font-size: clamp(16px, 2vmin, 30px);
+    line-height: 1.45;
+  }
+  /* Høykant-skjerm i gangen: større type, leses på avstand */
+  @media (orientation: portrait) {
+    h1 { font-size: clamp(30px, 5vw, 96px); }
+    p  { font-size: clamp(20px, 3.2vw, 68px); }
+  }
 </style></head>
 <body><div class="app"><h1>LUNSJMENY GJØVIK</h1><p>${out}</p></div></body></html>`);
   } catch (e) {
