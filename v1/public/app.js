@@ -4,10 +4,10 @@
 const UI = {
   no: {
     heading: 'LUNSJMENY FORNEBU',
-    sub: 'Tre kantiner og et bakeri - dagens meny på ett sted.',
+    sub: 'Tre kantiner og et bakeri — dagens meny på ett sted.',
     showingToday: 'Viser dagens meny', oldSite: 'Bytt til gammel side', themeDark: 'Bytt til mørk modus', themeLight: 'Bytt til lys modus',
     weekendKicker: 'Helg', weekendTitle: 'Kantinene er stengt',
-    weekendBody: 'Det serveres ingen lunsj i helgen. Kom tilbake på mandag, eller se menyen for en ukedag nå.',
+    weekendBody: 'Det serveres ingen lunsj i helgen. Kom tilbake på mandag — eller se menyen for en ukedag nå.',
     weekendCta: 'Se mandagens meny',
     mon: 'Mandag', tue: 'Tirsdag', wed: 'Onsdag', thu: 'Torsdag', fri: 'Fredag',
     monShort: 'Man', tueShort: 'Tir', wedShort: 'Ons', thuShort: 'Tor', friShort: 'Fre',
@@ -578,17 +578,15 @@ async function loadTraffic() {
     state.myVote = d.myVote || null;
     renderCanteens();
     renderMap();
-    if (!wasMine && state.myVote === id) microConfetti(anchor);
   } catch { /* trafikk er ikke kritisk */ }
 }
 
 /** Liten konfettifontene fra stemmeknappen — 14 biter, ~900 ms, ryddes bort. */
-function microConfetti(anchor) {
-  if (!anchor || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const r = anchor.getBoundingClientRect();
+function microConfetti(origin) {
+  if (!origin || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const box = el('div', 'confetti');
-  box.style.left = (r.left + r.width / 2) + 'px';
-  box.style.top = (r.top + r.height / 2) + 'px';
+  box.style.left = origin.x + 'px';
+  box.style.top = origin.y + 'px';
   const tones = ['#c67139', '#7a8a5e', '#1c16c5', '#e0a066', '#0080a6'];
   for (let i = 0; i < 14; i++) {
     const bit = el('i');
@@ -620,6 +618,12 @@ function voteOffline(id) {
 
 async function castVote(id, anchor) {
   const wasMine = state.myVote === id;
+  // Posisjonen må leses nå — etter render er knappen byttet ut og måler 0.
+  let origin = null;
+  if (anchor) {
+    const r = anchor.getBoundingClientRect();
+    origin = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
   try {
     if (state.offline) throw new Error('offline');
     const r = await fetch('/api/vote', {
@@ -637,7 +641,7 @@ async function castVote(id, anchor) {
   }
   renderCanteens();
   renderMap();
-  if (!wasMine && state.myVote === id) microConfetti(anchor);
+  if (!wasMine && state.myVote === id) microConfetti(origin);
 }
 
 // ------------------------------------------------------------------ copy
