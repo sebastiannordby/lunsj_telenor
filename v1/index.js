@@ -308,6 +308,10 @@ app.get('/en/day/:day', (req, res) =>
 app.get('/gjovik', async (req, res) => {
   try {
     const out = await runPython(['lunsj_gjovik.py']);
+    const body = String(out)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\r\n?/g, '\n')
+      .split('\n').map(l => l.trim()).join('<br>');
     res.type('text/html; charset=utf-8').send(`<!DOCTYPE html>
 <html lang="no"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -343,7 +347,7 @@ app.get('/gjovik', async (req, res) => {
   }
   p {
     margin: 0;
-    white-space: break-spaces;
+    white-space: normal;
     overflow-wrap: anywhere;
     font-size: clamp(16px, 2vmin, 30px);
     line-height: 1.45;
@@ -354,7 +358,7 @@ app.get('/gjovik', async (req, res) => {
     p  { font-size: clamp(20px, 3.2vw, 68px); }
   }
 </style></head>
-<body><div class="app"><h1>LUNSJMENY GJØVIK</h1><p>${out}</p></div></body></html>`);
+<body><div class="app"><h1>LUNSJMENY GJØVIK</h1><p>${body}</p></div></body></html>`);
   } catch (e) {
     res.status(500).type('text/plain; charset=utf-8').send(`Feil: ${e.message}`);
   }
