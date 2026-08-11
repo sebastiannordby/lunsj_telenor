@@ -111,6 +111,8 @@ if __name__ == "__main__":
         else:
             output_text = f"Todays lunch --- {weekday_en} {date_str}\n\n"
 
+        had_failure = False  # sporer om noe feilet for dette språket
+
         for canteen, info in urls.items():
             html_content = fetch_html(info["url"])
             if html_content:
@@ -122,12 +124,18 @@ if __name__ == "__main__":
                         output_text += f"{canteen} ({info['opening_hours']}) - Building: {info['building']}\n"
                     output_text += f"{menu}\n\n"
                 else:
+                    had_failure = True
                     output_text += f"Kunne ikke ekstrahere meny for {canteen}.\n\n"
             else:
+                had_failure = True
                 output_text += f"Kunne ikke hente HTML for {canteen}.\n\n"
 
-        # Skriv til fil
+        # Skriv til fil KUN hvis alt gikk bra – ellers behold gammelt innhold
         filename = f"menus_{lang}.txt"
         filepath = os.path.join("outputs", filename)
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(output_text)
+
+        if had_failure:
+            print(f"Feil oppstod for språk '{lang}' – beholder eksisterende {filename}, skriver ikke over.")
+        else:
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(output_text)
