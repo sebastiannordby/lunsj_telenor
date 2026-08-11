@@ -305,60 +305,144 @@ app.get('/en/day/:day', (req, res) =>
 
 // ---------------------------------------------------------------- gjøvik
 
+const GJ_DAYS = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// Deler den flate teksten fra regnearket i dagens meny, ukens dager og fritekst.
+// Rører ikke Python-scriptet — bare tolker linjene det skriver ut.
+function parseGjovik(raw) {
+  const lines = String(raw).replace(/\r\n?/g, '\n').split('\n').map(l => l.trim());
+  const res = { todayLabel: '', today: [], week: [], notes: [] };
+  let mode = 'today', cur = null;
+
+  for (const line of lines) {
+    if (!line) continue;
+    let m;
+    if ((m = line.match(/^dagens\s+lunsj\s*[-–:]\s*(.+?):?$/i))) {
+      res.todayLabel = m[1]; mode = 'today'; cur = null; continue;
+    }
+    if (/^ukens\s+meny:?$/i.test(line)) { mode = 'week'; cur = null; continue; }
+    if ((m = line.match(/^(mandag|tirsdag|onsdag|torsdag|fredag|lørdag|søndag)\s*:?$/i))) {
+      const name = GJ_DAYS.find(d => d.toLowerCase() === m[1].toLowerCase());
+      cur = { day: name, items: [] };
+      res.week.push(cur); mode = 'week'; continue;
+    }
+    const item = line.replace(/^[-–•]\s*/, '');
+    if (mode === 'week' && cur) cur.items.push(item);
+    else if (mode === 'today' && /^[-–•]/.test(line)) res.today.push(item);
+    else res.notes.push(item);
+  }
+  return res;
+}
+
 app.get('/gjovik', async (req, res) => {
   try {
-    const out = await runPython(['lunsj_gjovik.py']);
-    const body = String(out)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/\r\n?/g, '\n')
-      .split('\n').map(l => l.trim()).join('<br>');
+    const data = parseGjovik(await runPython(['lunsj_gjovik.py']));
+    const todayName = GJ_DAYS[(new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Oslo' })).getDay() + 6) % 7];
+
+    const todayCard = data.today.length ? `
+      <section class="hero">
+        <p class="kicker">${esc(data.todayLabel || 'Dagens lunsj')}</p>
+        <ul class="dishes">${data.today.map(d => `<li>${esc(d)}</li>`).join('')}</ul>
+      </section>` : '';
+
+    const week = data.week.length ? `
+      <section class="week">
+        <h2>Ukens meny</h2>
+        <div class="days">${data.week.map(d => `
+          <article class="day${d.day === todayName ? ' is-today' : ''}">
+            <h3>${esc(d.day)}</h3>
+            <ul>${d.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>
+          </article>`).join('')}</div>
+      </section>` : '';
+
+    const notes = data.notes.length
+      ? `<p class="notes">${data.notes.map(esc).join('<br>')}</p>` : '';
+
     res.type('text/html; charset=utf-8').send(`<!DOCTYPE html>
 <html lang="no"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="refresh" content="900">
 <title>Lunsjmeny Gjøvik</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --bg: #f5ead8; --surface: #fffdf8; --text: #201e1d;
+    --accent: #c67139; --accent-tint: #f7e3d3; --accent-deep: #8f4d24;
+    --sage: #7a8a5e; --sage-tint: #e8ecdf;
+    --muted: #7a716a;
+    --u: clamp(9px, 1.15vmin, 20px);          /* typografisk grunnenhet */
+  }
+  @media (orientation: portrait) { :root { --u: clamp(11px, 1.5vw, 30px); } }
   * { box-sizing: border-box; }
   body {
-    font-family: system-ui, sans-serif;
-    background: #f5ead8;
-    color: #201e1d;
-    margin: 0;
-    padding: 3vmin;
-    min-height: 100vh;
-    display: flex;
+    font-family: 'Figtree', system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    margin: 0; padding: calc(var(--u) * 2);
+    min-height: 100vh; display: flex;
+    -webkit-font-smoothing: antialiased;
   }
   .app {
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 8px 30px rgba(7,4,82,.12);
-    padding: 4vmin;
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2vmin;
+    background: var(--surface); border-radius: calc(var(--u) * 2);
+    box-shadow: 0 8px 30px rgba(32, 30, 29, .10);
+    padding: calc(var(--u) * 3);
+    flex: 1 1 auto; min-width: 0;
+    display: flex; flex-direction: column; gap: calc(var(--u) * 2.5);
   }
   h1 {
-    margin: 0;
-    font-size: clamp(24px, 3vmin, 44px);
-    line-height: 1.1;
-    letter-spacing: -0.01em;
+    font-family: 'Caprasimo', Georgia, serif; font-weight: 400;
+    margin: 0; font-size: calc(var(--u) * 3.4); line-height: 1;
+    letter-spacing: -0.005em; color: var(--accent-deep);
   }
-  p {
-    margin: 0;
-    white-space: normal;
-    overflow-wrap: anywhere;
-    font-size: clamp(16px, 2vmin, 30px);
-    line-height: 1.45;
+  .hero {
+    background: var(--accent-tint); border-radius: calc(var(--u) * 1.6);
+    padding: calc(var(--u) * 2.2) calc(var(--u) * 2.4);
   }
-  /* Høykant-skjerm i gangen: større type, leses på avstand */
-  @media (orientation: portrait) {
-    h1 { font-size: clamp(30px, 5vw, 96px); }
-    p  { font-size: clamp(20px, 3.2vw, 68px); }
+  .kicker {
+    margin: 0 0 calc(var(--u) * .8); font-size: calc(var(--u) * 1.25);
+    font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent-deep);
+  }
+  .dishes { list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: calc(var(--u) * .5); }
+  .dishes li {
+    font-family: 'Caprasimo', Georgia, serif; font-weight: 400;
+    font-size: calc(var(--u) * 2.6); line-height: 1.15; text-wrap: pretty;
+  }
+  .week h2 {
+    font-family: 'Caprasimo', Georgia, serif; font-weight: 400;
+    margin: 0 0 calc(var(--u) * 1.4); font-size: calc(var(--u) * 1.9);
+    color: var(--muted);
+  }
+  .days { display: grid; gap: calc(var(--u) * 1.2);
+    grid-template-columns: repeat(auto-fit, minmax(calc(var(--u) * 22), 1fr)); }
+  .day {
+    border-radius: calc(var(--u) * 1.4); padding: calc(var(--u) * 1.4) calc(var(--u) * 1.6);
+    background: var(--sage-tint); min-width: 0;
+  }
+  .day.is-today { background: var(--sage); color: #fff; }
+  .day h3 {
+    margin: 0 0 calc(var(--u) * .55); font-size: calc(var(--u) * 1.15);
+    font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+    opacity: .8;
+  }
+  .day ul { list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: calc(var(--u) * .3); }
+  .day li {
+    font-size: calc(var(--u) * 1.6); line-height: 1.3;
+    overflow-wrap: anywhere; text-wrap: pretty;
+  }
+  .notes {
+    margin: 0; font-size: calc(var(--u) * 1.35); line-height: 1.5;
+    color: var(--muted); text-wrap: pretty;
   }
 </style></head>
-<body><div class="app"><h1>LUNSJMENY GJØVIK</h1><p>${body}</p></div></body></html>`);
+<body><div class="app">
+  <h1>Lunsjmeny Gjøvik</h1>
+  ${todayCard}${week}${notes}
+</div></body></html>`);
   } catch (e) {
     res.status(500).type('text/plain; charset=utf-8').send(`Feil: ${e.message}`);
   }
