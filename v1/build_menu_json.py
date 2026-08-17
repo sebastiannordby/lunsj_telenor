@@ -214,16 +214,21 @@ def build(menu_dir: Path, daily_dir: Path) -> dict:
             "kind": meta["kind"],
             "week": weekly,
         }
+        if meta.get("lunchHours"):
+            places[pid]["lunchHours"] = meta["lunchHours"]
 
     daily = {
         lang: parse_daily(daily_dir / fname)
         for lang, fname in DAILY_FILES.items()
     }
 
-    # Dagfilene har autoritative åpningstider/bygg — bruk dem når de finnes
+    # Dagfilene har autoritative åpningstider/bygg — bruk dem når de finnes.
+    # Unntak: steder med eget lunsjvindu (Bakern) beholder åpningstiden fra
+    # PLACES, siden dagfila oppgir lunsjtidsrommet og ikke når stedet er åpent.
     for pid, block in daily.get("no", {}).items():
         if pid in places:
-            places[pid]["hours"] = block["hours"]
+            if not places[pid].get("lunchHours"):
+                places[pid]["hours"] = block["hours"]
             places[pid]["building"] = block["building"]
 
     return {
