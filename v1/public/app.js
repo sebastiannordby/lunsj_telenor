@@ -18,6 +18,8 @@ const UI = {
     mapSub: 'Hold musepekeren over en markør for å se menyen — eller trykk på den på mobil.',
     mapEmpty: 'Velg et sted i kartet over.',
     staticMenu: 'Fast meny hele uken', buildingLabel: 'Bygg', cafeLabel: 'Kafé',
+    openLabel: 'Åpent', lunchWindow: 'lunsjtilbudet gjelder',
+    bakeryAlways: 'Bakevarer og nystekt brød hele åpningstiden.',
     legendCanteens: 'Kantiner', legendBakery: 'Baker', legendCafes: 'Kafeer',
     expoFriday: 'Fredager: gratis kaffe frem til kl. 11 for Telenor-ansatte',
     expoFridayToday: 'I dag: gratis kaffe frem til kl. 11 for Telenor-ansatte',
@@ -34,10 +36,10 @@ const UI = {
     fbPlaceholder: 'Hva fungerer bra, hva kan bli bedre?', fbSend: 'Send',
     fbThanks: 'Takk for tilbakemeldingen!', fbSending: 'Sender …',
     fbError: 'Kunne ikke sende — prøv igjen.',
-    aboutBtn: 'Om', aboutTitle: 'Om denne løsningen',
-    aboutMadeH: 'Laget av', aboutMadeP: 'Siden er laget på fritiden av Marius Bråthen, som et hobbyprosjekt. Den er ikke et offisielt ISS- eller bedriftsverktøy.',
-    aboutHostH: 'Drift og hosting', aboutHostP: 'Løsningen kjører på en egen server utenfor bedriftens nettverk. Takk til Mats Danielsen. Menyene hentes automatisk fra ISS sine nettsider.',
-    aboutWebexH: 'Bli med i Webex-gruppen', aboutWebexP: 'Det finnes en åpen Webex-gruppe som automatisk sender dagens meny. Ta kontakt, så legges du til.',
+    aboutBtn: 'Om siden', aboutTitle: 'Om denne løsningen',
+    aboutMadeH: 'Laget av', aboutMadeP: 'Siden er laget på fritiden av en kollega på Fornebu, som et hobbyprosjekt. Den er ikke et offisielt ISS- eller bedriftsverktøy.',
+    aboutHostH: 'Drift og hosting', aboutHostP: 'Løsningen kjører på en egen liten server utenfor bedriftens nettverk. Menyene hentes automatisk fra kjøkkenets egne filer flere ganger hver morgen — ingen personopplysninger lagres, kun anonyme stemmer og tilbakemeldinger.',
+    aboutWebexH: 'Bli med i Webex-gruppen', aboutWebexP: 'Det finnes en åpen Webex-gruppe som varsler når dagens meny er klar, og hvor du kan komme med ønsker og feilmeldinger. Ta kontakt, så legges du til automatisk.',
     aboutWebexCta: 'Send melding på Webex',
     aboutWebexAlt: 'Eller send e-post i stedet',
     aboutNote: 'Forslag og feil? Bruk «Gi tilbakemelding» nede til høyre.',
@@ -59,6 +61,8 @@ const UI = {
     mapSub: 'Hover a marker to see its menu — or tap it on mobile.',
     mapEmpty: 'Pick a spot on the map above.',
     staticMenu: 'Same menu all week', buildingLabel: 'Building', cafeLabel: 'Café',
+    openLabel: 'Open', lunchWindow: 'lunch offer served',
+    bakeryAlways: 'Pastries and freshly baked bread all day.',
     legendCanteens: 'Canteens', legendBakery: 'Bakery', legendCafes: 'Cafés',
     expoFriday: 'Fridays: free coffee until 11:00 for Telenor employees',
     expoFridayToday: 'Today: free coffee until 11:00 for Telenor employees',
@@ -209,6 +213,7 @@ function placeInfo(id) {
     id,
     name: p?.name || geo.name || id,
     hours: p?.hours || geo.hours || '',
+    lunchHours: p?.lunchHours || '',
     building: p?.building || '',
     color: (isDark() ? geo.dark : geo.color) || '#1c16c5',
     left: geo.left,
@@ -373,16 +378,20 @@ function renderBakery() {
   head.appendChild(el('span', 'sep', '–'));
   head.appendChild(el('span', null, t().buildingLabel + ' ' + info.building));
   head.appendChild(el('span', 'sep', '–'));
-  head.appendChild(el('span', null, info.hours));
+  head.appendChild(el('span', null, t().openLabel + ' ' + info.hours));
+  if (info.lunchHours) {
+    head.appendChild(el('span', 'bakery-window', '(' + t().lunchWindow + ' ' + info.lunchHours + ')'));
+  }
   main.appendChild(head);
 
-  const dishes = el('div', 'bakery-dishes');
+  const dishes = el('ul', 'bakery-dishes');
   if (info.dishes.length) {
-    info.dishes.forEach(d => dishes.appendChild(el('span', null, d)));
+    info.dishes.forEach(d => dishes.appendChild(el('li', null, d)));
   } else {
-    dishes.appendChild(el('span', 'empty', t().noMenu));
+    dishes.appendChild(el('li', 'empty', t().noMenu));
   }
   main.appendChild(dishes);
+  main.appendChild(el('p', 'bakery-always', t().bakeryAlways));
   card.appendChild(main);
   card.appendChild(el('span', 'tag tag-neutral', t().staticMenu));
 }
@@ -508,6 +517,10 @@ function renderMap() {
     if (!narrow || info.cafe) {
       pop.appendChild(el('div', 'pin-pop-hours', info.hours));
     }
+    if (info.lunchHours && !narrow) {
+      pop.appendChild(el('div', 'pin-pop-window',
+        '(' + t().lunchWindow + ' ' + info.lunchHours + ')'));
+    }
     if (info.cafe) {
       if (info.note) {
         const fri = todayWeekKey() === 'fri';
@@ -546,6 +559,10 @@ function renderMapDetail() {
     info.cafe ? t().cafeLabel : t().buildingLabel + ' ' + info.building));
   card.appendChild(el('div', 'card-title', info.name));
   card.appendChild(el('div', 'detail-hours', info.hours));
+  if (info.lunchHours) {
+    card.appendChild(el('div', 'detail-window',
+      '(' + t().lunchWindow + ' ' + info.lunchHours + ')'));
+  }
   if (info.cafe) {
     if (info.note) {
       const fri = todayWeekKey() === 'fri';
