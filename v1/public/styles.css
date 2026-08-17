@@ -462,13 +462,48 @@ svg.ico-18 { width: 18px; height: 18px; }
 .bakery-head .bakery-name { font-size: 16px; font-weight: 700; }
 .bakery-head .sep { opacity: 0.4; }
 .bakery-dishes {
+  list-style: none;
+  margin: var(--s3) 0 0;
+  padding: 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--s1) var(--s4);
-  color: var(--muted);
+  flex-direction: column;
+  gap: var(--s1);
+  color: var(--text);
   font-size: 14px;
 }
+.bakery-dishes li {
+  position: relative;
+  padding-left: 15px;
+  line-height: 1.4;
+}
+.bakery-dishes li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.55em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-ink);
+  opacity: 0.55;
+}
+.bakery-dishes li.empty::before { display: none; }
 .bakery .tag-neutral { margin-left: auto; }
+.bakery-window { color: var(--muted); font-variant-numeric: tabular-nums; }
+.pin-pop-window, .detail-window {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  margin-top: 1px;
+}
+.detail-window { font-size: 13px; }
+.bakery-always {
+  margin: var(--s2) 0 0;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--muted);
+  text-wrap: pretty;
+}
 
 @media (max-width: 560px) {
   .bakery { flex-wrap: wrap; }
