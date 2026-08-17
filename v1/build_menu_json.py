@@ -51,7 +51,8 @@ PLACES = {
     "bakern": {
         "file": "bakern.txt",
         "name": "Bakern",
-        "hours": "10:30 – 13:00",
+        "hours": "07:00 – 15:00",
+        "lunchHours": "10:30 – 13:00",
         "building": "C",
         "kind": "static",
     },
