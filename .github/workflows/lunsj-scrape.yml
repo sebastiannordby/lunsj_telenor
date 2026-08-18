@@ -41,7 +41,15 @@ jobs:
           git add outputs/ Menyer/ raw_html/
           if git diff --cached --quiet; then
             echo "Ingen endringer aa committe."
-          else
-            git commit -m "Oppdater lunsjmeny $(date -u +'%Y-%m-%d %H:%M UTC')"
-            git push
+            exit 0
           fi
+          git commit -m "Oppdater lunsjmeny $(date -u +'%Y-%m-%d %H:%M UTC')"
+          # Remote kan ha faatt nye commits mens jobben kjoerte - rebase foer push.
+          # Proev noen ganger i tilfelle det skjer igjen midt i.
+          for i in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push && exit 0
+            echo "Push feilet (forsoek $i) - proever igjen ..."
+            sleep 5
+          done
+          echo "Klarte ikke aa pushe etter 3 forsoek."
+          exit 1
