@@ -1,60 +1,59 @@
 Mandag
-- Linsegryte ris (3)
-- Grønnsakssuppe (7)
-- Kremet potet og rødbet suppe (4,7)
-- Kremet pasta med kalkun (3,4)
+- Linsegryte ris
+- Grønnsakssuppe
+- Kremet potet og rødbet suppe
+- Kremet pasta med kalkun
 
 Monday
-- Lentils stew with rice (3)
-- Vegetable soup (7)
-- Creamy potato and beetroot soup (4,7)
-- Creamy pasta with turkey (3,4)
+- Lentils stew with rice
+- Vegetable soup
+- Creamy potato and beetroot soup
+- Creamy pasta with turkey
 
 Tirsdag
-- Kikertgryte (7)
+- Kikertgryte
 - Asiatisk grønnsakssuppe
-- (7,9,11)
-- Kremet sellerisuppe (4,7)
-- Svinekjøtt toppet med søtpotet lokk (4)
+- Kremet sellerisuppe
+- Svinekjøtt toppet med søtpotet lokk
 
 Tuesday
-- Chickpea stew (7)
+- Chickpea stew
 - Asian vegetable soup (79,11)
-- Creamy celeri soup (4,7)
-- Pork stew with sweet potato topp (4)
+- Creamy celeri soup
+- Pork stew with sweet potato topp
 
 Onsdag
-- Krydderstekt søtpotet med linser, feta på pannekake toppet med honning og balsamico krem (1,3)
-- Pack choi suppe (7,9,11)
-- Kremet kyllingsuppe (4,7)
-- Oven stekt torsk med potet, bakt tomat, oliven og spinats (2,4)
+- Krydderstekt søtpotet med linser, feta på pannekake toppet med honning og balsamico krem
+- Pack choi suppe
+- Kremet kyllingsuppe
+- Oven stekt torsk med potet, bakt tomat, oliven og spinats
 
 Wednesday
-- Spiced-roasted sweet potato with lentils &feta on a pancake with honey ans balsamico glaze (1,3)
-- Pac choi soup (7,9,11)
-- Creamy chicken soup (4,7)
-- Oven roasted cod with potato, baked tomato, olives and spinach (2,4)
+- Spiced-roasted sweet potato with lentils &feta on a pancake with honey ans balsamico glaze
+- Pac choi soup
+- Creamy chicken soup
+- Oven roasted cod with potato, baked tomato, olives and spinach
 
 Torsdag
 - Blomkål Gong Bao med ris
-- Kikert og tomatsuppe (7)
-- Kremet aspargessuppe (4,7)
+- Kikert og tomatsuppe
+- Kremet aspargessuppe
 - Marinert svinekjøtt med plommer og poteter
 
 Thursday
 - Cauliflower Gong Bao with rice
-- Chickpea and tomato soup (7)
-- Creamy aspargus soup (4,7)
+- Chickpea and tomato soup
+- Creamy aspargus soup
 - Marinated pork with plums and potatoes
 
 Fredag
 - Linse gryte med potet
-- Chilensk grønnsaksuppe (7)
-- Kremet Italiensk suppe (3,4,7)
-- Indisk kylling karri med kokosmelk og ris (4)
+- Chilensk grønnsaksuppe
+- Kremet Italiensk suppe
+- Indisk kylling karri med kokosmelk og ris
 
 Friday
 - Lentil stew with potato
-- Chilean vegetable soup (7)
-- Creamy italian tomato soup (3,4,7)
-- Indian chicken curry with coconut milk and rice (4)
+- Chilean vegetable soup
+- Creamy italian tomato soup
+- Indian chicken curry with coconut milk and rice
