@@ -65,7 +65,20 @@ for idx, _, no_variants, _, en_variants in DAY_NAMES:
     for v in en_variants:
         ALL_DAY_STRINGS[v] = (idx, "en")
 
-DISH_LINE_RE = re.compile(r"^(?P<name>.+?)\s+(?P<codes>\d{1,2}(?:,\d{1,2})*)\s*$")
+# Allergen-forklaringen nederst er splittet i egne celler ("1", "Egg", ...)
+BARE_NUMBER_RE = re.compile(r"^(1[0-4]|[1-9])$")
+
+
+def split_trailing_codes(text: str) -> tuple[str, list[int]]:
+    """Fjerner allergentall bakerst. Handterer '(1,3)', ' 3,4' og 'mozzarella4'."""
+    m = re.search(r"\s*\(\s*(\d{1,2}(?:\s*,\s*\d{1,2})*)\s*\)\s*$", text)
+    if not m:
+        m = re.search(r"\s*(\d{1,2}(?:\s*,\s*\d{1,2})*)\s*$", text)
+    if m:
+        codes = [int(c) for c in re.findall(r"\d+", m.group(1))]
+        if codes and all(1 <= c <= 14 for c in codes):
+            return text[:m.start()].strip(), codes
+    return text.strip(), []
 
 
 def fetch_html(url: str) -> str | None:
@@ -120,8 +133,15 @@ def parse_week(html: str) -> dict[str, dict[int, list[str]]]:
 
     result = {"no": {i: [] for i in range(5)}, "en": {i: [] for i in range(5)}}
     current_day, current_lang = None, None
+    in_legend = False
 
     for text in texts:
+        if BARE_NUMBER_RE.match(text):
+            in_legend = True          # allergen-tabellen har startet
+            continue
+        if in_legend:
+            continue
+
         header = is_day_header(text)
         if header:
             current_day, current_lang = header
@@ -129,8 +149,7 @@ def parse_week(html: str) -> dict[str, dict[int, list[str]]]:
         if is_allergen_legend(text) or current_day is None:
             continue
 
-        m = DISH_LINE_RE.match(text)
-        name = m.group("name").strip() if m else text
+        name, _codes = split_trailing_codes(text)
         if len(name) < 2 or name.isdigit():
             continue
         result[current_lang][current_day].append(name)
