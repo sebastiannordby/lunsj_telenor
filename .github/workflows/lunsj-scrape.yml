@@ -1,0 +1,47 @@
+name: Hent lunsjmeny
+
+"on":
+  schedule:
+    # 06:30 UTC = ca. 07:30/08:30 norsk tid avhengig av sommertid.
+    - cron: "30 6 * * 1-5"
+  workflow_dispatch: {}  # lar deg trigge manuelt fra Actions-fanen
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: v1   # scriptene kjoeres fra v1/, som build_menu_json.py
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Sett opp Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer avhengigheter
+        run: pip install requests beautifulsoup4
+
+      - name: Hent og parse dagens meny
+        run: python scrape_dagens_menu.py
+
+      - name: Hent og parse ukens meny
+        run: python scrape_ukens_menu.py
+
+      - name: Committ og push hvis noe endret seg
+        run: |
+          git config user.name "lunsj-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add outputs/ Menyer/ raw_html/
+          if git diff --cached --quiet; then
+            echo "Ingen endringer aa committe."
+          else
+            git commit -m "Oppdater lunsjmeny $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
