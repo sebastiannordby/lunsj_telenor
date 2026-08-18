@@ -1,34 +1,22 @@
 """
-Parser for "DAGENS MENY"-widgetene (v1-tokens).
+Parser for "DAGENS MENY"-widgetene.
 
-Disse sidene viser KUN dagens rett (kantinene oppdaterer selv hver morgen),
-så vi trenger ingen ukedag-deteksjon i det hele tatt - bare et språkbytte
-mellom "DAGENS LUNSJ"-seksjonen og "Todays LUNCH"-seksjonen.
+Skriver outputs/menus_no.txt, menus_en.txt, menus_al.txt i formatet
+parse_daily() i build_menu_json.py forventer. Kun menus_al beholder
+allergen-informasjon (som ord, ikke tall).
 
-Struktur observert på siden (leaf-tekst i dokumentrekkefølge):
-    DAGENS LUNSj
-    <rettnavn>
-    Allergener: <tall,tall>
-    <rettnavn>
-    Allergener: <tall>
-    ...
-    Todays LUNCH
-    <dish name>
-    Allergens: <tall,tall>
-    ...
-    [allergen-forklaringstabell - ignoreres]
-
-Output: matcher parse_daily() i build_menu_json.py nøyaktig:
-    Kantinenavn (hours) - Bygg: X
-    - Rett 1
-    - Rett 2
+Sett DEBUG=1 som miljovariabel for aa printe alle raa tekstlinjer per
+kantine - nyttig hvis en side har uventet struktur.
 """
 
+import os
 import re
 from pathlib import Path
 
 import requests
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
+
+DEBUG = os.environ.get("DEBUG") == "1"
 
 OUTPUT_DIR = Path("outputs")
 RAW_HTML_DIR = Path("raw_html")
@@ -64,11 +52,29 @@ ALLERGEN_MAP = {
     11: "Soy", 12: "Sulfites", 13: "Molluscs", 14: "Lupine",
 }
 
-NO_HEADER_RE = re.compile(r"^dagens\s+lunsj", re.IGNORECASE)
-EN_HEADER_RE = re.compile(r"^today'?s\s+lunch", re.IGNORECASE)
-ALLERGEN_LINE_RE = re.compile(r"^(?:allergener|allergens)\s*:\s*(?P<codes>[\d,\s]+)$", re.IGNORECASE)
-# Legend-tabellrader ser ut som "1   Egg" eller "10   Skalldyr/Shellfish" - kort, starter med 1-14 etterfulgt av ord.
-LEGEND_ROW_RE = re.compile(r"^(1[0-4]|[1-9])\s+\S")
+# Overskrifter som bytter sprak. Bredt nok til aa dekke bade lunsj og middag.
+NO_HEADER_RE = re.compile(r"^dagens\s+(lunsj|lunch|middag|meny|rett)", re.IGNORECASE)
+EN_HEADER_RE = re.compile(r"^today'?s\s+(lunch|dinner|menu|meal)", re.IGNORECASE)
+
+# "Allergener: 3,4" ELLER "Allergener:" uten tall
+ALLERGEN_LINE_RE = re.compile(r"^(?:allergener|allergens)\s*:?\s*(?P<codes>[\d,\s]*)$", re.IGNORECASE)
+
+# Allergen-forklaringstabellen ligger nederst, og hver celle er sin egen
+# tekstnode ("1", "Egg", "5", "Notter/Nuts", ...). Forste bare tall 1-14
+# markerer at vi er inne i tabellen - alt etter det ignoreres.
+BARE_NUMBER_RE = re.compile(r"^(1[0-4]|[1-9])$")
+
+
+def split_trailing_codes(text: str) -> tuple[str, list[int]]:
+    """Skiller allergentall fra rettnavn. Handterer '(1,3)', ' 3,4' og 'mozzarella4'."""
+    m = re.search(r"\s*\(\s*(\d{1,2}(?:\s*,\s*\d{1,2})*)\s*\)\s*$", text)
+    if not m:
+        m = re.search(r"\s*(\d{1,2}(?:\s*,\s*\d{1,2})*)\s*$", text)
+    if m:
+        codes = [int(c) for c in re.findall(r"\d+", m.group(1))]
+        if codes and all(1 <= c <= 14 for c in codes):
+            return text[:m.start()].strip(), codes
+    return text.strip(), []
 
 
 def fetch_html(url: str) -> str | None:
@@ -106,10 +112,22 @@ def parse_dagens(html: str) -> dict[str, list[tuple[str, list[int]]]]:
     soup = BeautifulSoup(html, "html.parser")
     texts = extract_leaf_texts(soup)
 
+    if DEBUG:
+        print("  -- raa tekstlinjer --")
+        for t in texts:
+            print(f"     {t!r}")
+
     result = {"no": [], "en": []}
     current_lang = None
+    in_legend = False
 
     for text in texts:
+        if BARE_NUMBER_RE.match(text):
+            in_legend = True          # allergen-tabellen har startet
+            continue
+        if in_legend:
+            continue
+
         if NO_HEADER_RE.match(text):
             current_lang = "no"
             continue
@@ -117,21 +135,20 @@ def parse_dagens(html: str) -> dict[str, list[tuple[str, list[int]]]]:
             current_lang = "en"
             continue
         if current_lang is None:
-            continue  # tekst før første overskrift (bør ikke skje, men vær robust)
+            continue
 
         m = ALLERGEN_LINE_RE.match(text)
         if m:
-            codes = [int(c) for c in re.findall(r"\d+", m.group("codes"))]
-            if result[current_lang]:
+            codes = [int(c) for c in re.findall(r"\d+", m.group("codes") or "")]
+            if codes and result[current_lang]:
                 name, _ = result[current_lang][-1]
                 result[current_lang][-1] = (name, codes)
+            continue      # tom "Allergener:"-linje droppes ogsaa her
+
+        name, codes = split_trailing_codes(text)
+        if len(name) < 2:
             continue
-
-        if LEGEND_ROW_RE.match(text) and len(text) < 40:
-            continue  # allergen-forklaringstabell på slutten - ikke en rett
-
-        # Vanlig rettnavn
-        result[current_lang].append((text, []))
+        result[current_lang].append((name, codes))
 
     return result
 
@@ -162,6 +179,7 @@ def main():
         raw_path.write_text(html or "", encoding="utf-8")
 
         parsed = parse_dagens(html) if html else {"no": [], "en": []}
+        print(f"  {len(parsed['no'])} retter (no), {len(parsed['en'])} retter (en)")
 
         no_blocks.append(format_block(canteen, info, parsed["no"], "no", allergen_names=False))
         en_blocks.append(format_block(canteen, info, parsed["en"], "en", allergen_names=False))
