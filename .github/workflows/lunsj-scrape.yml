@@ -3,7 +3,7 @@ name: Hent lunsjmeny
 "on":
   schedule:
     # 06:30 UTC = ca. 07:30/08:30 norsk tid avhengig av sommertid.
-    - cron: "*/30 6-11 * * 1-5"
+    - cron: "7,37 6-11 * * 1-5"
   workflow_dispatch: {}  # lar deg trigge manuelt fra Actions-fanen
 
 permissions:
