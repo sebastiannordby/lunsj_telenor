@@ -199,6 +199,14 @@ def parse_daily(path: Path) -> dict:
     return result
 
 
+def file_updated(path: Path) -> str:
+    """Sist endret på kildefila, så nettsiden kan vise 'sist oppdatert'."""
+    try:
+        return datetime.fromtimestamp(path.stat().st_mtime).astimezone().isoformat(timespec="seconds")
+    except OSError:
+        return ""
+
+
 def read_overrides() -> dict:
     """Manuelle menyer satt fra /admin. Vinner over alt annet, og blir
     stående til noen fjerner dem der."""
@@ -222,13 +230,15 @@ def today_key():
 def build(menu_dir: Path, daily_dir: Path) -> dict:
     places = {}
     for pid, meta in PLACES.items():
-        weekly = parse_weekly(menu_dir / meta["file"])
+        src = menu_dir / meta["file"]
+        weekly = parse_weekly(src)
         places[pid] = {
             "name": meta["name"],
             "hours": meta["hours"],
             "building": meta["building"],
             "kind": meta["kind"],
             "week": weekly,
+            "updated": file_updated(src),
         }
         if meta.get("lunchHours"):
             places[pid]["lunchHours"] = meta["lunchHours"]
@@ -238,7 +248,7 @@ def build(menu_dir: Path, daily_dir: Path) -> dict:
         for lang, fname in DAILY_FILES.items()
     }
 
-    # Dagfilene har autoritative åpningstider/bygg — bruk dem når de finnes.
+    # Dagfilene har autoritative åpningstider/bygg - bruk dem når de finnes.
     # Unntak: steder med eget lunsjvindu (Bakern) beholder åpningstiden fra
     # PLACES, siden dagfila oppgir lunsjtidsrommet og ikke når stedet er åpent.
     for pid, block in daily.get("no", {}).items():
@@ -253,7 +263,9 @@ def build(menu_dir: Path, daily_dir: Path) -> dict:
         "places": places,
         # Overstyrer ukesmenyen for i dag når den finnes (dagens-skriptet)
         "todayOverride": daily,
-        # Manuelt skrevne menyer fra /admin — vinner over alt over
+        # Sist endret på dagsfila fra scrape-skriptet
+        "dailyUpdated": file_updated(daily_dir / DAILY_FILES["no"]),
+        # Manuelt skrevne menyer fra /admin - vinner over alt over
         "manual": read_overrides(),
     }
 

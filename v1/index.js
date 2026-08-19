@@ -33,10 +33,10 @@ const OVERRIDE_PLACES = ['street', 'm', 'fresh4you', 'bakern', 'dinner'];
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
   || randomUUID().slice(0, 8);
 if (!process.env.ADMIN_PASSWORD) {
-  console.log(`\n  ADMIN_PASSWORD er ikke satt — bruker midlertidig passord: ${ADMIN_PASSWORD}\n`);
+  console.log(`\n  ADMIN_PASSWORD er ikke satt - bruker midlertidig passord: ${ADMIN_PASSWORD}\n`);
 }
 
-// ntfy-topics — sett som miljøvariabler i produksjon
+// ntfy-topics - sett som miljøvariabler i produksjon
 const NTFY_UP = process.env.NTFY_UP || 'mb-lunsjfbu-lunsjmeny-fornebu-bra';
 const NTFY_DOWN = process.env.NTFY_DOWN || 'mb-lunsjfbu-lunsjmeny-fornebu-darlig';
 const NTFY_TEXT = process.env.NTFY_TEXT || 'mb-lunsjfbu-lunsjmeny-fornebu-tekst';
@@ -49,7 +49,7 @@ app.use(express.json({ limit: '64kb' }));
 //
 // index.html caches aldri, og app.js/styles.css får en ?v= som følger filenes
 // endringstidspunkt. Da henter nettleseren nye filer så snart du deployer,
-// uten at noen må tømme cache — og uten at du bumper versjonsnummer manuelt.
+// uten at noen må tømme cache - og uten at du bumper versjonsnummer manuelt.
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
@@ -73,7 +73,7 @@ async function sendPage(res, file, script) {
   res.set('Cache-Control', 'no-cache, must-revalidate');
   res.type('text/html; charset=utf-8').send(
     html
-      // Godtar både "/styles.css" og "styles.css" — forhåndsvisning bruker
+      // Godtar både "/styles.css" og "styles.css" - forhåndsvisning bruker
       // relative stier, serveren bryr seg ikke, men stemplet må treffe begge.
       .replace(/href="\/?styles\.css"/, `href="styles.css?v=${v}"`)
       .replace(new RegExp(`src="/?${script.replace('.', '\\.')}"`), `src="${script}?v=${v}"`)
@@ -114,7 +114,7 @@ async function rebuildJson() {
 
 // ---------------------------------------------------------------- state
 
-// Norsk lokaltid, ikke UTC — ellers nullstilles stemmene kl. 02 om natten
+// Norsk lokaltid, ikke UTC - ellers nullstilles stemmene kl. 02 om natten
 // i stedet for ved midnatt. 'sv-SE' gir YYYY-MM-DD.
 function todayKey() {
   return new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' });
@@ -165,7 +165,7 @@ async function writeBanner(banner) {
 // ---------------------------------------------------------------- admin auth
 //
 // Bevisst enkelt: ett delt passord byttes mot en session-token i minnet.
-// Tokens forsvinner ved restart — da må man logge inn på nytt.
+// Tokens forsvinner ved restart - da må man logge inn på nytt.
 
 const SESSIONS = new Map();          // token -> utløpstidspunkt (ms)
 const SESSION_MS = 12 * 60 * 60 * 1000;
@@ -227,7 +227,7 @@ app.post('/api/feedback', async (req, res) => {
   const kind = String(req.body?.kind || '');
   const message = String(req.body?.message || '').slice(0, 2000);
 
-  // HTTP-headere må være ren ASCII — emoji sendes derfor som ntfy-tags,
+  // HTTP-headere må være ren ASCII - emoji sendes derfor som ntfy-tags,
   // ikke i Title. Æ/Ø/Å og emoji er trygt i selve body.
   const targets = {
     up: [NTFY_UP, 'Tommel opp', 'Noen liker den nye lunsjmeny-siden 👍', '+1'],
@@ -543,7 +543,7 @@ app.get('/update-gjovik', async (req, res) => {
 });
 
 // ================================================================
-// OLD SITE  —  den gamle siden, bevart på /old i betaperioden
+// OLD SITE  -  den gamle siden, bevart på /old i betaperioden
 // ================================================================
 //
 // Lim inn din opprinnelige renderAppPage (og eventuelle hjelpere den
@@ -635,7 +635,7 @@ const GJ_DAYS = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 // Deler den flate teksten fra regnearket i dagens meny, ukens dager og fritekst.
-// Rører ikke Python-scriptet — bare tolker linjene det skriver ut.
+// Rører ikke Python-scriptet - bare tolker linjene det skriver ut.
 function parseGjovik(raw) {
   const lines = String(raw).replace(/\r\n?/g, '\n').split('\n').map(l => l.trim());
   const res = { todayLabel: '', today: [], week: [], notes: [] };
@@ -804,7 +804,7 @@ app.use(express.static(PUBLIC_DIR, {
       // Innhold som endres gjennom dagen må alltid revalideres
       res.set('Cache-Control', 'no-cache, must-revalidate');
     } else {
-      // Versjonerte filer kan caches lenge — ?v= endres når filen endres
+      // Versjonerte filer kan caches lenge - ?v= endres når filen endres
       res.set('Cache-Control', 'public, max-age=604800');
     }
   }
