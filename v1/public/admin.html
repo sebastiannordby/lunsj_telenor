@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin – Lunsjmeny Fornebu</title>
+<meta name="robots" content="noindex">
+<script>
+  (function () {
+    var saved = null;
+    try { saved = localStorage.getItem('lunsj-theme'); } catch (e) {}
+    var dark = saved ? saved === 'dark'
+      : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (dark) document.documentElement.dataset.theme = 'dark';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-brand">🍽️ Lunsjmeny Fornebu</a>
+  <span class="spacer"></span>
+  <span class="tag tag-neutral">Admin</span>
+  <button type="button" class="btn btn-ghost btn-sm" id="logoutBtn" hidden>Logg ut</button>
+</nav>
+
+<main class="wrap admin-wrap">
+
+  <section class="card admin-card" id="loginCard" hidden>
+    <h1 class="admin-h1">Admin</h1>
+    <p class="card-body">Skriv inn admin-passordet for å oppdatere menyer og sette banner.</p>
+    <form class="admin-form" id="loginForm">
+      <div class="field">
+        <label for="pw">Passord</label>
+        <input class="input" type="password" id="pw" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Logg inn</button>
+    </form>
+    <p class="admin-error" id="loginError" hidden></p>
+  </section>
+
+  <div id="adminBody" hidden>
+
+    <header class="page-head">
+      <h1 class="admin-h1">Admin</h1>
+      <p class="card-body">Manuell oppdatering av menyer, og midlertidig banner på forsiden.</p>
+    </header>
+
+    <section class="card admin-card">
+      <span class="card-kicker">Menyer</span>
+      <h2 class="card-title">Oppdater lunsjmenyene nå</h2>
+      <p class="card-body">
+        Kjører <code class="admin-code">scrape_dagens_menu.py</code> og deretter
+        <code class="admin-code">build_menu_json.py</code> — samme kjede som kjøres automatisk
+        hver halvtime mellom 06 og 11 på hverdager.
+      </p>
+      <button type="button" class="btn btn-primary icon-btn" id="refreshBtn">
+        <svg viewBox="0 0 24 24" class="ico-16"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+        <span>Kjør oppdatering</span>
+      </button>
+      <p class="admin-status" id="refreshStatus" hidden></p>
+      <pre class="admin-log" id="refreshLog" hidden></pre>
+    </section>
+
+    <section class="card admin-card">
+      <span class="card-kicker">Banner</span>
+      <h2 class="card-title">Midlertidig melding øverst</h2>
+
+      <div class="admin-current" id="bannerCurrent" hidden>
+        <div class="admin-current-head">
+          <span class="tag tag-accent">Aktivt nå</span>
+          <span class="admin-current-until" id="bannerUntil"></span>
+        </div>
+        <div class="site-banner" id="bannerLive">
+          <span class="site-banner-emoji" id="bannerLiveEmoji"></span>
+          <span id="bannerLiveText"></span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="bannerRemove">Fjern banner</button>
+      </div>
+
+      <form class="admin-form" id="bannerForm">
+        <div class="field">
+          <label for="bText">Tekst (norsk)</label>
+          <input class="input" type="text" id="bText" maxlength="240"
+                 placeholder="Det var noen utfordringer med siden i går — nå er alt i orden igjen." required>
+        </div>
+        <div class="field">
+          <label for="bTextEn">Tekst (engelsk, valgfritt)</label>
+          <input class="input" type="text" id="bTextEn" maxlength="240"
+                 placeholder="The site had some issues yesterday — it is fixed now.">
+        </div>
+        <div class="admin-row">
+          <div class="field admin-narrow">
+            <label for="bEmoji">Ikon</label>
+            <input class="input" type="text" id="bEmoji" maxlength="4" value="✅">
+          </div>
+          <div class="field">
+            <label for="bTone">Farge</label>
+            <div class="seg" id="bTone">
+              <label class="seg-opt"><input type="radio" name="tone" value="info" checked><span>Nøytral</span></label>
+              <label class="seg-opt"><input type="radio" name="tone" value="good"><span>Positiv</span></label>
+              <label class="seg-opt"><input type="radio" name="tone" value="warn"><span>Varsel</span></label>
+            </div>
+          </div>
+          <div class="field admin-narrow">
+            <label for="bUntil">Vis til og med</label>
+            <input class="input" type="date" id="bUntil">
+          </div>
+        </div>
+        <label class="admin-check">
+          <input type="checkbox" id="bDismiss" checked>
+          <span>Kan lukkes av brukeren</span>
+        </label>
+        <div class="admin-actions">
+          <button type="submit" class="btn btn-primary">Publiser banner</button>
+          <span class="admin-status" id="bannerStatus" hidden></span>
+        </div>
+      </form>
+    </section>
+
+  </div>
+</main>
+
+<script src="admin.js"></script>
+</body>
+</html>
