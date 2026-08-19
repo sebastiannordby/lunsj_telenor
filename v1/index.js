@@ -19,6 +19,14 @@ const __dirname = path.dirname(__filename);
 const MENU_JSON = path.join(__dirname, 'public', 'menu.json');
 const STATE_FILE = path.join(__dirname, 'state.json');
 const BANNER_FILE = path.join(__dirname, 'banner.json');
+const OVERRIDES_FILE = path.join(__dirname, 'overrides.json');
+const STATUS_FILE = path.join(__dirname, 'last-run.json');
+const PREVIEW_JSON = path.join(__dirname, 'menu.preview.json');
+const MENU_DIR = path.join(__dirname, 'Menyer');
+const BAKERN_TXT = path.join(MENU_DIR, 'bakern.txt');
+
+// Kantiner som kan overstyres manuelt fra /admin (nødmodus)
+const OVERRIDE_PLACES = ['street', 'm', 'fresh4you', 'bakern', 'dinner'];
 
 // Admin-passord. Sett ADMIN_PASSWORD i miljøet (systemd-unit eller .env);
 // uten det genereres et engangspassord som skrives til loggen ved oppstart.
@@ -35,7 +43,7 @@ const NTFY_TEXT = process.env.NTFY_TEXT || 'mb-lunsjfbu-lunsjmeny-fornebu-tekst'
 
 const VOTE_PLACES = new Set(['street', 'm', 'fresh4you']);
 
-app.use(express.json({ limit: '8kb' }));
+app.use(express.json({ limit: '64kb' }));
 
 // ---------------------------------------------------------------- cache
 //
@@ -311,10 +319,189 @@ app.post('/api/admin/refresh', requireAdmin, async (req, res) => {
     log.push((await runPython(['scrape_dagens_menu.py'])).trimEnd());
     log.push('$ python3 build_menu_json.py');
     log.push((await runPython(['build_menu_json.py'])).trimEnd());
+    await recordRun(true, log.join('\n'));
     res.json({ ok: true, log: log.join('\n') });
   } catch (e) {
     log.push('FEIL: ' + e.message);
+    await recordRun(false, log.join('\n'), e.message);
     res.status(500).json({ error: e.message, log: log.join('\n') });
+  }
+});
+
+// ---------------------------------------------------------------- status
+
+async function recordRun(ok, log, error) {
+  const entry = {
+    at: new Date().toISOString(),
+    ok,
+    error: error || null,
+    log: (log || '').slice(-4000)
+  };
+  await fs.writeFile(STATUS_FILE, JSON.stringify(entry, null, 2), 'utf-8').catch(() => {});
+}
+
+async function mtime(file) {
+  try {
+    return (await fs.stat(file)).mtime.toISOString();
+  } catch {
+    return null;
+  }
+}
+
+app.get('/api/admin/status', requireAdmin, async (req, res) => {
+  let menu = null;
+  try {
+    menu = JSON.parse(await fs.readFile(MENU_JSON, 'utf-8'));
+  } catch {}
+
+  const today = menu?.today || null;
+  const places = Object.entries(menu?.places || {}).map(([id, p]) => {
+    const daily = menu?.todayOverride?.no?.[id]?.items || [];
+    const weekly = p.week?.no?.[today] || [];
+    const manual = menu?.manual?.[id]?.items || [];
+    return {
+      id,
+      name: p.name,
+      kind: p.kind,
+      manual: manual.length > 0,
+      count: manual.length || daily.length || weekly.length,
+      source: manual.length ? 'manual' : daily.length ? 'daily' : weekly.length ? 'weekly' : 'none'
+    };
+  });
+
+  let lastRun = null;
+  try {
+    lastRun = JSON.parse(await fs.readFile(STATUS_FILE, 'utf-8'));
+  } catch {}
+
+  res.json({
+    generated: menu?.generated || null,
+    today,
+    places,
+    lastRun,
+    files: {
+      menuJson: await mtime(MENU_JSON),
+      dayFile: await mtime(path.join(__dirname, 'outputs', 'menus_no.txt')),
+      bakern: await mtime(BAKERN_TXT)
+    }
+  });
+});
+
+// ---------------------------------------------------------------- nødmodus
+
+async function readOverrides() {
+  try {
+    return JSON.parse(await fs.readFile(OVERRIDES_FILE, 'utf-8')) || {};
+  } catch {
+    return {};
+  }
+}
+
+async function writeOverrides(all) {
+  const tmp = OVERRIDES_FILE + '.tmp';
+  await fs.writeFile(tmp, JSON.stringify(all, null, 2), 'utf-8');
+  await fs.rename(tmp, OVERRIDES_FILE);
+  await rebuildJson();          // slår gjennom på forsiden med en gang
+}
+
+app.get('/api/admin/overrides', requireAdmin, async (req, res) => {
+  res.json({ overrides: await readOverrides() });
+});
+
+app.post('/api/admin/override', requireAdmin, async (req, res) => {
+  const place = String(req.body?.place || '');
+  if (!OVERRIDE_PLACES.includes(place)) {
+    return res.status(400).json({ error: 'ukjent kantine' });
+  }
+  const items = String(req.body?.text || '')
+    .split('\n').map(l => l.trim().replace(/^[-–•]\s*/, '')).filter(Boolean).slice(0, 20);
+  if (!items.length) return res.status(400).json({ error: 'Menyen må ha minst én rett' });
+
+  const all = await readOverrides();
+  all[place] = { items, set: new Date().toISOString() };
+  await writeOverrides(all);
+  res.json({ ok: true, overrides: all });
+});
+
+app.delete('/api/admin/override', requireAdmin, async (req, res) => {
+  const place = String(req.query.place || '');
+  const all = await readOverrides();
+  delete all[place];
+  await writeOverrides(all);
+  res.json({ ok: true, overrides: all });
+});
+
+// ---------------------------------------------------------------- bakern.txt
+
+app.get('/api/admin/bakern', requireAdmin, async (req, res) => {
+  try {
+    res.json({ text: await fs.readFile(BAKERN_TXT, 'utf-8'), updated: await mtime(BAKERN_TXT) });
+  } catch {
+    res.json({ text: '', updated: null });
+  }
+});
+
+app.post('/api/admin/bakern', requireAdmin, async (req, res) => {
+  const text = String(req.body?.text || '').slice(0, 8000);
+  if (!text.trim()) return res.status(400).json({ error: 'Teksten er tom' });
+  try {
+    await fs.mkdir(MENU_DIR, { recursive: true });
+    const tmp = BAKERN_TXT + '.tmp';
+    await fs.writeFile(tmp, text.endsWith('\n') ? text : text + '\n', 'utf-8');
+    await fs.rename(tmp, BAKERN_TXT);
+    const log = await rebuildJson();
+    res.json({ ok: true, log: log.trim(), updated: await mtime(BAKERN_TXT) });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ------------------------------------------------------------- forhåndsvis
+//
+// Kjører skrapingen og bygger til en midlertidig fil, så du ser hva menyen
+// VILLE blitt før public/menu.json røres. "Publiser" flytter den på plass.
+
+app.post('/api/admin/preview', requireAdmin, async (req, res) => {
+  const log = [];
+  try {
+    log.push('$ python3 scrape_dagens_menu.py');
+    log.push((await runPython(['scrape_dagens_menu.py'])).trimEnd());
+    log.push(`$ python3 build_menu_json.py --out ${path.basename(PREVIEW_JSON)}`);
+    log.push((await runPython(['build_menu_json.py', '--out', PREVIEW_JSON])).trimEnd());
+
+    const next = JSON.parse(await fs.readFile(PREVIEW_JSON, 'utf-8'));
+    let current = null;
+    try {
+      current = JSON.parse(await fs.readFile(MENU_JSON, 'utf-8'));
+    } catch {}
+
+    const today = next.today;
+    const dishes = (data, id) =>
+      data?.manual?.[id]?.items?.length ? data.manual[id].items
+        : data?.todayOverride?.no?.[id]?.items?.length ? data.todayOverride.no[id].items
+        : data?.places?.[id]?.week?.no?.[today] || [];
+
+    const diff = Object.keys(next.places || {}).map(id => ({
+      id,
+      name: next.places[id].name,
+      items: dishes(next, id),
+      changed: JSON.stringify(dishes(next, id)) !== JSON.stringify(dishes(current, id))
+    }));
+
+    res.json({ ok: true, log: log.join('\n'), today, diff });
+  } catch (e) {
+    log.push('FEIL: ' + e.message);
+    res.status(500).json({ error: e.message, log: log.join('\n') });
+  }
+});
+
+app.post('/api/admin/publish', requireAdmin, async (req, res) => {
+  try {
+    await fs.copyFile(PREVIEW_JSON, MENU_JSON);
+    await recordRun(true, 'Publisert fra forhåndsvisning');
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Ingen forhåndsvisning å publisere: ' + e.message });
   }
 });
 

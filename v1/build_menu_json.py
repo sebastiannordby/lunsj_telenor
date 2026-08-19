@@ -18,6 +18,7 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 MENU_DIR = SCRIPT_DIR / "Menyer"                    # ukesmenyene (kantinenavn.txt)
+OVERRIDES = SCRIPT_DIR / "overrides.json"           # manuelle menyer satt fra /admin
 DAILY_DIR = SCRIPT_DIR / "outputs"                  # dagsmenyene (menus_no/en/al.txt)
 OUT_FILE = SCRIPT_DIR / "public" / "menu.json"      # der nettsiden leser den
 
@@ -198,6 +199,21 @@ def parse_daily(path: Path) -> dict:
     return result
 
 
+def read_overrides() -> dict:
+    """Manuelle menyer satt fra /admin. Vinner over alt annet, og blir
+    stående til noen fjerner dem der."""
+    try:
+        data = json.loads(OVERRIDES.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    out = {}
+    for pid, entry in (data or {}).items():
+        items = [str(i).strip() for i in (entry or {}).get("items", []) if str(i).strip()]
+        if items:
+            out[pid] = {"items": items, "set": entry.get("set", "")}
+    return out
+
+
 def today_key():
     wd = datetime.today().weekday()
     return DAY_KEYS[wd] if wd <= 4 else None
@@ -237,6 +253,8 @@ def build(menu_dir: Path, daily_dir: Path) -> dict:
         "places": places,
         # Overstyrer ukesmenyen for i dag når den finnes (dagens-skriptet)
         "todayOverride": daily,
+        # Manuelt skrevne menyer fra /admin — vinner over alt over
+        "manual": read_overrides(),
     }
 
 
