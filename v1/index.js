@@ -676,10 +676,12 @@ app.get('/gjovik', async (req, res) => {
       <section class="week">
         <h2>Ukens meny</h2>
         <div class="days">${data.week.map(d => `
-          <article class="day${d.day === todayName ? ' is-today' : ''}">
-            <h3>${esc(d.day)}</h3>
-            <ul>${d.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>
-          </article>`).join('')}</div>
+          <div class="day${d.day === todayName ? ' is-today' : ''}">
+            <div class="day-inner">
+              <h3>${esc(d.day)}</h3>
+              <ul>${d.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>
+            </div>
+          </div>`).join('')}</div>
       </section>` : '';
 
     const notes = data.notes.length
@@ -690,79 +692,50 @@ app.get('/gjovik', async (req, res) => {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="refresh" content="900">
 <title>Lunsjmeny Gjøvik</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #f5ead8; --surface: #fffdf8; --text: #201e1d;
-    --accent: #c67139; --accent-tint: #f7e3d3; --accent-deep: #8f4d24;
-    --sage: #7a8a5e; --sage-tint: #e8ecdf;
-    --muted: #7a716a;
-    --u: clamp(9px, 1.15vmin, 20px);          /* typografisk grunnenhet */
+  /* Skjermen i gangen er en Samsung-TV med gammel Tizen-nettleser: ingen
+     CSS-variabler, ingen clamp(), ingen grid og ingen gap. Alt her er derfor
+     rene hex-farger, faste px-verdier og float-kolonner. Ikke moderniser
+     denne stilen - da blir skjermen hvit. */
+  * { -webkit-box-sizing: border-box; box-sizing: border-box; }
+  body { font-family: 'Figtree', Helvetica, Arial, sans-serif; background: #f5ead8;
+         color: #201e1d; margin: 0; padding: 24px; }
+  .app { background: #fffdf8; border: 1px solid #ecd9bd; border-radius: 20px;
+         padding: 32px 36px 40px; }
+  h1 { font-family: 'Caprasimo', Georgia, serif; font-weight: normal; margin: 0 0 22px;
+       font-size: 40px; line-height: 1.05; color: #8f4d24; }
+  .hero { background: #f7e3d3; border-radius: 16px; padding: 22px 26px; margin-bottom: 30px; }
+  .kicker { margin: 0 0 8px; font-size: 15px; font-weight: bold; letter-spacing: 1px;
+            text-transform: uppercase; color: #8f4d24; }
+  .dishes { list-style: none; margin: 0; padding: 0; }
+  .dishes li { font-family: 'Caprasimo', Georgia, serif; font-weight: normal; font-size: 30px;
+               line-height: 1.2; margin: 0 0 6px; color: #201e1d; }
+  .week h2 { font-family: 'Caprasimo', Georgia, serif; font-weight: normal; margin: 0 0 16px;
+             font-size: 23px; color: #7a716a; }
+  /* Float i stedet for grid, margin i stedet for gap */
+  .days { margin: 0 -7px; }
+  .days:after { content: ""; display: block; clear: both; }
+  .day { float: left; width: 50%; padding: 0 7px; margin-bottom: 14px; }
+  .day-inner { background: #e8ecdf; border-radius: 14px; padding: 16px 18px; color: #201e1d; }
+  .day.is-today .day-inner { background: #7a8a5e; color: #ffffff; }
+  .day h3 { margin: 0 0 6px; font-size: 14px; font-weight: bold; letter-spacing: 1px;
+            text-transform: uppercase; color: #5d6b45; }
+  .day.is-today h3 { color: #ffffff; }
+  .day ul { list-style: none; margin: 0; padding: 0; }
+  .day li { font-size: 20px; line-height: 1.3; margin: 0 0 3px; word-wrap: break-word; }
+  .notes { clear: both; margin: 22px 0 0; font-size: 17px; line-height: 1.5; color: #7a716a; }
+  /* Skjermen i gangen star pa hoykant - da skal alt leses pa avstand */
+  @media (min-width: 700px) {
+    body { padding: 34px; } .app { padding: 44px 48px 52px; }
+    h1 { font-size: 62px; } .kicker { font-size: 20px; } .dishes li { font-size: 46px; }
+    .week h2 { font-size: 32px; } .day h3 { font-size: 19px; } .day li { font-size: 30px; }
+    .notes { font-size: 22px; }
   }
-  @media (orientation: portrait) { :root { --u: clamp(11px, 1.5vw, 30px); } }
-  * { box-sizing: border-box; }
-  body {
-    font-family: 'Figtree', system-ui, sans-serif;
-    background: var(--bg); color: var(--text);
-    margin: 0; padding: calc(var(--u) * 2);
-    min-height: 100vh; display: flex;
-    -webkit-font-smoothing: antialiased;
-  }
-  .app {
-    background: var(--surface); border-radius: calc(var(--u) * 2);
-    box-shadow: 0 8px 30px rgba(32, 30, 29, .10);
-    padding: calc(var(--u) * 3);
-    flex: 1 1 auto; min-width: 0;
-    display: flex; flex-direction: column; gap: calc(var(--u) * 2.5);
-  }
-  h1 {
-    font-family: 'Caprasimo', Georgia, serif; font-weight: 400;
-    margin: 0; font-size: calc(var(--u) * 3.4); line-height: 1;
-    letter-spacing: -0.005em; color: var(--accent-deep);
-  }
-  .hero {
-    background: var(--accent-tint); border-radius: calc(var(--u) * 1.6);
-    padding: calc(var(--u) * 2.2) calc(var(--u) * 2.4);
-  }
-  .kicker {
-    margin: 0 0 calc(var(--u) * .8); font-size: calc(var(--u) * 1.25);
-    font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-    color: var(--accent-deep);
-  }
-  .dishes { list-style: none; margin: 0; padding: 0;
-    display: flex; flex-direction: column; gap: calc(var(--u) * .5); }
-  .dishes li {
-    font-family: 'Caprasimo', Georgia, serif; font-weight: 400;
-    font-size: calc(var(--u) * 2.6); line-height: 1.15; text-wrap: pretty;
-  }
-  .week h2 {
-    font-family: 'Caprasimo', Georgia, serif; font-weight: 400;
-    margin: 0 0 calc(var(--u) * 1.4); font-size: calc(var(--u) * 1.9);
-    color: var(--muted);
-  }
-  .days { display: grid; gap: calc(var(--u) * 1.2);
-    grid-template-columns: repeat(auto-fit, minmax(calc(var(--u) * 22), 1fr)); }
-  .day {
-    border-radius: calc(var(--u) * 1.4); padding: calc(var(--u) * 1.4) calc(var(--u) * 1.6);
-    background: var(--sage-tint); min-width: 0;
-  }
-  .day.is-today { background: var(--sage); color: #fff; }
-  .day h3 {
-    margin: 0 0 calc(var(--u) * .55); font-size: calc(var(--u) * 1.15);
-    font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
-    opacity: .8;
-  }
-  .day ul { list-style: none; margin: 0; padding: 0;
-    display: flex; flex-direction: column; gap: calc(var(--u) * .3); }
-  .day li {
-    font-size: calc(var(--u) * 1.6); line-height: 1.3;
-    overflow-wrap: anywhere; text-wrap: pretty;
-  }
-  .notes {
-    margin: 0; font-size: calc(var(--u) * 1.35); line-height: 1.5;
-    color: var(--muted); text-wrap: pretty;
+  @media (min-width: 1000px) {
+    h1 { font-size: 82px; } .kicker { font-size: 26px; } .dishes li { font-size: 60px; }
+    .week h2 { font-size: 42px; } .day-inner { padding: 22px 26px; }
+    .day h3 { font-size: 24px; } .day li { font-size: 38px; } .notes { font-size: 28px; }
   }
 </style></head>
 <body><div class="app">
