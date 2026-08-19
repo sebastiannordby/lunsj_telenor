@@ -8,6 +8,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
+import { randomUUID } from 'crypto';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -17,6 +18,15 @@ const __dirname = path.dirname(__filename);
 
 const MENU_JSON = path.join(__dirname, 'public', 'menu.json');
 const STATE_FILE = path.join(__dirname, 'state.json');
+const BANNER_FILE = path.join(__dirname, 'banner.json');
+
+// Admin-passord. Sett ADMIN_PASSWORD i miljøet (systemd-unit eller .env);
+// uten det genereres et engangspassord som skrives til loggen ved oppstart.
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
+  || randomUUID().slice(0, 8);
+if (!process.env.ADMIN_PASSWORD) {
+  console.log(`\n  ADMIN_PASSWORD er ikke satt — bruker midlertidig passord: ${ADMIN_PASSWORD}\n`);
+}
 
 // ntfy-topics — sett som miljøvariabler i produksjon
 const NTFY_UP = process.env.NTFY_UP || 'mb-lunsjfbu-lunsjmeny-fornebu-bra';
@@ -36,7 +46,7 @@ app.use(express.json({ limit: '8kb' }));
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
 async function assetStamp() {
-  const files = ['app.js', 'styles.css', 'fornebu-kart.png'];
+  const files = ['app.js', 'admin.js', 'styles.css', 'fornebu-kart.png'];
   const stamps = await Promise.all(files.map(async f => {
     try {
       return (await fs.stat(path.join(PUBLIC_DIR, f))).mtimeMs;
@@ -47,9 +57,9 @@ async function assetStamp() {
   return Math.max(...stamps).toString(36);
 }
 
-async function sendIndex(res) {
+async function sendPage(res, file, script) {
   const [html, v] = await Promise.all([
-    fs.readFile(path.join(PUBLIC_DIR, 'index.html'), 'utf-8'),
+    fs.readFile(path.join(PUBLIC_DIR, file), 'utf-8'),
     assetStamp()
   ]);
   res.set('Cache-Control', 'no-cache, must-revalidate');
@@ -58,8 +68,12 @@ async function sendIndex(res) {
       // Godtar både "/styles.css" og "styles.css" — forhåndsvisning bruker
       // relative stier, serveren bryr seg ikke, men stemplet må treffe begge.
       .replace(/href="\/?styles\.css"/, `href="styles.css?v=${v}"`)
-      .replace(/src="\/?app\.js"/, `src="app.js?v=${v}"`)
+      .replace(new RegExp(`src="/?${script.replace('.', '\\.')}"`), `src="${script}?v=${v}"`)
   );
+}
+
+async function sendIndex(res) {
+  return sendPage(res, 'index.html', 'app.js');
 }
 
 app.get('/', async (req, res, next) => {
@@ -116,6 +130,56 @@ async function writeState(state) {
 
 function cookieVote(req) {
   return req.headers.cookie?.match(/lunsjvote=([a-z0-9]+)/)?.[1] ?? null;
+}
+
+// ---------------------------------------------------------------- banner
+//
+// Et midlertidig banner øverst på siden, satt fra /admin. Ligger i egen fil
+// (ikke state.json, som nullstilles hver midnatt) og har en utløpsdato.
+
+async function readBanner() {
+  try {
+    const b = JSON.parse(await fs.readFile(BANNER_FILE, 'utf-8'));
+    if (!b?.text) return null;
+    if (b.until && b.until < todayKey()) return null;   // utløpt
+    return b;
+  } catch {
+    return null;
+  }
+}
+
+async function writeBanner(banner) {
+  const tmp = BANNER_FILE + '.tmp';
+  await fs.writeFile(tmp, JSON.stringify(banner ?? {}, null, 2), 'utf-8');
+  await fs.rename(tmp, BANNER_FILE);
+}
+
+// ---------------------------------------------------------------- admin auth
+//
+// Bevisst enkelt: ett delt passord byttes mot en session-token i minnet.
+// Tokens forsvinner ved restart — da må man logge inn på nytt.
+
+const SESSIONS = new Map();          // token -> utløpstidspunkt (ms)
+const SESSION_MS = 12 * 60 * 60 * 1000;
+
+function newSession() {
+  const token = randomUUID().replace(/-/g, '');
+  SESSIONS.set(token, Date.now() + SESSION_MS);
+  return token;
+}
+
+function isAdmin(req) {
+  const token = req.headers.cookie?.match(/lunsjadmin=([a-f0-9]+)/)?.[1];
+  if (!token) return false;
+  const exp = SESSIONS.get(token);
+  if (!exp) return false;
+  if (exp < Date.now()) { SESSIONS.delete(token); return false; }
+  return true;
+}
+
+function requireAdmin(req, res, next) {
+  if (!isAdmin(req)) return res.status(401).json({ error: 'ikke innlogget' });
+  next();
 }
 
 // ---------------------------------------------------------------- api
@@ -184,6 +248,81 @@ app.post('/api/feedback', async (req, res) => {
   } catch (e) {
     console.error('ntfy-feil:', e);
     res.status(502).json({ error: e.message });
+  }
+});
+
+// ---------------------------------------------------------------- admin api
+
+app.get('/api/banner', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ banner: await readBanner() });
+});
+
+app.get('/api/admin/session', (req, res) => {
+  res.json({ loggedIn: isAdmin(req) });
+});
+
+app.post('/api/admin/login', (req, res) => {
+  const pw = String(req.body?.password || '');
+  if (pw !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Feil passord' });
+  }
+  res.setHeader('Set-Cookie',
+    `lunsjadmin=${newSession()}; Path=/; Max-Age=${SESSION_MS / 1000}; HttpOnly; SameSite=Lax`);
+  res.json({ ok: true });
+});
+
+app.post('/api/admin/logout', (req, res) => {
+  const token = req.headers.cookie?.match(/lunsjadmin=([a-f0-9]+)/)?.[1];
+  if (token) SESSIONS.delete(token);
+  res.setHeader('Set-Cookie', 'lunsjadmin=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax');
+  res.json({ ok: true });
+});
+
+app.post('/api/admin/banner', requireAdmin, async (req, res) => {
+  const text = String(req.body?.text || '').trim().slice(0, 240);
+  if (!text) return res.status(400).json({ error: 'Banneret må ha tekst' });
+
+  const tones = ['info', 'good', 'warn'];
+  const banner = {
+    id: randomUUID().slice(0, 8),
+    text,
+    textEn: String(req.body?.textEn || '').trim().slice(0, 240) || null,
+    emoji: String(req.body?.emoji || '').trim().slice(0, 4) || 'ℹ️',
+    tone: tones.includes(req.body?.tone) ? req.body.tone : 'info',
+    until: /^\d{4}-\d{2}-\d{2}$/.test(req.body?.until || '') ? req.body.until : todayKey(),
+    dismissible: req.body?.dismissible !== false,
+    created: new Date().toISOString()
+  };
+  await writeBanner(banner);
+  res.json({ ok: true, banner });
+});
+
+app.delete('/api/admin/banner', requireAdmin, async (req, res) => {
+  await writeBanner(null);
+  res.json({ ok: true });
+});
+
+// Manuell oppdatering: samme kjede som cron/systemd kjører.
+app.post('/api/admin/refresh', requireAdmin, async (req, res) => {
+  const log = [];
+  try {
+    log.push('$ python3 scrape_dagens_menu.py');
+    log.push((await runPython(['scrape_dagens_menu.py'])).trimEnd());
+    log.push('$ python3 build_menu_json.py');
+    log.push((await runPython(['build_menu_json.py'])).trimEnd());
+    res.json({ ok: true, log: log.join('\n') });
+  } catch (e) {
+    log.push('FEIL: ' + e.message);
+    res.status(500).json({ error: e.message, log: log.join('\n') });
+  }
+});
+
+app.get('/admin', async (req, res, next) => {
+  try {
+    await sendPage(res, 'admin.html', 'admin.js');
+  } catch (e) {
+    next(e);
   }
 });
 
