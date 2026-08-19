@@ -650,6 +650,15 @@ select.input { cursor: pointer; }
 
 .empty { font-size: 15px; color: var(--muted); font-style: italic; }
 
+.card-stamp {
+  margin-top: var(--s3);
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.btn[hidden] { display: none; }
+.btn:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+
 .manual-flag {
   margin-left: 8px;
   padding: 2px 8px;
@@ -661,14 +670,35 @@ select.input { cursor: pointer; }
   letter-spacing: 0.04em;
 }
 
-/* bakery — smal stripe på tvers, ikke et kort i rutenettet */
+/* bakery - smal stripe på tvers, ikke et kort i rutenettet */
 
 .nowrap { white-space: nowrap; }
 .bakery {
+  position: relative;
   border-top: 3px solid var(--n-300);
   margin-bottom: var(--s6);
   padding: var(--s3) var(--s4);
 }
+.bakery-link {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--muted);
+  opacity: 0.45;
+  transition: opacity 0.15s, background 0.15s;
+}
+.bakery-link:hover, .bakery-link:focus-visible {
+  opacity: 1;
+  background: var(--n-100);
+  color: var(--text);
+}
+.bakery-link svg { width: 14px; height: 14px; }
 .bakery-head {
   display: flex;
   align-items: center;
@@ -867,7 +897,7 @@ select.input { cursor: pointer; }
   margin: 0 0 3px;
 }
 .pin-pop.compact .pin-pop-dishes { gap: 2px; }
-/* Maks to linjer per rett — full tekst står i detaljkortet under kartet */
+/* Maks to linjer per rett - full tekst står i detaljkortet under kartet */
 .pin-pop.compact .pin-pop-dishes > div {
   font-size: 11px;
   line-height: 1.25;
@@ -879,7 +909,7 @@ select.input { cursor: pointer; }
 .pin-pop.compact.below { top: calc(100% + 6px); }
 .pin-pop.compact.above { bottom: calc(100% + 6px); }
 
-/* På mobil er kartet lite og markørene ligger tætt — vis bare prikken.
+/* På mobil er kartet lite og markørene ligger tætt - vis bare prikken.
    Navnet dukker opp på den aktive markøren, og står i kortet under kartet. */
 @media (max-width: 620px) {
   .pin { position: relative; padding: 5px; gap: 0; }

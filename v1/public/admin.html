@@ -63,7 +63,7 @@
       <h2 class="card-title">Oppdater lunsjmenyene nå</h2>
       <p class="card-body">
         Kjører <code class="admin-code">scrape_dagens_menu.py</code> og deretter
-        <code class="admin-code">build_menu_json.py</code> — samme kjede som kjøres automatisk
+        <code class="admin-code">build_menu_json.py</code> - samme kjede som kjøres automatisk
         hver halvtime mellom 06 og 11 på hverdager.
       </p>
       <div class="admin-actions">
@@ -98,7 +98,7 @@
       <h2 class="card-title">Skriv dagens meny manuelt</h2>
       <p class="card-body">
         Brukes når skrapingen ikke får tak i menyen. Teksten vinner over alt annet og
-        blir stående — også gjennom automatiske oppdateringer — til du fjerner den.
+        blir stående - også gjennom automatiske oppdateringer - til du fjerner den.
         Én rett per linje. Kortet på forsiden merkes «Skrevet manuelt».
       </p>
       <div class="admin-form">
@@ -113,7 +113,7 @@
           </select>
         </div>
         <div class="field">
-          <label for="ovText">Retter — én per linje</label>
+          <label for="ovText">Retter - én per linje</label>
           <textarea class="input" id="ovText" rows="5" placeholder="Kjøttkaker med ertestuing&#10;Vegetarlasagne&#10;Dagens suppe"></textarea>
         </div>
         <div class="admin-actions">
@@ -134,9 +134,14 @@
       <h2 class="card-title">Ukemeny fra bildefila</h2>
       <p class="card-body">
         Skriver rett til <code class="admin-code">Menyer/bakern.txt</code> og bygger
-        <code class="admin-code">menu.json</code> på nytt. Behold formatet som står der —
+        <code class="admin-code">menu.json</code> på nytt. Behold formatet som står der -
         dagnavn på egen linje, rettene under.
       </p>
+      <a class="btn btn-secondary btn-sm icon-btn" id="bakernWidget" target="_blank" rel="noopener"
+         href="https://widget.inisign.com/Widget/Customers/Customer.aspx?token=e7420bcd-79cf-4268-abb6-08ccca3a7e89&amp;scaleToFit=true">
+        <svg viewBox="0 0 24 24" class="ico-14"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+        <span>Åpne Bakern sin meny</span>
+      </a>
       <div class="admin-form">
         <div class="field">
           <label for="bakernText">bakern.txt</label>
@@ -169,12 +174,12 @@
         <div class="field">
           <label for="bText">Tekst (norsk)</label>
           <input class="input" type="text" id="bText" maxlength="240"
-                 placeholder="Det var noen utfordringer med siden i går — nå er alt i orden igjen." required>
+                 placeholder="Det var noen utfordringer med siden i går - nå er alt i orden igjen." required>
         </div>
         <div class="field">
           <label for="bTextEn">Tekst (engelsk, valgfritt)</label>
           <input class="input" type="text" id="bTextEn" maxlength="240"
-                 placeholder="The site had some issues yesterday — it is fixed now.">
+                 placeholder="The site had some issues yesterday - it is fixed now.">
         </div>
         <div class="admin-row">
           <div class="field admin-narrow">

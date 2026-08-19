@@ -1,4 +1,4 @@
-// admin.js — /admin: manuell menyoppdatering og midlertidig banner.
+// admin.js - /admin: manuell menyoppdatering og midlertidig banner.
 
 const $ = s => document.querySelector(s);
 
@@ -96,7 +96,7 @@ $('#previewBtn').onclick = async () => {
     });
     $('#previewBox').hidden = false;
     status.className = 'admin-status ok';
-    status.textContent = 'Forhåndsvisning klar — ingenting er publisert enda.';
+    status.textContent = 'Forhåndsvisning klar - ingenting er publisert enda.';
     log.textContent = res.log || '';
     log.hidden = !res.log;
   } catch (e) {
@@ -116,7 +116,7 @@ $('#publishBtn').onclick = async () => {
     $('#previewBox').hidden = true;
     status.hidden = false;
     status.className = 'admin-status ok';
-    status.textContent = 'Publisert — forsiden viser den nye menyen.';
+    status.textContent = 'Publisert - forsiden viser den nye menyen.';
     loadStatus();
   } catch (e) {
     status.className = 'admin-status bad';
@@ -174,7 +174,7 @@ async function loadStatus() {
       row.appendChild(el('span', 'status-dot ' + tone));
       row.appendChild(el('span', 'status-name', p.name));
       row.appendChild(el('span', 'status-src', label));
-      row.appendChild(el('span', 'status-count', p.count ? p.count + ' retter' : '—'));
+      row.appendChild(el('span', 'status-count', p.count ? p.count + ' retter' : '-'));
       grid.appendChild(row);
     });
 
@@ -183,7 +183,7 @@ async function loadStatus() {
     if (s.lastRun) {
       bits.push(s.lastRun.ok
         ? 'siste kjøring fra admin gikk bra ' + when(s.lastRun.at)
-        : 'SISTE KJØRING FEILET ' + when(s.lastRun.at) + ' — ' + s.lastRun.error);
+        : 'SISTE KJØRING FEILET ' + when(s.lastRun.at) + ' - ' + s.lastRun.error);
     }
     meta.textContent = bits.join(' · ');
     meta.className = 'admin-status' + (s.lastRun && !s.lastRun.ok ? ' bad' : '');
@@ -253,7 +253,7 @@ $('#ovSave').onclick = async () => {
       body: JSON.stringify({ place: $('#ovPlace').value, text: $('#ovText').value })
     });
     status.className = 'admin-status ok';
-    status.textContent = 'Lagret — ligger ute på forsiden nå.';
+    status.textContent = 'Lagret - ligger ute på forsiden nå.';
     renderOverrides(r.overrides);
     loadStatus();
   } catch (e) {

@@ -1,13 +1,13 @@
-/* app.js — Lunsjmeny Fornebu
+/* app.js - Lunsjmeny Fornebu
    Leser public/menu.json og snakker med /api/traffic, /api/vote, /api/feedback. */
 
 const UI = {
   no: {
     heading: 'LUNSJMENY FORNEBU',
-    sub: 'Tre kantiner og et bakeri — dagens meny på ett sted.',
+    sub: 'Tre kantiner og et bakeri - dagens meny på ett sted.',
     showingToday: 'Viser dagens meny', oldSite: 'Bytt til gammel side', themeDark: 'Bytt til mørk modus', themeLight: 'Bytt til lys modus',
     weekendKicker: 'Helg', weekendTitle: 'Kantinene er stengt',
-    weekendBody: 'Det serveres ingen lunsj i helgen. Kom tilbake på mandag — eller se menyen for en ukedag nå.',
+    weekendBody: 'Det serveres ingen lunsj i helgen. Kom tilbake på mandag - eller se menyen for en ukedag nå.',
     weekendCta: 'Se mandagens meny',
     mon: 'Mandag', tue: 'Tirsdag', wed: 'Onsdag', thu: 'Torsdag', fri: 'Fredag',
     monShort: 'Man', tueShort: 'Tir', wedShort: 'Ons', thuShort: 'Tor', friShort: 'Fre',
@@ -15,13 +15,15 @@ const UI = {
     lunch: 'Lunsj', dinner: 'Middag', allergyToggle: 'Allergener',
     voteLabel: '🙋 Jeg spiser her', votedLabel: '✓ Du spiser her', votesLabel: 'stemmer i dag', votesLabelOne: 'stemme i dag',
     mapTitle: 'Hvor er kantinene?',
-    mapSub: 'Hold musepekeren over en markør for å se menyen — eller trykk på den på mobil.',
+    mapSub: 'Hold musepekeren over en markør for å se menyen - eller trykk på den på mobil.',
     mapEmpty: 'Velg et sted i kartet over.',
     staticMenu: 'Fast meny hele uken', buildingLabel: 'Bygg', cafeLabel: 'Kafé',
     openLabel: 'Åpent', lunchWindow: 'lunsjtilbudet gjelder',
     bakeryAlways: 'Bakevarer og nystekt brød hele åpningstiden.',
     bannerHide: 'Skjul melding', lunchWindowShort: 'Lunsjtilbud',
-    manualFlag: 'Skrevet manuelt',
+    manualFlag: 'Skrevet manuelt', bakernLink: 'Åpne Bakern sin egen meny',
+    lastUpdated: 'Sist oppdatert',
+    allergyTodayOnly: 'Allergener vises kun for dagens meny',
     legendCanteens: 'Kantiner', legendBakery: 'Baker', legendCafes: 'Kafeer',
     expoFriday: 'Fredager: gratis kaffe frem til kl. 11 for Telenor-ansatte',
     expoFridayToday: 'I dag: gratis kaffe frem til kl. 11 for Telenor-ansatte',
@@ -37,10 +39,10 @@ const UI = {
     fbUp: 'Bra', fbDown: 'Dårlig', fbDetail: 'Skriv detaljert tilbakemelding',
     fbPlaceholder: 'Hva fungerer bra, hva kan bli bedre?', fbSend: 'Send',
     fbThanks: 'Takk for tilbakemeldingen!', fbSending: 'Sender …',
-    fbError: 'Kunne ikke sende — prøv igjen.',
+    fbError: 'Kunne ikke sende - prøv igjen.',
     aboutBtn: 'Om siden', aboutTitle: 'Om denne løsningen',
     aboutMadeH: 'Laget av', aboutMadeP: 'Siden er laget på fritiden av en kollega på Fornebu, som et hobbyprosjekt. Den er ikke et offisielt ISS- eller bedriftsverktøy.',
-    aboutHostH: 'Drift og hosting', aboutHostP: 'Løsningen kjører på en egen liten server utenfor bedriftens nettverk. Menyene hentes automatisk fra kjøkkenets egne filer flere ganger hver morgen — ingen personopplysninger lagres, kun anonyme stemmer og tilbakemeldinger.',
+    aboutHostH: 'Drift og hosting', aboutHostP: 'Løsningen kjører på en egen liten server utenfor bedriftens nettverk. Menyene hentes automatisk fra kjøkkenets egne filer flere ganger hver morgen - ingen personopplysninger lagres, kun anonyme stemmer og tilbakemeldinger.',
     aboutWebexH: 'Bli med i Webex-gruppen', aboutWebexP: 'Det finnes en åpen Webex-gruppe som varsler når dagens meny er klar, og hvor du kan komme med ønsker og feilmeldinger. Ta kontakt, så legges du til automatisk.',
     aboutWebexCta: 'Send melding på Webex',
     aboutWebexAlt: 'Eller send e-post i stedet',
@@ -49,10 +51,10 @@ const UI = {
   },
   en: {
     heading: 'LUNCH MENU FORNEBU',
-    sub: 'Three canteens and a bakery — today\u2019s menu in one place.',
+    sub: 'Three canteens and a bakery - today\u2019s menu in one place.',
     showingToday: 'Showing today\u2019s menu', oldSite: 'Switch to the old site', themeDark: 'Switch to dark mode', themeLight: 'Switch to light mode',
     weekendKicker: 'Weekend', weekendTitle: 'The canteens are closed',
-    weekendBody: 'No lunch is served at the weekend. Come back on Monday — or browse a weekday menu now.',
+    weekendBody: 'No lunch is served at the weekend. Come back on Monday - or browse a weekday menu now.',
     weekendCta: 'See Monday\u2019s menu',
     mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday',
     monShort: 'Mon', tueShort: 'Tue', wedShort: 'Wed', thuShort: 'Thu', friShort: 'Fri',
@@ -60,13 +62,15 @@ const UI = {
     lunch: 'Lunch', dinner: 'Dinner', allergyToggle: 'Allergens',
     voteLabel: '🙋 Eating here', votedLabel: '✓ You\u2019re eating here', votesLabel: 'votes today', votesLabelOne: 'vote today',
     mapTitle: 'Where are the canteens?',
-    mapSub: 'Hover a marker to see its menu — or tap it on mobile.',
+    mapSub: 'Hover a marker to see its menu - or tap it on mobile.',
     mapEmpty: 'Pick a spot on the map above.',
     staticMenu: 'Same menu all week', buildingLabel: 'Building', cafeLabel: 'Café',
     openLabel: 'Open', lunchWindow: 'lunch offer served',
     bakeryAlways: 'Pastries and freshly baked bread all day.',
     bannerHide: 'Hide message', lunchWindowShort: 'Lunch offer',
-    manualFlag: 'Entered manually',
+    manualFlag: 'Entered manually', bakernLink: 'Open Bakern\u2019s own menu',
+    lastUpdated: 'Last updated',
+    allergyTodayOnly: 'Allergens are only available for today\u2019s menu',
     legendCanteens: 'Canteens', legendBakery: 'Bakery', legendCafes: 'Cafés',
     expoFriday: 'Fridays: free coffee until 11:00 for Telenor employees',
     expoFridayToday: 'Today: free coffee until 11:00 for Telenor employees',
@@ -82,10 +86,10 @@ const UI = {
     fbUp: 'Good', fbDown: 'Bad', fbDetail: 'Write detailed feedback',
     fbPlaceholder: 'What works well, what could be better?', fbSend: 'Send',
     fbThanks: 'Thanks for the feedback!', fbSending: 'Sending \u2026',
-    fbError: 'Could not send — please try again.',
+    fbError: 'Could not send - please try again.',
     aboutBtn: 'About', aboutTitle: 'About this site',
     aboutMadeH: 'Made by', aboutMadeP: 'Built in spare time by a colleague at Fornebu as a hobby project. It is not an official ISS or company tool.',
-    aboutHostH: 'Hosting and operations', aboutHostP: 'The site runs on a small private server outside the company network. Menus are pulled automatically from the kitchen\u2019s own files several times each morning — no personal data is stored, only anonymous votes and feedback.',
+    aboutHostH: 'Hosting and operations', aboutHostP: 'The site runs on a small private server outside the company network. Menus are pulled automatically from the kitchen\u2019s own files several times each morning - no personal data is stored, only anonymous votes and feedback.',
     aboutWebexH: 'Join the Webex group', aboutWebexP: 'There is an open Webex space that pings when today\u2019s menu is ready, and where you can send wishes and bug reports. Get in touch and you are added automatically.',
     aboutWebexCta: 'Message on Webex',
     aboutWebexAlt: 'Or send an email instead',
@@ -94,9 +98,13 @@ const UI = {
   }
 };
 
+// Bakern legger ukesmenyen sin ut som bilde i denne skjermwidgeten
+const BAKERN_MENU_URL =
+  'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=e7420bcd-79cf-4268-abb6-08ccca3a7e89&scaleToFit=true';
+
 const FRIDAY_LINES = {
-  no: ['Endelig fredag!', 'Ha en fin fredag!', 'Er det fredag? Ja. 🙌', 'God helg — men først lunsj.'],
-  en: ['Finally Friday!', 'Have a great Friday!', 'Is it Friday? Yes. 🙌', 'Happy weekend — lunch first.']
+  no: ['Endelig fredag!', 'Ha en fin fredag!', 'Er det fredag? Ja. 🙌', 'God helg - men først lunsj.'],
+  en: ['Finally Friday!', 'Have a great Friday!', 'Is it Friday? Yes. 🙌', 'Happy weekend - lunch first.']
 };
 const FRIDAY_IDX = Math.floor(Math.random() * 4);
 
@@ -106,7 +114,7 @@ const GEO = {
   m:         { color: '#0080a6', dark: '#38c9e8', left: '74%', top: '56%', vote: true },
   fresh4you: { color: '#070452', dark: '#a08cff', left: '78%', top: '21%', vote: true },
   bakern:    { color: '#8a5a2b', dark: '#e0a066', left: '61%', top: '21%', vote: false },
-  // Kafeer uten meny — bare navn og åpningstid
+  // Kafeer uten meny - bare navn og åpningstid
   expo:      { color: '#7a8a5e', dark: '#b3c48c', left: '86%', top: '30%', vote: false, cafe: true,
                name: 'Café Expo', hours: '08:00 – 15:00', noteKey: 'expoFriday' },
   hotspot:   { color: '#7a8a5e', dark: '#b3c48c', left: '45%', top: '50%', vote: false, cafe: true,
@@ -180,7 +188,7 @@ function activeDay() {
   return state.day || todayWeekKey() || 'mon';
 }
 
-/** Sant når vi viser dagens dato — da gjelder dagfilene. */
+/** Sant når vi viser dagens dato - da gjelder dagfilene. */
 function showingToday() {
   const today = todayWeekKey();
   return !!today && activeDay() === today;
@@ -196,7 +204,7 @@ function dishesFor(id) {
   const data = state.data;
   if (!data || !data.places[id]) return [];
 
-  // Dagfilene er ferskere enn ukesmenyen — bruk dem når valgt dag er i dag
+  // Dagfilene er ferskere enn ukesmenyen - bruk dem når valgt dag er i dag
   if (showingToday()) {
     // Manuelt skrevet meny fra /admin vinner over alt
     const manual = data.manual?.[id]?.items;
@@ -280,10 +288,14 @@ function renderTabs() {
   $$('[data-lang]').forEach(b => {
     b.className = 'btn btn-sm ' + (b.dataset.lang === state.lang ? 'btn-secondary' : 'btn-ghost');
   });
+  // Allergenene finnes bare i dagsfila, så knappen gjelder kun dagens meny.
+  // Den blir stående, men utilgjengelig, på andre dager.
+  const isTodayView = showingToday();
+  if (!isTodayView) state.allergens = false;
   const allergyBtn = $('#allergyToggle');
   allergyBtn.className = 'btn btn-sm icon-btn ' + (state.allergens ? 'btn-secondary' : 'btn-ghost');
-  // Allergenene finnes bare i dagsfila, så knappen gjelder kun dagens meny
-  allergyBtn.hidden = !showingToday();
+  allergyBtn.disabled = !isTodayView;
+  allergyBtn.title = isTodayView ? '' : t().allergyTodayOnly;
 
   const active = activeDay();
   const group = $('#weekTabs');
@@ -420,7 +432,7 @@ function renderBanner() {
 }
 
 // Bakern er ikke en ordinær kantine, og får derfor sin egen smale stripe
-// på tvers under kantinekortene — ikke et kort i rutenettet.
+// på tvers under kantinekortene - ikke et kort i rutenettet.
 function renderBakery() {
   const info = placeInfo('bakern');
   const card = $('#bakeryCard');
@@ -456,6 +468,16 @@ function renderBakery() {
   }
   card.appendChild(dishes);
 
+  const link = el('a', 'bakery-link');
+  link.href = BAKERN_MENU_URL;
+  link.target = '_blank';
+  link.rel = 'noopener';
+  link.title = t().bakernLink;
+  link.setAttribute('aria-label', t().bakernLink);
+  link.innerHTML = '<svg viewBox="0 0 24 24" class="ico-14"><path d="M15 3h6v6"/><path d="M10 14 21 3"/>' +
+    '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
+  card.appendChild(link);
+
   const note = el('div', 'bakery-note');
   note.appendChild(el('span', null, t().bakeryAlways));
   if (info.lunchHours) {
@@ -467,12 +489,35 @@ function renderBakery() {
   card.appendChild(note);
 }
 
+/** Sist endret på kildefila menyen faktisk kommer fra. */
+function updatedFor(id) {
+  const data = state.data;
+  if (!data) return '';
+  const daily = data.todayOverride?.no?.[id]?.items?.length;
+  return (showingToday() && daily && data.dailyUpdated)
+    ? data.dailyUpdated
+    : data.places?.[id]?.updated || '';
+}
+
+function stampText(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const locale = state.lang === 'en' ? 'en-GB' : 'no-NO';
+  return t().lastUpdated + ' ' + d.toLocaleString(locale, {
+    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+  });
+}
+
 function renderDinner() {
   const info = placeInfo('dinner');
   const wrap = $('#dinnerCard');
   wrap.textContent = '';
   info.color = GEO.street.color;
-  wrap.appendChild(canteenCard(info, false));
+  const card = canteenCard(info, false);
+  const stamp = stampText(updatedFor('dinner'));
+  if (stamp) card.appendChild(el('div', 'card-stamp', stamp));
+  wrap.appendChild(card);
 }
 
 function applyMapTransform() {
@@ -553,7 +598,7 @@ function renderMap() {
     pin.appendChild(el('span', 'pin-label', info.name));
     if (state.myVote === id) pin.appendChild(el('span', 'pin-star', '★'));
     pin.onclick = () => {
-      // Trykk på samme markør igjen lukker den — både på mobil og PC
+      // Trykk på samme markør igjen lukker den - både på mobil og PC
       if (state.selected === id) {
         state.selected = null;
         setHover(null);
@@ -578,7 +623,7 @@ function renderMap() {
     const pop = el('div', 'pin-pop ' + (above ? 'above' : 'below') + ' ' + side +
       (narrow ? ' compact' : ''));
 
-    // På mobil er kartet lavt — kicker og åpningstid utgår, de står i
+    // På mobil er kartet lavt - kicker og åpningstid utgår, de står i
     // detaljkortet under kartet. Bare navn og retter får plass.
     if (!narrow) {
       pop.appendChild(el('div', 'pin-pop-kicker',
@@ -683,7 +728,7 @@ async function loadTraffic() {
   } catch { /* trafikk er ikke kritisk */ }
 }
 
-/** Liten konfettifontene fra stemmeknappen — 14 biter, ~900 ms, ryddes bort. */
+/** Liten konfettifontene fra stemmeknappen - 14 biter, ~900 ms, ryddes bort. */
 function microConfetti(origin) {
   if (!origin || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const box = el('div', 'confetti');
@@ -720,7 +765,7 @@ function voteOffline(id) {
 
 async function castVote(id, anchor) {
   const wasMine = state.myVote === id;
-  // Posisjonen må leses nå — etter render er knappen byttet ut og måler 0.
+  // Posisjonen må leses nå - etter render er knappen byttet ut og måler 0.
   let origin = null;
   if (anchor) {
     const r = anchor.getBoundingClientRect();
@@ -749,7 +794,7 @@ async function castVote(id, anchor) {
 // ------------------------------------------------------------------ copy
 
 function menuAsText() {
-  const lines = [t().heading + ' — ' + $('#datestamp').textContent, ''];
+  const lines = [t().heading + ' - ' + $('#datestamp').textContent, ''];
   [...LUNCH_IDS, 'bakern', 'dinner'].forEach(id => {
     const info = placeInfo(id);
     lines.push(`${info.name} (${t().buildingLabel} ${info.building}, ${info.hours})`);
@@ -823,7 +868,7 @@ async function sendFeedback(kind, message) {
     if (!r.ok) throw new Error(r.status);
     status.textContent = t().fbThanks;
     if (message) {
-      // Fritekst er sendt — da er vi ferdige
+      // Fritekst er sendt - da er vi ferdige
       $('#fbVotes').hidden = true;
       $('#fbText').hidden = true;
       $('#fbDetail').hidden = true;
@@ -864,6 +909,7 @@ document.addEventListener('pointerdown', e => {
 });
 
 $('#allergyToggle').onclick = () => {
+  if (!showingToday()) return;
   state.allergens = !state.allergens;
   writeUrl();
   render();
