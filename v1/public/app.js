@@ -20,7 +20,8 @@ const UI = {
     staticMenu: 'Fast meny hele uken', buildingLabel: 'Bygg', cafeLabel: 'Kafé',
     openLabel: 'Åpent', lunchWindow: 'lunsjtilbudet gjelder',
     bakeryAlways: 'Bakevarer og nystekt brød hele åpningstiden.',
-    bannerHide: 'Skjul melding',
+    bannerHide: 'Skjul melding', lunchWindowShort: 'Lunsjtilbud',
+    manualFlag: 'Skrevet manuelt',
     legendCanteens: 'Kantiner', legendBakery: 'Baker', legendCafes: 'Kafeer',
     expoFriday: 'Fredager: gratis kaffe frem til kl. 11 for Telenor-ansatte',
     expoFridayToday: 'I dag: gratis kaffe frem til kl. 11 for Telenor-ansatte',
@@ -64,7 +65,8 @@ const UI = {
     staticMenu: 'Same menu all week', buildingLabel: 'Building', cafeLabel: 'Café',
     openLabel: 'Open', lunchWindow: 'lunch offer served',
     bakeryAlways: 'Pastries and freshly baked bread all day.',
-    bannerHide: 'Hide message',
+    bannerHide: 'Hide message', lunchWindowShort: 'Lunch offer',
+    manualFlag: 'Entered manually',
     legendCanteens: 'Canteens', legendBakery: 'Bakery', legendCafes: 'Cafés',
     expoFriday: 'Fridays: free coffee until 11:00 for Telenor employees',
     expoFridayToday: 'Today: free coffee until 11:00 for Telenor employees',
@@ -196,6 +198,10 @@ function dishesFor(id) {
 
   // Dagfilene er ferskere enn ukesmenyen — bruk dem når valgt dag er i dag
   if (showingToday()) {
+    // Manuelt skrevet meny fra /admin vinner over alt
+    const manual = data.manual?.[id]?.items;
+    if (manual && manual.length) return manual;
+
     // Allergenfila er menyen med allergener påført hver rett
     if (state.allergens) {
       const al = data.todayOverride?.allergens?.[id]?.items;
@@ -221,6 +227,7 @@ function placeInfo(id) {
     left: geo.left,
     top: geo.top,
     cafe: !!geo.cafe,
+    manual: showingToday() && !!state.data?.manual?.[id]?.items?.length,
     note: geo.noteKey ? t()[geo.noteKey] : '',
     dishes: geo.cafe ? [] : dishesFor(id)
   };
@@ -332,7 +339,9 @@ function dishList(info) {
 function canteenCard(info, withVote) {
   const card = el('div', 'card elev-sm canteen');
   card.style.borderTopColor = info.color;
-  card.appendChild(el('div', 'card-kicker', t().buildingLabel + ' ' + info.building));
+  const kicker = el('div', 'card-kicker', t().buildingLabel + ' ' + info.building);
+  if (info.manual) kicker.appendChild(el('span', 'manual-flag', t().manualFlag));
+  card.appendChild(kicker);
   card.appendChild(el('div', 'card-title', info.name));
 
   const hours = el('div', 'hours');
@@ -410,33 +419,52 @@ function renderBanner() {
   box.hidden = false;
 }
 
+// Bakern er ikke en ordinær kantine, og får derfor sin egen smale stripe
+// på tvers under kantinekortene — ikke et kort i rutenettet.
 function renderBakery() {
   const info = placeInfo('bakern');
   const card = $('#bakeryCard');
+  if (!card) return;
   card.textContent = '';
+  card.style.borderTopColor = info.color;
 
-  const main = el('div', 'bakery-main');
   const head = el('div', 'bakery-head');
   head.appendChild(el('span', 'bakery-name', info.name));
-  head.appendChild(el('span', 'sep', '–'));
+  head.appendChild(el('span', 'sep', '·'));
   head.appendChild(el('span', null, t().buildingLabel + ' ' + info.building));
-  head.appendChild(el('span', 'sep', '–'));
-  head.appendChild(el('span', null, t().openLabel + ' ' + info.hours));
-  if (info.lunchHours) {
-    head.appendChild(el('span', 'bakery-window', '(' + t().lunchWindow + ' ' + info.lunchHours + ')'));
-  }
-  main.appendChild(head);
 
-  const dishes = el('ul', 'bakery-dishes');
+  const hours = el('span', 'bakery-hours');
+  hours.innerHTML = CLOCK;
+  hours.appendChild(el('span', 'nowrap', info.hours));
+  head.appendChild(hours);
+
+  head.appendChild(el('span', 'tag tag-neutral', t().staticMenu));
+  card.appendChild(head);
+
+  const dishes = el('div', 'bakery-dishes');
   if (info.dishes.length) {
-    info.dishes.forEach(d => dishes.appendChild(el('li', null, d)));
+    info.dishes.forEach(d => {
+      const item = el('span', 'bakery-dish');
+      const dot = el('span', 'dot');
+      dot.style.background = info.color;
+      item.appendChild(dot);
+      item.appendChild(el('span', null, d));
+      dishes.appendChild(item);
+    });
   } else {
-    dishes.appendChild(el('li', 'empty', t().noMenu));
+    dishes.appendChild(el('span', 'empty', t().noMenu));
   }
-  main.appendChild(dishes);
-  main.appendChild(el('p', 'bakery-always', t().bakeryAlways));
-  card.appendChild(main);
-  card.appendChild(el('span', 'tag tag-neutral', t().staticMenu));
+  card.appendChild(dishes);
+
+  const note = el('div', 'bakery-note');
+  note.appendChild(el('span', null, t().bakeryAlways));
+  if (info.lunchHours) {
+    note.appendChild(el('span', 'sep', ' · '));
+    const w = el('span', 'bakery-window', t().lunchWindowShort + ' ');
+    w.appendChild(el('span', 'nowrap', info.lunchHours));
+    note.appendChild(w);
+  }
+  card.appendChild(note);
 }
 
 function renderDinner() {
