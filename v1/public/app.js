@@ -20,6 +20,7 @@ const UI = {
     staticMenu: 'Fast meny hele uken', buildingLabel: 'Bygg', cafeLabel: 'Kafé',
     openLabel: 'Åpent', lunchWindow: 'lunsjtilbudet gjelder',
     bakeryAlways: 'Bakevarer og nystekt brød hele åpningstiden.',
+    bannerHide: 'Skjul melding',
     legendCanteens: 'Kantiner', legendBakery: 'Baker', legendCafes: 'Kafeer',
     expoFriday: 'Fredager: gratis kaffe frem til kl. 11 for Telenor-ansatte',
     expoFridayToday: 'I dag: gratis kaffe frem til kl. 11 for Telenor-ansatte',
@@ -63,6 +64,7 @@ const UI = {
     staticMenu: 'Same menu all week', buildingLabel: 'Building', cafeLabel: 'Café',
     openLabel: 'Open', lunchWindow: 'lunch offer served',
     bakeryAlways: 'Pastries and freshly baked bread all day.',
+    bannerHide: 'Hide message',
     legendCanteens: 'Canteens', legendBakery: 'Bakery', legendCafes: 'Cafés',
     expoFriday: 'Fridays: free coffee until 11:00 for Telenor employees',
     expoFridayToday: 'Today: free coffee until 11:00 for Telenor employees',
@@ -245,6 +247,7 @@ function renderStrings() {
     inst.setAttribute('aria-label', t().install);
   }
   $('#fbMessage').placeholder = t().fbPlaceholder;
+  if (state.banner) renderBanner();
   $('#datestamp').textContent = new Date().toLocaleDateString(
     state.lang === 'en' ? 'en-GB' : 'nb-NO',
     { weekday: 'long', day: 'numeric', month: 'long' }
@@ -365,6 +368,46 @@ function renderCanteens() {
   const grid = $('#canteenCards');
   grid.textContent = '';
   LUNCH_IDS.forEach(id => grid.appendChild(canteenCard(placeInfo(id), showingToday())));
+}
+
+// Midlertidig banner satt fra /admin. Skjules per bruker via localStorage,
+// nøkkelen inneholder bannerets id så et nytt banner alltid vises igjen.
+async function loadBanner() {
+  const box = $('#siteBanner');
+  if (!box) return;
+  try {
+    const r = await fetch('api/banner', { cache: 'no-store' });
+    const { banner } = await r.json();
+    if (!banner) { box.hidden = true; return; }
+
+    let hidden = null;
+    try { hidden = localStorage.getItem('lunsj-banner-hidden'); } catch (e) {}
+    if (hidden === banner.id) { box.hidden = true; return; }
+
+    state.banner = banner;
+    renderBanner();
+  } catch (e) {
+    box.hidden = true;
+  }
+}
+
+function renderBanner() {
+  const box = $('#siteBanner');
+  const banner = state.banner;
+  if (!box || !banner) return;
+  box.className = 'site-banner tone-' + banner.tone;
+  $('#siteBannerEmoji').textContent = banner.emoji || '';
+  $('#siteBannerText').textContent =
+    (state.lang === 'en' && banner.textEn) ? banner.textEn : banner.text;
+  const x = $('#siteBannerClose');
+  x.hidden = !banner.dismissible;
+  x.title = t().bannerHide;
+  x.setAttribute('aria-label', t().bannerHide);
+  x.onclick = () => {
+    box.hidden = true;
+    try { localStorage.setItem('lunsj-banner-hidden', banner.id); } catch (e) {}
+  };
+  box.hidden = false;
 }
 
 function renderBakery() {
@@ -987,6 +1030,7 @@ async function boot() {
   }
   render();
   loadTraffic();
+  loadBanner();
 }
 
 let resizeTimer = null;
