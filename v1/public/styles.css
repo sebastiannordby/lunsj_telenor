@@ -222,6 +222,163 @@ svg.ico-18 { width: 18px; height: 18px; }
   .wrap { padding-right: 84px; }
 }
 
+/* ---------------------------------------------------------------- admin */
+
+.admin-wrap { max-width: 720px; }
+.admin-h1 {
+  margin: 0 0 var(--s2);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.admin-card { margin-bottom: var(--s4); }
+.admin-card .card-title { margin: 2px 0 var(--s2); }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.field .input { width: 100%; }
+.seg {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--n-100);
+}
+.seg-opt { flex: 1 1 auto; }
+.seg-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.seg-opt span {
+  display: block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.seg-opt input:checked + span { background: var(--surface); color: var(--text); box-shadow: var(--elev-sm); }
+.seg-opt input:focus-visible + span { outline: 2px solid var(--blue-500); outline-offset: 2px; }
+.tag-accent { background: var(--blue-500); color: var(--on-accent); }
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin-top: var(--s4);
+}
+.admin-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  align-items: flex-end;
+}
+.admin-row .field { flex: 1 1 180px; }
+.admin-narrow { flex: 0 0 auto !important; }
+.admin-actions { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.admin-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--n-100);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+.admin-status {
+  margin: var(--s3) 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.admin-status.ok { color: #2f7a4d; }
+.admin-status.bad { color: #c0392b; }
+.admin-status[hidden] { display: none; }
+.admin-error {
+  margin: var(--s3) 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c0392b;
+}
+.admin-error[hidden] { display: none; }
+.admin-log {
+  margin: var(--s3) 0 0;
+  padding: var(--s3);
+  max-height: 260px;
+  overflow: auto;
+  border-radius: var(--radius);
+  background: var(--n-100);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.admin-log[hidden] { display: none; }
+.admin-current {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  align-items: flex-start;
+  margin-top: var(--s4);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--n-200);
+}
+.admin-current[hidden] { display: none; }
+.admin-current-head { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.admin-current-until { font-size: 13px; color: var(--muted); font-weight: 600; }
+.admin-current .site-banner { margin: 0; width: 100%; }
+
+.site-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  margin-bottom: var(--s4);
+  border-radius: var(--radius);
+  background: var(--n-100);
+  border: 1px solid var(--n-200);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  text-wrap: pretty;
+}
+.site-banner[hidden] { display: none; }
+.site-banner-emoji { font-size: 18px; flex: 0 0 auto; }
+.site-banner-x {
+  margin-left: auto;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  opacity: 0.5;
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+}
+.site-banner-x:hover { opacity: 1; background: color-mix(in oklab, currentColor 12%, transparent); }
+.site-banner-x[hidden] { display: none; }
+.site-banner.tone-good {
+  background: color-mix(in oklab, #2f7a4d 12%, var(--surface));
+  border-color: color-mix(in oklab, #2f7a4d 30%, transparent);
+}
+.site-banner.tone-warn {
+  background: color-mix(in oklab, #d98324 14%, var(--surface));
+  border-color: color-mix(in oklab, #d98324 34%, transparent);
+}
+
 .friday-banner {
   display: flex;
   align-items: center;
