@@ -551,7 +551,6 @@ select.input { cursor: pointer; }
   .nav { flex-wrap: nowrap; gap: var(--s1); padding: var(--s3); }
   .nav-brand { font-size: 15px; overflow: hidden; text-overflow: ellipsis; }
   .nav .btn-sm { padding: var(--s1) var(--s2); }
-  .nav #allergyToggle span { display: none; }
 
   .old-switch { margin-left: 0; }
 }
@@ -564,6 +563,23 @@ select.input { cursor: pointer; }
   margin-bottom: var(--s6);
 }
 .section-row .btn { font-size: 13px; padding: var(--s1) var(--s3); }
+
+/* Allergenbryteren står som en tekstet pille ved siden av lunsj/middag -
+   som rent ikon oppe i navigasjonen var den uleselig på mobil. */
+.allergy-toggle { margin-left: var(--s3); }
+.allergy-toggle:disabled { opacity: 0.5; cursor: default; }
+.allergy-toggle:disabled:hover { background: transparent; border-color: var(--n-300); }
+.allergy-toggle.is-on {
+  background: var(--accent-fill);
+  border-color: transparent;
+  color: var(--accent-ink);
+}
+.allergy-toggle.is-on:hover { background: var(--accent-fill-hover); border-color: transparent; }
+
+@media (max-width: 560px) {
+  .section-row { flex-wrap: wrap; }
+  .allergy-toggle { margin-left: auto; }
+}
 
 .copy-fallback {
   display: flex;

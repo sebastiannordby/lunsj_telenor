@@ -48,10 +48,6 @@
     <svg viewBox="0 0 24 24" class="ico-16 ico-moon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
     <svg viewBox="0 0 24 24" class="ico-16 ico-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.3 17.7-1.4 1.4"/><path d="m19.1 4.9-1.4 1.4"/></svg>
   </button>
-  <button type="button" class="btn btn-ghost btn-sm icon-btn" id="allergyToggle">
-    <svg viewBox="0 0 24 24" class="ico-14"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-    <span data-t="allergyToggle"></span>
-  </button>
 </nav>
 
 <main class="wrap">
@@ -80,6 +76,10 @@
   <div class="section-row">
     <button type="button" class="btn btn-ghost btn-sm" data-section="lunch" data-t="lunch"></button>
     <button type="button" class="btn btn-ghost btn-sm" data-section="dinner" data-t="dinner"></button>
+    <button type="button" class="btn btn-ghost btn-sm icon-btn allergy-toggle" id="allergyToggle" aria-pressed="false">
+      <svg viewBox="0 0 24 24" class="ico-14"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+      <span data-t="allergyToggle"></span>
+    </button>
     <span class="spacer"></span>
     <button type="button" class="btn btn-ghost btn-icon-only" id="copyBtn">
       <svg viewBox="0 0 24 24" class="ico-16"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -178,11 +178,11 @@
     <section class="about-item">
       <h3 data-t="aboutWebexH"></h3>
       <p data-t="aboutWebexP"></p>
-      <a class="btn btn-primary btn-block icon-btn" id="aboutWebexLink" href="webexteams://im?email=marius.brathen@telenor.no">
+      <a class="btn btn-primary btn-block icon-btn" id="aboutWebexLink" href="webexteams://im?email=lunsj@fornebu.no">
         <svg viewBox="0 0 24 24" class="ico-16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span data-t="aboutWebexCta"></span>
       </a>
-      <a class="about-alt" href="mailto:marius.brathen@telenor.no?subject=Webex-gruppe%20lunsjmeny" data-t="aboutWebexAlt"></a>
+      <a class="about-alt" href="mailto:lunsj@fornebu.no?subject=Webex-gruppe%20lunsjmeny" data-t="aboutWebexAlt"></a>
     </section>
   </div>
   <p class="about-note" data-t="aboutNote"></p>

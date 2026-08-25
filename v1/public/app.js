@@ -12,7 +12,7 @@ const UI = {
     mon: 'Mandag', tue: 'Tirsdag', wed: 'Onsdag', thu: 'Torsdag', fri: 'Fredag',
     monShort: 'Man', tueShort: 'Tir', wedShort: 'Ons', thuShort: 'Tor', friShort: 'Fre',
     todaySuffix: '(dagens)', copiedToast: 'Hele menyen er kopiert', voteTodayOnly: 'Du kan bare stemme på dagens meny.',
-    lunch: 'Lunsj', dinner: 'Middag', allergyToggle: 'Allergener',
+    lunch: 'Lunsj', dinner: 'Middag', allergyToggle: 'Vis allergener',
     voteLabel: '🙋 Jeg spiser her', votedLabel: '✓ Du spiser her', votesLabel: 'stemmer i dag', votesLabelOne: 'stemme i dag',
     mapTitle: 'Hvor er kantinene?',
     mapSub: 'Hold musepekeren over en markør for å se menyen - eller trykk på den på mobil.',
@@ -24,6 +24,8 @@ const UI = {
     manualFlag: 'Skrevet manuelt', bakernLink: 'Åpne Bakern sin egen meny',
     lastUpdated: 'Sist oppdatert',
     allergyTodayOnly: 'Allergener vises kun for dagens meny',
+    allergyOnHint: 'Vises bak hver rett i listen',
+    allergyOffHint: 'Slå på for å se allergener i menyen',
     legendCanteens: 'Kantiner', legendBakery: 'Baker', legendCafes: 'Kafeer',
     expoFriday: 'Fredager: gratis kaffe frem til kl. 11 for Telenor-ansatte',
     expoFridayToday: 'I dag: gratis kaffe frem til kl. 11 for Telenor-ansatte',
@@ -59,7 +61,7 @@ const UI = {
     mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday',
     monShort: 'Mon', tueShort: 'Tue', wedShort: 'Wed', thuShort: 'Thu', friShort: 'Fri',
     todaySuffix: '(today)', copiedToast: 'The whole menu was copied', voteTodayOnly: 'You can only vote on today\u2019s menu.',
-    lunch: 'Lunch', dinner: 'Dinner', allergyToggle: 'Allergens',
+    lunch: 'Lunch', dinner: 'Dinner', allergyToggle: 'Show allergens',
     voteLabel: '🙋 Eating here', votedLabel: '✓ You\u2019re eating here', votesLabel: 'votes today', votesLabelOne: 'vote today',
     mapTitle: 'Where are the canteens?',
     mapSub: 'Hover a marker to see its menu - or tap it on mobile.',
@@ -71,6 +73,8 @@ const UI = {
     manualFlag: 'Entered manually', bakernLink: 'Open Bakern\u2019s own menu',
     lastUpdated: 'Last updated',
     allergyTodayOnly: 'Allergens are only available for today\u2019s menu',
+    allergyOnHint: 'Shown after each dish in the list',
+    allergyOffHint: 'Turn on to see allergens in the menu',
     legendCanteens: 'Canteens', legendBakery: 'Bakery', legendCafes: 'Cafés',
     expoFriday: 'Fridays: free coffee until 11:00 for Telenor employees',
     expoFridayToday: 'Today: free coffee until 11:00 for Telenor employees',
@@ -293,8 +297,9 @@ function renderTabs() {
   const isTodayView = showingToday();
   if (!isTodayView) state.allergens = false;
   const allergyBtn = $('#allergyToggle');
-  allergyBtn.className = 'btn btn-sm icon-btn ' + (state.allergens ? 'btn-secondary' : 'btn-ghost');
+  allergyBtn.classList.toggle('is-on', state.allergens);
   allergyBtn.disabled = !isTodayView;
+  allergyBtn.setAttribute('aria-pressed', state.allergens ? 'true' : 'false');
   allergyBtn.title = isTodayView ? '' : t().allergyTodayOnly;
 
   const active = activeDay();
