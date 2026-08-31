@@ -23,7 +23,7 @@ function showLoggedIn(yes) {
   loginCard.hidden = yes;
   adminBody.hidden = !yes;
   $('#logoutBtn').hidden = !yes;
-  if (yes) { loadBanner(); loadStatus(); loadOverrides(); loadBakern(); }
+  if (yes) { loadBanner(); loadStatus(); loadVotes(); loadOverrides(); loadBakern(); }
 }
 
 const el = (tag, cls, text) => {
@@ -194,6 +194,113 @@ async function loadStatus() {
     meta.hidden = false;
   }
 }
+
+// ------------------------------------------------------------------ stemmer
+
+function voteMsg(text, bad) {
+  const s = $('#voteStatus');
+  s.textContent = text;
+  s.className = 'admin-status' + (bad ? ' bad' : '');
+  s.hidden = !text;
+}
+
+async function loadVotes() {
+  const list = $('#voteList');
+  try {
+    const v = await api('api/admin/votes');
+    list.textContent = '';
+    const total = v.places.reduce((n, p) => n + p.count, 0);
+    v.places.forEach(p => {
+      const row = el('div', 'vote-row');
+      row.appendChild(el('span', 'vote-name', p.label));
+      row.appendChild(el('span', 'vote-count' + (p.count > 300 ? ' bad' : ''), String(p.count)));
+      const btn = el('button', 'btn btn-ghost btn-xs', 'Nullstill');
+      btn.type = 'button';
+      btn.onclick = () => resetVotes(p.id, p.label);
+      row.appendChild(btn);
+      list.appendChild(row);
+    });
+
+    renderVoteClients(v.clients);
+
+    const bits = [`${total} stemmer i dag (${v.date})`];
+    bits.push(`${v.lastMinute} siste minutt`);
+    bits.push(`maks ${v.limit} per maskin per dag`);
+    if (!v.originLocked) bits.push('ADVARSEL: ALLOWED_ORIGIN er ikke satt');
+    voteMsg(bits.join(' · '), !v.originLocked || v.lastMinute > 25);
+  } catch (e) {
+    voteMsg('Kunne ikke hente stemmer: ' + e.message, true);
+  }
+}
+
+function renderVoteClients(clients) {
+  const box = $('#voteClients');
+  box.textContent = '';
+  if (!clients || !clients.length) {
+    box.appendChild(el('p', 'admin-status', 'Ingen stemmer logget i dag.'));
+    return;
+  }
+  clients.forEach(c => {
+    const row = el('div', 'vote-row');
+    row.appendChild(el('span', 'vote-key', c.who));
+
+    const detail = [];
+    if (c.rate >= 3) detail.push(`${c.rate}/min`);
+    if (c.undos) detail.push(`${c.undos} angret`);
+    if (c.blocked) detail.push('SPERRET');
+    row.appendChild(el('span', 'vote-detail', detail.join(' · ')));
+
+    const suspicious = c.votes > 10 || c.rate >= 3;
+    row.appendChild(el('span', 'vote-count' + (suspicious ? ' bad' : ''), String(c.votes)));
+
+    const btn = el('button', 'btn btn-ghost btn-xs', c.blocked ? 'Opphev' : 'Sperr');
+    btn.type = 'button';
+    btn.onclick = () => (c.blocked ? unblockClient(c.who) : blockClient(c.who, c.votes));
+    row.appendChild(btn);
+    box.appendChild(row);
+  });
+}
+
+async function blockClient(who, votes) {
+  if (!confirm(`Sperre maskin ${who} og fjerne ${votes} stemmer?`)) return;
+  voteMsg('Sperrer ...');
+  try {
+    const r = await api('api/admin/votes/block', {
+      method: 'POST',
+      body: JSON.stringify({ who })
+    });
+    await loadVotes();
+    voteMsg(`Sperret ${who} og fjernet ${r.removed} stemmer.`);
+  } catch (e) {
+    voteMsg('Klarte ikke sperre: ' + e.message, true);
+  }
+}
+
+async function unblockClient(who) {
+  try {
+    await api('api/admin/votes/block?who=' + encodeURIComponent(who), { method: 'DELETE' });
+    await loadVotes();
+    voteMsg(`Sperren for ${who} er opphevet.`);
+  } catch (e) {
+    voteMsg('Klarte ikke oppheve: ' + e.message, true);
+  }
+}
+
+async function resetVotes(place, label) {
+  const what = place ? `stemmene for ${label}` : 'alle stemmene';
+  if (!confirm(`Nullstille ${what}?`)) return;
+  voteMsg('Nullstiller ...');
+  try {
+    await api('api/admin/votes' + (place ? '?place=' + encodeURIComponent(place) : ''), { method: 'DELETE' });
+    await loadVotes();
+    voteMsg(`Nullstilt ${what}.`);
+  } catch (e) {
+    voteMsg('Klarte ikke nullstille: ' + e.message, true);
+  }
+}
+
+$('#voteReload').onclick = loadVotes;
+$('#voteResetAll').onclick = () => resetVotes('', '');
 
 // ------------------------------------------------------------------ nødmodus
 

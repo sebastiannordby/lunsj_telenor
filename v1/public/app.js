@@ -768,6 +768,23 @@ function voteOffline(id) {
   state.votes = v;
 }
 
+function postVote(id) {
+  return fetch('/api/vote', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ place: id })
+  });
+}
+
+/** Avvist stemme (for rask, sperret, for mange): si det i stedet for å late
+    som den ble registrert lokalt. */
+function showVoteError(msg) {
+  const box = el('div', 'vote-error');
+  box.textContent = msg;
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 3200);
+}
+
 async function castVote(id, anchor) {
   const wasMine = state.myVote === id;
   // Posisjonen må leses nå - etter render er knappen byttet ut og måler 0.
@@ -778,12 +795,23 @@ async function castVote(id, anchor) {
   }
   try {
     if (state.offline) throw new Error('offline');
-    const r = await fetch('/api/vote', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ place: id })
-    });
-    if (!r.ok) throw new Error(r.status);
+    let r = await postVote(id);
+
+    // Sesjonscookien mangler eller er utløpt: hent /api/traffic (som utsteder
+    // en ny) og prøv én gang til.
+    if (r.status === 403) {
+      const d = await r.clone().json().catch(() => ({}));
+      if (d.retry) {
+        await fetch('/api/traffic');
+        r = await postVote(id);
+      }
+    }
+
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      if (d.error) { showVoteError(d.error); return; }
+      throw new Error(r.status);
+    }
     const d = await r.json();
     state.votes = d.votes || {};
     state.myVote = d.myVote || null;

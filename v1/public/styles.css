@@ -364,6 +364,58 @@ svg.ico-18 { width: 18px; height: 18px; }
 .status-name { font-weight: 700; }
 .status-src { color: var(--muted); font-size: 13px; }
 .status-count { margin-left: auto; color: var(--muted); font-size: 13px; }
+
+/* Stemmelista i admin: navn, teller, nullstill-knapp per kantine. */
+.admin-vote-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--s3);
+  border-top: 1px solid var(--n-200);
+}
+.vote-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--n-200);
+  font-size: 14px;
+}
+.vote-name { font-weight: 700; }
+.vote-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.vote-count.bad { color: #b3261e; }
+.vote-key {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  font-weight: 700;
+}
+.vote-detail { color: var(--muted); font-size: 13px; }
+
+/* Melding n\u00e5r en stemme blir avvist av bot-vernet. */
+.vote-error {
+  position: fixed;
+  left: 50%;
+  bottom: 88px;
+  transform: translateX(-50%);
+  z-index: 60;
+  max-width: 320px;
+  padding: var(--s2) var(--s4);
+  border-radius: 999px;
+  background: #b3261e;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(var(--shadow-tint), 0.35);
+}
+.admin-h3 {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  margin: var(--s5) 0 var(--s1);
+}
 .admin-preview {
   margin-top: var(--s4);
   padding: var(--s4);

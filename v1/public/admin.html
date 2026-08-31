@@ -59,6 +59,31 @@
     </section>
 
     <section class="card admin-card">
+      <span class="card-kicker">Stemmer</span>
+      <h2 class="card-title">Dagens avstemming</h2>
+      <p class="card-body">
+        Nullstill hvis tallene er tuklet med. Stemmene nullstilles ellers
+        automatisk hver midnatt.
+      </p>
+      <div class="admin-vote-list" id="voteList"></div>
+
+      <h3 class="admin-h3">Hvor stemmene kommer fra</h3>
+      <p class="card-body">
+        Hver maskin får en anonym nøkkel. Sperr én maskin for å fjerne stemmene
+        den har lagt inn i dag og stenge den ute til midnatt.
+      </p>
+      <div class="admin-vote-list" id="voteClients"></div>
+      <div class="admin-actions">
+        <button type="button" class="btn btn-secondary icon-btn" id="voteReload">
+          <svg viewBox="0 0 24 24" class="ico-16"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+          <span>Oppdater tallene</span>
+        </button>
+        <button type="button" class="btn btn-primary" id="voteResetAll">Nullstill alle</button>
+        <span class="admin-status" id="voteStatus" hidden></span>
+      </div>
+    </section>
+
+    <section class="card admin-card">
       <span class="card-kicker">Menyer</span>
       <h2 class="card-title">Oppdater lunsjmenyene nå</h2>
       <p class="card-body">
