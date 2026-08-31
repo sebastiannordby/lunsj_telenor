@@ -8,7 +8,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHmac, createHash, timingSafeEqual } from 'crypto';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -42,6 +42,119 @@ const NTFY_DOWN = process.env.NTFY_DOWN || 'mb-lunsjfbu-lunsjmeny-fornebu-darlig
 const NTFY_TEXT = process.env.NTFY_TEXT || 'mb-lunsjfbu-lunsjmeny-fornebu-tekst';
 
 const VOTE_PLACES = new Set(['street', 'm', 'fresh4you']);
+
+const VOTE_LABELS = { street: 'Street Food', m: 'M', fresh4you: 'Fresh4You' };
+
+// Bot-brems: en klient som ikke tar imot cookien kan ellers poste stemmer i
+// det uendelige. Vi teller forsøk per IP per dag i minnet (nullstilles ved
+// omstart, som er greit - stemmene nullstilles hver midnatt likevel).
+const VOTE_LIMIT_PER_IP = 15;
+const voteHits = new Map(); // ip -> { date, n }
+
+function clientIp(req) {
+  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+    || req.socket.remoteAddress || '?';
+}
+
+// Delt kontornett gir én utgående IP for mange folk, så nøkkelen er IP +
+// nettleser. Ikke vanntett, men treffer bedre enn IP alene.
+function clientKey(req) {
+  return clientIp(req) + '|' + String(req.headers['user-agent'] || '').slice(0, 120);
+}
+
+function voteRateExceeded(req) {
+  const key = clientKey(req);
+  const today = todayKey();
+  const hit = voteHits.get(key);
+  if (!hit || hit.date !== today) {
+    voteHits.set(key, { date: today, n: 1 });
+    return false;
+  }
+  hit.n += 1;
+  return hit.n > VOTE_LIMIT_PER_IP;
+}
+
+// -------------------------------------------------------- stemmesesjon
+//
+// /api/vote godtok tidligere en naken POST. Nå må klienten først hente
+// /api/traffic (som siden alltid gjør ved lasting), som setter en signert
+// lunsjsess-cookie. En bot må dermed gjøre to kall i riktig rekkefølge OG ta
+// imot cookies. I tillegg må det gå minst SESSION_MIN_AGE_MS fra sesjonen ble
+// utstedt til første stemme - gratis for mennesker, i veien for skript.
+
+const VOTE_SECRET = process.env.VOTE_SECRET || randomUUID();
+const VOTE_SESSION_MS = 12 * 60 * 60 * 1000;
+const SESSION_MIN_AGE_MS = 2000;
+
+// Hvilke Origin/Referer vi godtar. Sett ALLOWED_ORIGIN i produksjon
+// (komma-separert hvis flere), ellers godtas alt for lokal utvikling.
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || '')
+  .split(',').map(s => s.trim()).filter(Boolean);
+
+function sign(value) {
+  return createHmac('sha256', VOTE_SECRET).update(value).digest('hex').slice(0, 32);
+}
+
+function newVoteSession() {
+  const payload = `${Date.now()}.${randomUUID().replace(/-/g, '').slice(0, 12)}`;
+  return `${payload}.${sign(payload)}`;
+}
+
+/** Returnerer alder i ms hvis cookien er ekte og fersk, ellers null. */
+function voteSessionAge(req) {
+  const raw = req.headers.cookie?.match(/lunsjsess=([\w.]+)/)?.[1];
+  if (!raw) return null;
+  const parts = raw.split('.');
+  if (parts.length !== 3) return null;
+  const payload = `${parts[0]}.${parts[1]}`;
+  const want = Buffer.from(sign(payload));
+  const got = Buffer.from(parts[2]);
+  if (want.length !== got.length || !timingSafeEqual(want, got)) return null;
+  const age = Date.now() - Number(parts[0]);
+  if (!Number.isFinite(age) || age < 0 || age > VOTE_SESSION_MS) return null;
+  return age;
+}
+
+function originAllowed(req) {
+  if (!ALLOWED_ORIGINS.length) return true;
+  const src = req.headers.origin || req.headers.referer || '';
+  if (!src) return false; // nettlesere sender alltid en av dem på POST
+  return ALLOWED_ORIGINS.some(o => src === o || src.startsWith(o + '/'));
+}
+
+// --------------------------------------------------------- stemmelogg
+//
+// Hver stemme logges med hashet klientnøkkel, så admin kan se HVORDAN juksingen
+// skjer (én maskin eller mange?) og fjerne én synder presist i stedet for å
+// nullstille alt. Logg og sperreliste ligger i state.json og forsvinner ved
+// midnatt sammen med stemmene.
+
+const VOTE_LOG_MAX = 600;
+const BURST_WINDOW_MS = 60 * 1000;
+const BURST_LIMIT = 25;
+let burstNotifiedAt = 0;
+
+function hashKey(key) {
+  return createHash('sha256').update(VOTE_SECRET + key).digest('hex').slice(0, 10);
+}
+
+async function notifyBurst(count) {
+  if (Date.now() - burstNotifiedAt < 30 * 60 * 1000) return;
+  burstNotifiedAt = Date.now();
+  try {
+    await fetch(`https://ntfy.sh/${encodeURIComponent(NTFY_DOWN)}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        Title: 'Mistenkelig avstemming',
+        Tags: 'warning'
+      },
+      body: `${count} stemmer siste minutt pa lunsjmeny-siden. Sjekk /admin.`
+    });
+  } catch (e) {
+    console.error('ntfy-varsel feilet:', e);
+  }
+}
 
 app.use(express.json({ limit: '64kb' }));
 
@@ -121,12 +234,15 @@ function todayKey() {
 }
 
 async function readState() {
+  const empty = () => ({ date: todayKey(), votes: {}, log: [], blocked: [] });
   try {
     const state = JSON.parse(await fs.readFile(STATE_FILE, 'utf-8'));
-    if (state.date !== todayKey()) return { date: todayKey(), votes: {} };
+    if (state.date !== todayKey()) return empty();
+    state.log ||= [];
+    state.blocked ||= [];
     return state;
   } catch {
-    return { date: todayKey(), votes: {} };
+    return empty();
   }
 }
 
@@ -194,6 +310,12 @@ function requireAdmin(req, res, next) {
 
 app.get('/api/traffic', async (req, res) => {
   const state = await readState();
+  // Utsteder stemmesesjonen. Fornyes bare hvis den mangler eller er utløpt, så
+  // alderskravet ikke nullstilles hver gang siden lastes.
+  if (voteSessionAge(req) === null) {
+    res.setHeader('Set-Cookie',
+      `lunsjsess=${newVoteSession()}; Path=/; Max-Age=${VOTE_SESSION_MS / 1000}; HttpOnly; SameSite=Lax`);
+  }
   res.json({ date: state.date, votes: state.votes, myVote: cookieVote(req) });
 });
 
@@ -201,7 +323,29 @@ app.post('/api/vote', async (req, res) => {
   const place = String(req.body?.place || '');
   if (!VOTE_PLACES.has(place)) return res.status(400).json({ error: 'ukjent sted' });
 
+  if (!originAllowed(req)) {
+    return res.status(403).json({ error: 'ugyldig opphav' });
+  }
+
+  const age = voteSessionAge(req);
+  if (age === null) {
+    // Klienten kan hente /api/traffic og prøve på nytt.
+    return res.status(403).json({ error: 'mangler sesjon', retry: true });
+  }
+  if (age < SESSION_MIN_AGE_MS) {
+    return res.status(429).json({ error: 'for raskt - prøv igjen om et øyeblikk' });
+  }
+
+  const who = hashKey(clientKey(req));
   const state = await readState();
+
+  if (state.blocked.includes(who)) {
+    return res.status(403).json({ error: 'stemming sperret for denne maskinen i dag' });
+  }
+  if (voteRateExceeded(req)) {
+    return res.status(429).json({ error: 'For mange stemmer fra denne maskinen i dag' });
+  }
+
   const prev = cookieVote(req);
 
   // Én stemme per bruker per dag: flytt stemmen i stedet for å legge til ny
@@ -214,7 +358,14 @@ app.post('/api/vote', async (req, res) => {
     state.votes[place] = (state.votes[place] || 0) + 1;
   }
 
+  state.log.push({ t: Date.now(), who, place, undo: next === '' });
+  if (state.log.length > VOTE_LOG_MAX) state.log = state.log.slice(-VOTE_LOG_MAX);
+
   await writeState(state);
+
+  // Uvanlig mange stemmer på kort tid -> varsel på ntfy.
+  const recent = state.log.filter(e => Date.now() - e.t < BURST_WINDOW_MS).length;
+  if (recent > BURST_LIMIT) notifyBurst(recent);
 
   const midnight = new Date();
   midnight.setHours(23, 59, 59, 0);
@@ -403,6 +554,105 @@ async function writeOverrides(all) {
   await fs.rename(tmp, OVERRIDES_FILE);
   await rebuildJson();          // slår gjennom på forsiden med en gang
 }
+
+// ---------------------------------------------------------------- stemmer
+//
+// Nullstilling fra /admin: enten alt, eller én kantine. Cookie-sperren hos dem
+// som alt har stemt blir stående, men tellerne starter på null.
+
+app.get('/api/admin/votes', requireAdmin, async (req, res) => {
+  const state = await readState();
+
+  // Grupperer loggen per maskin, slik at mønsteret blir synlig: én nøkkel med
+  // 800 stemmer er en bot, 200 nøkler med én hver er ekte folk.
+  const byWho = new Map();
+  state.log.forEach(e => {
+    const g = byWho.get(e.who) || { who: e.who, votes: 0, undos: 0, first: e.t, last: e.t, places: {} };
+    if (e.undo) g.undos += 1; else g.votes += 1;
+    g.first = Math.min(g.first, e.t);
+    g.last = Math.max(g.last, e.t);
+    if (!e.undo) g.places[e.place] = (g.places[e.place] || 0) + 1;
+    byWho.set(e.who, g);
+  });
+
+  const clients = [...byWho.values()]
+    .map(g => ({
+      ...g,
+      blocked: state.blocked.includes(g.who),
+      // Stemmer per minutt over det tidsrommet maskinen var aktiv.
+      rate: g.last > g.first
+        ? +(g.votes / ((g.last - g.first) / 60000)).toFixed(1)
+        : g.votes
+    }))
+    .sort((a, b) => b.votes - a.votes)
+    .slice(0, 25);
+
+  res.json({
+    date: state.date,
+    limit: VOTE_LIMIT_PER_IP,
+    logged: state.log.length,
+    logCapped: state.log.length >= VOTE_LOG_MAX,
+    lastMinute: state.log.filter(e => Date.now() - e.t < BURST_WINDOW_MS).length,
+    originLocked: ALLOWED_ORIGINS.length > 0,
+    clients,
+    places: [...VOTE_PLACES].map(id => ({
+      id,
+      label: VOTE_LABELS[id] || id,
+      count: state.votes[id] || 0
+    }))
+  });
+});
+
+// Sperrer én maskin resten av dagen OG trekker fra stemmene den la inn -
+// presis opprydding i stedet for å nullstille alt.
+app.post('/api/admin/votes/block', requireAdmin, async (req, res) => {
+  const who = String(req.body?.who || '');
+  if (!/^[a-f0-9]{10}$/.test(who)) return res.status(400).json({ error: 'ugyldig nøkkel' });
+
+  const state = await readState();
+  let removed = 0;
+
+  state.log.filter(e => e.who === who && !e.undo).forEach(e => {
+    if (state.votes[e.place]) {
+      state.votes[e.place] = Math.max(0, state.votes[e.place] - 1);
+      removed += 1;
+    }
+  });
+
+  state.log = state.log.filter(e => e.who !== who);
+  if (!state.blocked.includes(who)) state.blocked.push(who);
+
+  await writeState(state);
+  res.json({ ok: true, removed, votes: state.votes });
+});
+
+app.delete('/api/admin/votes/block', requireAdmin, async (req, res) => {
+  const who = String(req.query.who || '');
+  const state = await readState();
+  state.blocked = state.blocked.filter(w => w !== who);
+  await writeState(state);
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/votes', requireAdmin, async (req, res) => {
+  const place = String(req.query.place || '');
+  const state = await readState();
+
+  if (place) {
+    if (!VOTE_PLACES.has(place)) return res.status(400).json({ error: 'ukjent sted' });
+    state.votes[place] = 0;
+    state.log = state.log.filter(e => e.place !== place);
+  } else {
+    state.votes = {};
+    state.log = [];
+    state.blocked = [];
+    voteHits.clear();
+  }
+
+  state.date = todayKey();
+  await writeState(state);
+  res.json({ ok: true, votes: state.votes });
+});
 
 app.get('/api/admin/overrides', requireAdmin, async (req, res) => {
   res.json({ overrides: await readOverrides() });
