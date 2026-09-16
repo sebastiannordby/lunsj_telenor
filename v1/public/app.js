@@ -24,6 +24,15 @@ const UI = {
     manualFlag: 'Skrevet manuelt', bakernLink: 'Åpne Bakern sin egen meny',
     lastUpdated: 'Sist oppdatert',
     allergyTodayOnly: 'Allergener vises kun for dagens meny',
+    wheelBtn: 'Velg for meg',
+    wheelTitle: 'Hvor skal vi spise?',
+    wheelSub: 'Klarer du ikke bestemme deg? Ta med stedene du vurderer og spinn.',
+    wheelSpin: 'Spinn hjulet',
+    wheelSpinning: 'Spinner ...',
+    wheelAgain: 'Spinn på nytt',
+    wheelNeedTwo: 'Velg minst to steder for å spinne.',
+    wheelWinner: 'Dagens valg:',
+    wheelClosed: 'stengt i dag',
     allergyOnHint: 'Vises bak hver rett i listen',
     allergyOffHint: 'Slå på for å se allergener i menyen',
     legendCanteens: 'Kantiner', legendBakery: 'Baker', legendCafes: 'Kafeer',
@@ -43,9 +52,9 @@ const UI = {
     fbThanks: 'Takk for tilbakemeldingen!', fbSending: 'Sender …',
     fbError: 'Kunne ikke sende - prøv igjen.',
     aboutBtn: 'Om siden', aboutTitle: 'Om denne løsningen',
-    aboutMadeH: 'Laget av', aboutMadeP: 'Siden er laget på fritiden av Marius Bråthen, som et hobbyprosjekt. Den er ikke et offisielt ISS- eller bedriftsverktøy.',
-    aboutHostH: 'Drift og hosting', aboutHostP: 'Løsningen kjører på en egen server utenfor bedriftens nettverk, hosted av Mats Danielsen. Menyene hentes automatisk fra kjøkkenets egne filer flere ganger hver dag - ingen personopplysninger lagres, kun anonyme stemmer og tilbakemeldinger.',
-    aboutWebexH: 'Bli med i Webex-gruppen', aboutWebexP: 'Det finnes en åpen Webex-gruppe som varsler dagens meny automatisk. Ta kontakt, så legges du til automatisk.',
+    aboutMadeH: 'Laget av', aboutMadeP: 'Siden er laget på fritiden av en kollega på Fornebu, som et hobbyprosjekt. Den er ikke et offisielt ISS- eller bedriftsverktøy.',
+    aboutHostH: 'Drift og hosting', aboutHostP: 'Løsningen kjører på en egen liten server utenfor bedriftens nettverk. Menyene hentes automatisk fra kjøkkenets egne filer flere ganger hver morgen - ingen personopplysninger lagres, kun anonyme stemmer og tilbakemeldinger.',
+    aboutWebexH: 'Bli med i Webex-gruppen', aboutWebexP: 'Det finnes en åpen Webex-gruppe som varsler når dagens meny er klar, og hvor du kan komme med ønsker og feilmeldinger. Ta kontakt, så legges du til automatisk.',
     aboutWebexCta: 'Send melding på Webex',
     aboutWebexAlt: 'Eller send e-post i stedet',
     aboutNote: 'Forslag og feil? Bruk «Gi tilbakemelding» nede til høyre.',
@@ -73,6 +82,15 @@ const UI = {
     manualFlag: 'Entered manually', bakernLink: 'Open Bakern\u2019s own menu',
     lastUpdated: 'Last updated',
     allergyTodayOnly: 'Allergens are only available for today\u2019s menu',
+    wheelBtn: 'Pick for me',
+    wheelTitle: 'Where should we eat?',
+    wheelSub: 'Can\u2019t decide? Keep the places you are considering and give it a spin.',
+    wheelSpin: 'Spin the wheel',
+    wheelSpinning: 'Spinning ...',
+    wheelAgain: 'Spin again',
+    wheelNeedTwo: 'Pick at least two places to spin.',
+    wheelWinner: 'Today\u2019s pick:',
+    wheelClosed: 'closed today',
     allergyOnHint: 'Shown after each dish in the list',
     allergyOffHint: 'Turn on to see allergens in the menu',
     legendCanteens: 'Canteens', legendBakery: 'Bakery', legendCafes: 'Cafés',
@@ -92,9 +110,9 @@ const UI = {
     fbThanks: 'Thanks for the feedback!', fbSending: 'Sending \u2026',
     fbError: 'Could not send - please try again.',
     aboutBtn: 'About', aboutTitle: 'About this site',
-    aboutMadeH: 'Made by', aboutMadeP: 'Built in spare time by Marius Bråthen as a hobby project. It is not an official ISS or company tool.',
-    aboutHostH: 'Hosting and operations', aboutHostP: 'The site runs on a private server outside the company network hosted by Mats Danielsen. Menus are pulled automatically from the ISS\u2019s site several times a day - no personal data is stored, only anonymous votes and feedback.',
-    aboutWebexH: 'Join the Webex group', aboutWebexP: 'There is an open Webex space that pings every today\u2019s. Get in touch and you are added automatically.',
+    aboutMadeH: 'Made by', aboutMadeP: 'Built in spare time by a colleague at Fornebu as a hobby project. It is not an official ISS or company tool.',
+    aboutHostH: 'Hosting and operations', aboutHostP: 'The site runs on a small private server outside the company network. Menus are pulled automatically from the kitchen\u2019s own files several times each morning - no personal data is stored, only anonymous votes and feedback.',
+    aboutWebexH: 'Join the Webex group', aboutWebexP: 'There is an open Webex space that pings when today\u2019s menu is ready, and where you can send wishes and bug reports. Get in touch and you are added automatically.',
     aboutWebexCta: 'Message on Webex',
     aboutWebexAlt: 'Or send an email instead',
     aboutNote: 'Suggestions or bugs? Use “Give feedback” in the bottom right.',
@@ -712,6 +730,8 @@ function setHover(id) {
 function render() {
   renderStrings();
   renderTabs();
+  // Hjulet tegnes på nytt ved språk- og temabytte mens dialogen står åpen.
+  if (wheelModal && !wheelModal.hidden) renderWheel();
   renderCanteens();
   renderBakery();
   renderDinner();
@@ -1093,6 +1113,225 @@ if (installBtn) {
       showToast(t().installIos);
     }
   };
+}
+
+// ------------------------------------------------------------------ hjulet
+//
+// «Velg for meg»: et lykkehjul mellom stedene brukeren vurderer. Hvilke steder
+// som er med lagres i localStorage, så valget står til neste besøk.
+
+const WHEEL_IDS = [...LUNCH_IDS, 'bakern'];
+const WHEEL_KEY = 'lunsj-wheel-picks';
+
+const wheelModal = $('#wheelModal');
+const wheelBackdrop = $('#wheelBackdrop');
+const wheelCanvas = $('#wheelCanvas');
+
+const wheel = { picks: [...WHEEL_IDS], angle: 0, spinning: false, winner: null, timer: null };
+
+try {
+  const saved = JSON.parse(localStorage.getItem(WHEEL_KEY) || 'null');
+  if (Array.isArray(saved)) {
+    const kept = saved.filter(id => WHEEL_IDS.includes(id));
+    if (kept.length) wheel.picks = kept;
+  }
+} catch {}
+
+function savePicks() {
+  try { localStorage.setItem(WHEEL_KEY, JSON.stringify(wheel.picks)); } catch {}
+}
+
+/** Stedene på hjulet, i fast rekkefølge, med navn og farge fra menydataene. */
+function wheelSlices() {
+  return WHEEL_IDS.filter(id => wheel.picks.includes(id)).map(id => {
+    const p = placeInfo(id);
+    return { id, name: p.name, color: p.color };
+  });
+}
+
+function renderWheelOpts() {
+  const box = $('#wheelOpts');
+  box.textContent = '';
+  WHEEL_IDS.forEach(id => {
+    const p = placeInfo(id);
+    const on = wheel.picks.includes(id);
+    const b = el('button', 'wheel-opt' + (on ? ' is-on' : ''));
+    b.type = 'button';
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.disabled = wheel.spinning;
+
+    const dot = el('span', 'wheel-dot');
+    dot.style.background = on ? p.color : 'transparent';
+    dot.style.borderColor = p.color;
+    b.appendChild(dot);
+    b.appendChild(el('span', null, p.name));
+
+    b.onclick = () => {
+      if (wheel.spinning) return;
+      wheel.picks = on ? wheel.picks.filter(x => x !== id) : [...wheel.picks, id];
+      savePicks();
+      wheel.winner = null;
+      renderWheel();
+    };
+    box.appendChild(b);
+  });
+}
+
+function drawWheel() {
+  const ctx = wheelCanvas.getContext('2d');
+  const size = wheelCanvas.width;
+  const r = size / 2;
+  const slices = wheelSlices();
+
+  ctx.clearRect(0, 0, size, size);
+  wheelCanvas.style.transform = `rotate(${wheel.angle}deg)`;
+
+  if (slices.length < 2) {
+    ctx.beginPath();
+    ctx.arc(r, r, r - 8, 0, Math.PI * 2);
+    ctx.fillStyle = isDark() ? 'rgba(255,255,255,0.07)' : 'rgba(11,16,32,0.06)';
+    ctx.fill();
+    return;
+  }
+
+  const step = (Math.PI * 2) / slices.length;
+  const hub = 44;
+  const textOuter = r - 34;
+  const room = textOuter - hub - 8; // radial plass mellom nav og ytterkant
+
+  slices.forEach((s, i) => {
+    const from = -Math.PI / 2 + i * step;
+
+    ctx.beginPath();
+    ctx.moveTo(r, r);
+    ctx.arc(r, r, r - 8, from, from + step);
+    ctx.closePath();
+    ctx.fillStyle = s.color;
+    ctx.fill();
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = isDark() ? '#12161f' : '#ffffff';
+    ctx.stroke();
+  });
+
+  // Navet først, så teksten - ellers spiser fyllet de første bokstavene.
+  ctx.beginPath();
+  ctx.arc(r, r, hub, 0, Math.PI * 2);
+  ctx.fillStyle = isDark() ? '#12161f' : '#ffffff';
+  ctx.fill();
+
+  slices.forEach((s, i) => {
+    const from = -Math.PI / 2 + i * step;
+
+    // Navnet skrives langs radien, med bunnen mot sentrum. Lange navn
+    // krympes til de får plass mellom nav og ytterkant.
+    let size = 34;
+    ctx.font = `700 ${size}px Figtree, system-ui, sans-serif`;
+    while (size > 16 && ctx.measureText(s.name).width > room) {
+      size -= 1;
+      ctx.font = `700 ${size}px Figtree, system-ui, sans-serif`;
+    }
+
+    ctx.save();
+    ctx.translate(r, r);
+    ctx.rotate(from + step / 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(s.name, textOuter, 0);
+    ctx.restore();
+  });
+}
+
+function renderWheel() {
+  renderWheelOpts();
+  drawWheel();
+
+  const slices = wheelSlices();
+  const spin = $('#wheelSpin');
+  spin.disabled = slices.length < 2 || wheel.spinning;
+  spin.textContent = wheel.spinning
+    ? t().wheelSpinning
+    : (wheel.winner ? t().wheelAgain : t().wheelSpin);
+
+  const out = $('#wheelResult');
+  out.textContent = '';
+  out.className = 'wheel-result';
+
+  if (slices.length < 2) {
+    out.className = 'wheel-result is-hint';
+    out.textContent = t().wheelNeedTwo;
+    return;
+  }
+  if (wheel.winner && !wheel.spinning) {
+    const p = placeInfo(wheel.winner);
+    out.className = 'wheel-result is-win';
+    out.appendChild(el('span', 'wheel-result-kicker', t().wheelWinner));
+    const name = el('span', 'wheel-result-name', p.name);
+    name.style.color = p.color;
+    out.appendChild(name);
+    const meta = [p.building, p.lunchHours || p.hours].filter(Boolean).join(' · ');
+    if (meta) out.appendChild(el('span', 'wheel-result-meta', meta));
+  }
+}
+
+function spinWheel() {
+  const slices = wheelSlices();
+  if (slices.length < 2 || wheel.spinning) return;
+
+  const i = Math.floor(Math.random() * slices.length);
+  const step = 360 / slices.length;
+  const center = i * step + step / 2; // grader fra pinnen, med klokka
+  const target = wheel.angle - (wheel.angle % 360) + 360 * 4 + ((360 - center) % 360);
+
+  wheel.winner = null;
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const land = () => {
+    clearTimeout(wheel.timer);
+    wheel.timer = null;
+    wheel.spinning = false;
+    wheel.winner = slices[i].id;
+    renderWheel();
+  };
+
+  if (still) {
+    wheel.angle = target;
+    land();
+    return;
+  }
+
+  wheel.spinning = true;
+  wheel.angle = target;
+  renderWheel();
+  // Klokka avslutter spinnen. transitionend er upålitelig her: den kommer
+  // ikke i alle nettlesere, og uteblir helt om dialogen lukkes underveis.
+  wheel.timer = setTimeout(land, 4000);
+}
+
+function toggleWheel(open) {
+  if (!wheelModal) return;
+  // En spinn som ble avbrutt ved lukking skal ikke etterlate knappen låst.
+  if (!open && wheel.spinning) {
+    clearTimeout(wheel.timer);
+    wheel.timer = null;
+    wheel.spinning = false;
+  }
+  wheelModal.hidden = !open;
+  wheelBackdrop.hidden = !open;
+  if (open) {
+    renderWheel();
+    $('#wheelClose').focus();
+  }
+}
+
+if (wheelModal) {
+  $('#wheelBtn').onclick = () => toggleWheel(true);
+  $('#wheelClose').onclick = () => toggleWheel(false);
+  wheelBackdrop.onclick = () => toggleWheel(false);
+  $('#wheelSpin').onclick = spinWheel;
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !wheelModal.hidden) toggleWheel(false);
+  });
 }
 
 // ------------------------------------------------------------------ om siden

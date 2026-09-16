@@ -13,7 +13,9 @@
 
   --n-100: #f4f8fb;
   --n-200: #e6eef4;
-  --n-300: #d0dde7;
+  /* Rammefarge. #d0dde7 forsvant mot hvitt, så knappene så ut som de manglet
+     ramme i lys modus. */
+  --n-300: #b8cad9;
   --n-600: #647585;
 
   --raised: #ffffff;          /* popup/kontroll-flater over kartet */
@@ -412,9 +414,10 @@ svg.ico-18 { width: 18px; height: 18px; }
   box-shadow: 0 10px 30px rgba(var(--shadow-tint), 0.35);
 }
 .admin-h3 {
-  font-family: var(--font-heading);
+  font-family: var(--font-head);
+  font-weight: 700;
   font-size: 16px;
-  margin: var(--s5) 0 var(--s1);
+  margin: var(--s6) 0 var(--s1);
 }
 .admin-preview {
   margin-top: var(--s4);
@@ -621,12 +624,14 @@ select.input { cursor: pointer; }
 .allergy-toggle { margin-left: var(--s3); }
 .allergy-toggle:disabled { opacity: 0.5; cursor: default; }
 .allergy-toggle:disabled:hover { background: transparent; border-color: var(--n-300); }
+/* På-tilstanden må se lik ut som de andre aktive knappene i raden (Lunsj,
+   valgt dag). En svak tint leste som avslått i lys modus. */
 .allergy-toggle.is-on {
-  background: var(--accent-fill);
-  border-color: transparent;
-  color: var(--accent-ink);
+  background: var(--blue-500);
+  border-color: var(--blue-500);
+  color: var(--on-accent);
 }
-.allergy-toggle.is-on:hover { background: var(--accent-fill-hover); border-color: transparent; }
+.allergy-toggle.is-on:hover { background: var(--blue-600); border-color: var(--blue-600); }
 
 @media (max-width: 560px) {
   .section-row { flex-wrap: wrap; }
@@ -1127,6 +1132,97 @@ select.input { cursor: pointer; }
 .about-modal[hidden] { display: none; }
 
 .about-head { display: flex; align-items: flex-start; gap: var(--s2); }
+
+/* Lykkehjulet - «Velg for meg». Hjulet er et canvas som roteres med CSS, og
+   pinnen ligger fast over toppen av det. */
+.wheel-modal .about-head { justify-content: space-between; }
+.wheel-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.wheel-opt {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 8px var(--s3);
+  min-height: 44px;
+  border: 2px solid var(--n-300);
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.wheel-opt:hover:not(:disabled) { background: var(--n-100); }
+.wheel-opt:focus-visible { outline: 2px solid var(--blue-500); outline-offset: 2px; }
+.wheel-opt:disabled { opacity: 0.6; cursor: default; }
+.wheel-opt.is-on { color: var(--text); border-color: var(--n-600); }
+.wheel-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid;
+  flex-shrink: 0;
+}
+
+.wheel-stage {
+  position: relative;
+  width: min(280px, 100%);
+  align-self: center;
+}
+.wheel-stage canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: transform 4s cubic-bezier(0.12, 0.72, 0.03, 1);
+}
+.wheel-pin {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: -4px;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-top: 20px solid var(--text);
+  filter: drop-shadow(0 2px 3px rgba(var(--shadow-tint), 0.3));
+}
+
+.wheel-result {
+  min-height: 62px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+}
+.wheel-result.is-hint { color: var(--muted); font-size: 14px; }
+.wheel-result-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.wheel-result-name {
+  font-family: var(--font-head);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  font-size: 28px;
+  line-height: 1.1;
+}
+.wheel-result-meta { font-size: 14px; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wheel-stage canvas { transition: none; }
+}
 .about-body { display: flex; flex-direction: column; gap: var(--s4); }
 .about-item { display: flex; flex-direction: column; gap: 6px; }
 .about-item h3 {
