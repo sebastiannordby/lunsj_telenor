@@ -9,6 +9,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { randomUUID, createHmac, createHash, timingSafeEqual } from 'crypto';
+import { existsSync } from 'fs';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -206,15 +207,33 @@ app.get('/', async (req, res, next) => {
 });
 
 // ---------------------------------------------------------------- python
+//
+// Ubuntu 24.04 blokkerer globale pip-pakker, så vi bruker prosjektets venv.
+// Rekkefølge: PYTHON_BIN fra miljøet → .venv i prosjektet → system-python3.
+const PYTHON_BIN = process.env.PYTHON_BIN
+  || (existsSync(path.join(__dirname, '.venv', 'bin', 'python'))
+    ? path.join(__dirname, '.venv', 'bin', 'python')
+    : 'python3');
 
-function runPython(args) {
+console.log(`Bruker Python: ${PYTHON_BIN}`);
+
+function runPython(args, { timeout = 120000 } = {}) {
   return new Promise((resolve, reject) => {
-    const python = spawn('python3', args, { cwd: __dirname });
+    const python = spawn(PYTHON_BIN, args, { cwd: __dirname });
     let out = '';
     let err = '';
+    const timer = setTimeout(() => {
+      python.kill('SIGKILL');
+      reject(new Error(`Python-script tok over ${timeout / 1000}s: ${args[0]}`));
+    }, timeout);
     python.stdout.on('data', d => (out += d.toString('utf-8')));
     python.stderr.on('data', d => (err += d.toString('utf-8')));
+    python.on('error', e => {
+      clearTimeout(timer);
+      reject(new Error(`Klarte ikke starte ${PYTHON_BIN}: ${e.message}`));
+    });
     python.on('close', code => {
+      clearTimeout(timer);
       if (code !== 0) return reject(new Error(err || `Python exit ${code}`));
       resolve(out);
     });
