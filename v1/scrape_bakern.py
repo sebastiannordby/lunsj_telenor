@@ -28,6 +28,8 @@ Valg:
     --force     tolk bildet selv om det er uendret siden sist
     --dry-run   skriv resultatet til skjerm, ikke til bakern.txt
     --image F   bruk en lokal bildefil i stedet for å hente fra widgeten (testing)
+    --json      forhåndsvisning for /admin: tolker alltid bildet, skriver ingen
+                menyfil, og avslutter med én linje 'JSON:{"text":..., "hash":...}'
 """
 import argparse
 import base64
@@ -48,10 +50,11 @@ RAW_HTML_DIR = SCRIPT_DIR / "raw_html"
 OUT_FILE = MENYER_DIR / "bakern.txt"
 HASH_FILE = RAW_HTML_DIR / "bakern_image.sha256"
 
-BAKERN_URL = (
+BAKERN_URL = os.environ.get("BAKERN_URL") or (
     "https://widget.inisign.com/Widget/Customers/Customer.aspx"
     "?token=e7420bcd-79cf-4268-abb6-08ccca3a7e89&scaleToFit=true"
 )
+OPENAI_URL = os.environ.get("OPENAI_URL", "https://api.openai.com/v1/chat/completions")
 
 KEY_FILE = Path("/home/marius/git/key.txt")
 MODEL = os.environ.get("BAKERN_MODEL", "gpt-4.1-mini")
@@ -196,7 +199,7 @@ def read_menu_with_ai(image: bytes, mime: str) -> dict | None:
     }
     try:
         r = requests.post(
-            "https://api.openai.com/v1/chat/completions",
+            OPENAI_URL,
             headers={"Authorization": f"Bearer {openai_key()}", "Content-Type": "application/json"},
             json=body,
             timeout=120,
@@ -228,7 +231,10 @@ def main():
     ap.add_argument("--force", action="store_true", help="tolk bildet selv om det er uendret")
     ap.add_argument("--dry-run", action="store_true", help="ikke skriv bakern.txt")
     ap.add_argument("--image", help="lokal bildefil i stedet for widgeten")
+    ap.add_argument("--json", action="store_true", help="forhåndsvisning for /admin")
     args = ap.parse_args()
+    if args.json:
+        args.force = args.dry_run = True
 
     if args.image:
         path = Path(args.image)
@@ -242,6 +248,8 @@ def main():
     image, mime = found
 
     RAW_HTML_DIR.mkdir(parents=True, exist_ok=True)
+    for old in RAW_HTML_DIR.glob("bakern_meny.*"):
+        old.unlink()                      # bare ett menybilde, så /admin viser riktig
     (RAW_HTML_DIR / f"bakern_meny.{mime.split('/')[-1]}").write_bytes(image)
 
     digest = hashlib.sha256(image).hexdigest()
@@ -257,6 +265,9 @@ def main():
 
     text = format_static(menu)
     print("\n" + text)
+    if args.json:
+        print("JSON:" + json.dumps({"text": text, "hash": digest}, ensure_ascii=False))
+        return
     if args.dry_run:
         print("(--dry-run: skrev ikke til fil)")
         return
@@ -265,8 +276,7 @@ def main():
     tmp = OUT_FILE.with_suffix(".txt.tmp")
     tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, OUT_FILE)          # atomisk, samme som /admin gjør
-    if not args.dry_run:
-        HASH_FILE.write_text(digest + "\n")
+    HASH_FILE.write_text(digest + "\n")
     print(f"Skrev {OUT_FILE}")
 
 

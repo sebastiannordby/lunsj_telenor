@@ -90,6 +90,12 @@ def fetch_html(url: str) -> str | None:
 def extract_leaf_texts(soup: BeautifulSoup) -> list[str]:
     for tag in soup.find_all(["script", "style", "noscript", "img", "svg"]):
         tag.decompose()
+    # Allergentall ligger av og til i egen <sup>/<sub>/<small> ("grønnsaker<sup>3</sup>").
+    # Da blir retten ikke et blad-element, og det løse "3" ser ut som starten
+    # på allergentabellen. Pakk dem ut så tallet havner sammen med retten.
+    for tag in soup.find_all(["sup", "sub", "small"]):
+        tag.unwrap()
+    soup.smooth()
 
     texts, seen = [], set()
     for el in soup.find_all(True):
@@ -187,12 +193,18 @@ def main():
         raw_path = RAW_HTML_DIR / f"{canteen.replace(' ', '_').replace('/', '_').lower()}_ukens.html"
         raw_path.write_text(html or "", encoding="utf-8")
 
-        week = parse_week(html) if html else {"no": {i: [] for i in range(5)}, "en": {i: [] for i in range(5)}}
-        output = format_week_file(week)
-
         filepath = MENYER_DIR / info["file"]
-        filepath.write_text(output, encoding="utf-8")
-        print(f"  Skrev {filepath}")
+        week = parse_week(html) if html else None
+        dishes = sum(len(d) for d in week["no"].values()) if week else 0
+
+        # Feilet hentingen, eller fant vi ingen retter, beholder vi fila vi har.
+        # Ellers ville en nettverksfeil tømt ukesmenyen for resten av uka.
+        if dishes == 0 and filepath.is_file():
+            print(f"  Fant ingen retter - beholder eksisterende {filepath}")
+            continue
+
+        filepath.write_text(format_week_file(week or {"no": {i: [] for i in range(5)}, "en": {i: [] for i in range(5)}}), encoding="utf-8")
+        print(f"  Skrev {filepath} ({dishes} retter)")
 
 
 if __name__ == "__main__":

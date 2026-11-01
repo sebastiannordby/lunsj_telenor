@@ -253,10 +253,17 @@ def build(menu_dir: Path, daily_dir: Path) -> dict:
         if meta.get("lunchHours"):
             places[pid]["lunchHours"] = meta["lunchHours"]
 
+    # Dagfila gjelder bare den dagen den ble skrevet. En fil fra fredag skal
+    # ikke vises som "dagens meny" mandag morgen før første skraping.
+    daily_path = daily_dir / DAILY_FILES["no"]
+    daily_fresh = daily_path.is_file() and \
+        datetime.fromtimestamp(daily_path.stat().st_mtime).date() == datetime.now().date()
     daily = {
-        lang: parse_daily(daily_dir / fname)
+        lang: (parse_daily(daily_dir / fname) if daily_fresh else {})
         for lang, fname in DAILY_FILES.items()
     }
+    if not daily_fresh:
+        print("  Dagfila er ikke fra i dag - bruker bare ukesmenyene.")
 
     # Dagfilene har autoritative åpningstider/bygg - bruk dem når de finnes.
     # Unntak: steder med eget lunsjvindu (Bakern) beholder åpningstiden fra

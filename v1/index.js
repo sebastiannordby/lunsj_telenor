@@ -25,6 +25,13 @@ const STATUS_FILE = path.join(__dirname, 'last-run.json');
 const PREVIEW_JSON = path.join(__dirname, 'menu.preview.json');
 const MENU_DIR = path.join(__dirname, 'Menyer');
 const BAKERN_TXT = path.join(MENU_DIR, 'bakern.txt');
+const RAW_DIR = path.join(__dirname, 'raw_html');
+const BAKERN_HASH = path.join(RAW_DIR, 'bakern_image.sha256');
+
+// Steder som bare har ukesmeny (ingen dagsmeny-widget å skrape). For dem er
+// "ukesmeny" riktig kilde, ikke et faresignal.
+const WEEKLY_SOURCE = new Set(['bakern', 'dinner']);
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
 
 // Kantiner som kan overstyres manuelt fra /admin (nødmodus)
 const OVERRIDE_PLACES = ['m', 'fresh4you', 'bakern', 'dinner'];
@@ -482,12 +489,20 @@ app.delete('/api/admin/banner', requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
+// Skraper dagsmenyene (lunsj) og ukesmenyene (lunsj + middag). Bakern hentes
+// for seg, siden den går via AI og bare trengs når bildet er byttet.
+async function runScrapers(log) {
+  log.push('$ python3 scrape_dagens_menu.py');
+  log.push((await runPython(['scrape_dagens_menu.py'])).trimEnd());
+  log.push('$ python3 scrape_ukens_menu.py');
+  log.push((await runPython(['scrape_ukens_menu.py'])).trimEnd());
+}
+
 // Manuell oppdatering: samme kjede som cron/systemd kjører.
 app.post('/api/admin/refresh', requireAdmin, async (req, res) => {
   const log = [];
   try {
-    log.push('$ python3 scrape_dagens_menu.py');
-    log.push((await runPython(['scrape_dagens_menu.py'])).trimEnd());
+    await runScrapers(log);
     log.push('$ python3 build_menu_json.py');
     log.push((await runPython(['build_menu_json.py'])).trimEnd());
     await recordRun(true, log.join('\n'));
@@ -519,26 +534,55 @@ async function mtime(file) {
   }
 }
 
+// Ukedag i norsk tid: 0 = mandag ... 6 = søndag
+function osloWeekday() {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+  return (d.getDay() + 6) % 7;
+}
+
+function osloDate(iso) {
+  return iso ? new Date(iso).toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' }) : null;
+}
+
+/**
+ * Hva forsiden viser for hvert sted "i dag" - samme prioritet som app.js:
+ * manuell > dagsmeny > ukesmeny. I helgen vises mandagens ukesmeny, og en
+ * dagfil fra en annen dag teller ikke.
+ */
+function resolveMenu(menu) {
+  const wd = osloWeekday();
+  const weekend = wd > 4;
+  const day = weekend ? 'mon' : DAY_KEYS[wd];
+  const dailyFresh = !weekend && osloDate(menu?.dailyUpdated) === todayKey();
+
+  const places = Object.entries(menu?.places || {}).map(([id, p]) => {
+    const manual = weekend ? [] : (menu?.manual?.[id]?.items || []);
+    const daily = dailyFresh && !WEEKLY_SOURCE.has(id) ? (menu?.todayOverride?.no?.[id]?.items || []) : [];
+    const weekly = p.week?.no?.[day] || [];
+    const items = manual.length ? manual : daily.length ? daily : weekly;
+    return {
+      id,
+      name: p.name,
+      kind: p.kind,
+      items,
+      count: items.length,
+      manual: manual.length > 0,
+      weeklySource: WEEKLY_SOURCE.has(id),
+      updated: p.updated || null,
+      source: manual.length ? 'manual' : daily.length ? 'daily' : weekly.length ? 'weekly' : 'none'
+    };
+  });
+  return { day, weekend, dailyFresh, places };
+}
+
 app.get('/api/admin/status', requireAdmin, async (req, res) => {
   let menu = null;
   try {
     menu = JSON.parse(await fs.readFile(MENU_JSON, 'utf-8'));
   } catch {}
 
-  const today = menu?.today || null;
-  const places = Object.entries(menu?.places || {}).map(([id, p]) => {
-    const daily = menu?.todayOverride?.no?.[id]?.items || [];
-    const weekly = p.week?.no?.[today] || [];
-    const manual = menu?.manual?.[id]?.items || [];
-    return {
-      id,
-      name: p.name,
-      kind: p.kind,
-      manual: manual.length > 0,
-      count: manual.length || daily.length || weekly.length,
-      source: manual.length ? 'manual' : daily.length ? 'daily' : weekly.length ? 'weekly' : 'none'
-    };
-  });
+  const { day, weekend, dailyFresh, places } = resolveMenu(menu);
+  const today = day;
 
   let lastRun = null;
   try {
@@ -548,7 +592,9 @@ app.get('/api/admin/status', requireAdmin, async (req, res) => {
   res.json({
     generated: menu?.generated || null,
     today,
-    places,
+    weekend,
+    dailyFresh,
+    places: places.map(({ items, ...p }) => p),
     lastRun,
     files: {
       menuJson: await mtime(MENU_JSON),
@@ -719,10 +765,44 @@ app.post('/api/admin/bakern', requireAdmin, async (req, res) => {
     const tmp = BAKERN_TXT + '.tmp';
     await fs.writeFile(tmp, text.endsWith('\n') ? text : text + '\n', 'utf-8');
     await fs.rename(tmp, BAKERN_TXT);
+    // Kom teksten fra "Hent fra bildet", lagrer vi bildets fingeravtrykk - da
+    // lar cron-jobben menyen være til Bakern faktisk bytter bilde.
+    const hash = String(req.body?.hash || '');
+    if (/^[a-f0-9]{64}$/.test(hash)) {
+      await fs.mkdir(RAW_DIR, { recursive: true });
+      await fs.writeFile(BAKERN_HASH, hash + '\n', 'utf-8');
+    }
     const log = await rebuildJson();
     res.json({ ok: true, log: log.trim(), updated: await mtime(BAKERN_TXT) });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// Henter Bakern-menyen fra bildet i widgeten via AI, uten å lagre noe.
+// Admin ser teksten og bildet side om side, og velger selv om den skal brukes.
+app.post('/api/admin/bakern/preview', requireAdmin, async (req, res) => {
+  try {
+    const out = await runPython(['scrape_bakern.py', '--json'], { timeout: 180000 });
+    const line = out.split('\n').reverse().find(l => l.startsWith('JSON:'));
+    if (!line) throw new Error('Fikk ingen meny tilbake fra scrape_bakern.py');
+    const { text, hash } = JSON.parse(line.slice(5));
+    const log = out.split('\n').filter(l => !l.startsWith('JSON:')).join('\n').trim();
+    res.json({ ok: true, text, hash, image: 'api/admin/bakern/image?t=' + Date.now(), log });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Siste menybilde scrape_bakern.py lastet ned (raw_html/bakern_meny.*)
+app.get('/api/admin/bakern/image', requireAdmin, async (req, res) => {
+  try {
+    const file = (await fs.readdir(RAW_DIR)).find(f => /^bakern_meny\.(png|jpe?g|webp|gif)$/i.test(f));
+    if (!file) return res.status(404).json({ error: 'Ingen bilde ennå' });
+    res.set('Cache-Control', 'no-store');
+    res.sendFile(path.join(RAW_DIR, file));
+  } catch {
+    res.status(404).json({ error: 'Ingen bilde ennå' });
   }
 });
 
@@ -734,8 +814,7 @@ app.post('/api/admin/bakern', requireAdmin, async (req, res) => {
 app.post('/api/admin/preview', requireAdmin, async (req, res) => {
   const log = [];
   try {
-    log.push('$ python3 scrape_dagens_menu.py');
-    log.push((await runPython(['scrape_dagens_menu.py'])).trimEnd());
+    await runScrapers(log);
     log.push(`$ python3 build_menu_json.py --out ${path.basename(PREVIEW_JSON)}`);
     log.push((await runPython(['build_menu_json.py', '--out', PREVIEW_JSON])).trimEnd());
 
@@ -745,17 +824,15 @@ app.post('/api/admin/preview', requireAdmin, async (req, res) => {
       current = JSON.parse(await fs.readFile(MENU_JSON, 'utf-8'));
     } catch {}
 
-    const today = next.today;
-    const dishes = (data, id) =>
-      data?.manual?.[id]?.items?.length ? data.manual[id].items
-        : data?.todayOverride?.no?.[id]?.items?.length ? data.todayOverride.no[id].items
-        : data?.places?.[id]?.week?.no?.[today] || [];
+    const nextMenu = resolveMenu(next);
+    const curItems = Object.fromEntries(resolveMenu(current).places.map(p => [p.id, p.items]));
+    const today = nextMenu.day;
 
-    const diff = Object.keys(next.places || {}).map(id => ({
-      id,
-      name: next.places[id].name,
-      items: dishes(next, id),
-      changed: JSON.stringify(dishes(next, id)) !== JSON.stringify(dishes(current, id))
+    const diff = nextMenu.places.map(p => ({
+      id: p.id,
+      name: p.name,
+      items: p.items,
+      changed: JSON.stringify(p.items) !== JSON.stringify(curItems[p.id] || [])
     }));
 
     res.json({ ok: true, log: log.join('\n'), today, diff });
