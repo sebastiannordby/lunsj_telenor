@@ -585,8 +585,11 @@ select.input { cursor: pointer; }
 }
 .day-group {
   flex-wrap: nowrap;
-  width: 100%;
+  flex: 1 1 420px;
+  min-width: 0;
 }
+/* «Velg for meg» og kopier står på samme linje som dagvelgeren */
+.day-tools { display: flex; align-items: center; gap: var(--s2); margin-left: auto; }
 .day-group .btn {
   font-size: 14px;
   padding: var(--s1) var(--s3);
@@ -621,7 +624,7 @@ select.input { cursor: pointer; }
 
 /* Allergenbryteren står som en tekstet pille ved siden av lunsj/middag -
    som rent ikon oppe i navigasjonen var den uleselig på mobil. */
-.allergy-toggle { margin-left: var(--s3); }
+.allergy-toggle { margin-left: 0; }
 .allergy-toggle:disabled { opacity: 0.5; cursor: default; }
 .allergy-toggle:disabled:hover { background: transparent; border-color: var(--n-300); }
 /* På-tilstanden må se lik ut som de andre aktive knappene i raden (Lunsj,
@@ -635,7 +638,6 @@ select.input { cursor: pointer; }
 
 @media (max-width: 560px) {
   .section-row { flex-wrap: wrap; }
-  .allergy-toggle { margin-left: auto; }
 }
 
 .copy-fallback {
@@ -743,72 +745,98 @@ select.input { cursor: pointer; }
   letter-spacing: 0.04em;
 }
 
-/* bakery - smal stripe på tvers, ikke et kort i rutenettet */
+/* Lunsj: to kantiner + Bakern som høy sidekolonne */
 
 .nowrap { white-space: nowrap; }
-.bakery {
-  position: relative;
-  border-top: 3px solid var(--n-300);
+.lunch-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(240px, 0.8fr);
+  gap: var(--s4);
+  align-items: stretch;
   margin-bottom: var(--s6);
-  padding: var(--s3) var(--s4);
 }
-.bakery-link {
-  position: absolute;
-  right: 10px;
-  bottom: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  color: var(--muted);
-  opacity: 0.45;
-  transition: opacity 0.15s, background 0.15s;
+.lunch-layout[hidden] { display: none; }
+.lunch-layout .card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  margin-bottom: 0;
 }
-.bakery-link:hover, .bakery-link:focus-visible {
-  opacity: 1;
-  background: var(--n-100);
+@media (max-width: 860px) {
+  .lunch-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+.bakery {
+  --place: #8a5a2b;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  border-top: 4px solid var(--place);
+  background: color-mix(in oklab, var(--place) 9%, var(--surface));
+}
+.bakery-top { display: flex; align-items: center; gap: var(--s2); min-height: 16px; }
+.bakery-tag {
+  margin: -6px 0 -6px auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: color-mix(in oklab, var(--place) 16%, var(--surface));
   color: var(--text);
 }
-.bakery-link svg { width: 14px; height: 14px; }
-.bakery-head {
-  display: flex;
-  align-items: center;
-  gap: var(--s2);
-  flex-wrap: wrap;
+.bakery-window {
   font-size: 13px;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  margin-top: calc(var(--s1) * -1);
 }
-.bakery-head .bakery-name { font-size: 15px; font-weight: 700; color: var(--text); }
-.bakery-head .sep { opacity: 0.45; }
-.bakery-hours {
+.bakery-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+.bakery-link {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  align-self: flex-start;
+  font-size: 13px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-decoration: none;
+  padding: 4px 10px;
+  margin-left: -10px;
+  border-radius: 999px;
+  transition: background 0.15s;
 }
-.bakery-hours svg { width: 13px; height: 13px; }
-.bakery .tag-neutral { margin-left: auto; flex: 0 0 auto; }
-.bakery-dishes {
+.bakery-link:hover, .bakery-link:focus-visible {
+  background: color-mix(in oklab, var(--place) 16%, var(--surface));
+}
+.bakery-link svg { width: 14px; height: 14px; }
+
+/* Kicker-raden: Lunsj | Middag ligger oppe i hjørnet på Fresh 4 You.
+   Negative marger holder radhøyden lik kickeren, så linjene i kortene
+   står på samme høyde som Kantine M og Bakern. */
+.card-head { display: flex; align-items: center; gap: var(--s2); min-height: 16px; }
+.card-seg {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--s1) var(--s4);
-  margin-top: var(--s2);
-  font-size: 14px;
+  gap: 2px;
+  margin: -6px 0 -6px auto;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--n-100);
 }
-.bakery-dish { display: inline-flex; align-items: center; gap: 7px; }
-.bakery-dish .dot { width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; }
-.bakery-note {
-  margin-top: 5px;
-  text-wrap: pretty;
+.card-seg-opt {
+  font: inherit;
   font-size: 12px;
-  font-style: italic;
+  font-weight: 600;
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
   color: var(--muted);
+  cursor: pointer;
 }
-.bakery-window { font-variant-numeric: tabular-nums; }
-.bakery-note .sep { opacity: 0.5; font-style: normal; }
+.card-seg-opt:hover { color: var(--text); }
+.card-seg-opt.is-on { background: var(--blue-500); color: var(--on-accent); }
+.card-seg-opt:focus-visible { outline: 2px solid var(--blue-500); outline-offset: 2px; }
 .pin-pop-window, .detail-window {
   color: var(--muted);
   font-size: 12px;
@@ -817,10 +845,6 @@ select.input { cursor: pointer; }
 }
 .detail-window { font-size: 13px; }
 
-@media (max-width: 560px) {
-  .bakery { flex-wrap: wrap; }
-  .bakery .tag-neutral { margin-left: 0; }
-}
 
 /* ---------------------------------------------------------------- voting */
 
@@ -835,10 +859,6 @@ select.input { cursor: pointer; }
 .vote-foot .btn { margin-left: auto; white-space: nowrap; }
 .vote-count { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .vote-foot { flex-wrap: wrap; row-gap: var(--s1); }
-
-/* ---------------------------------------------------------------- dinner */
-
-.dinner-wrap { max-width: 480px; margin-bottom: var(--s6); }
 
 /* ---------------------------------------------------------------- map */
 
@@ -1094,6 +1114,7 @@ select.input { cursor: pointer; }
   .footer-links .btn svg { display: none; }
 }
 
+#lastStamp:not(:empty)::before { content: ' · '; }
 .footnote {
   font-size: 12px;
   color: var(--muted);
@@ -1132,6 +1153,30 @@ select.input { cursor: pointer; }
 .about-modal[hidden] { display: none; }
 
 .about-head { display: flex; align-items: flex-start; gap: var(--s2); }
+
+/* Bakern-menyen i dialog */
+/* Widgeten er en stående 9:16-skjerm som skaleres etter høyden */
+.bakern-modal { width: min(500px, calc(100vw - 32px)); }
+.bakern-modal .about-head { justify-content: space-between; }
+.bakern-frame {
+  width: min(100%, calc(78vh * 9 / 16));
+  margin: 0 auto;
+  aspect-ratio: 9 / 16;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--n-100);
+}
+.bakern-frame { position: relative; }
+/* Widgeten gjengis i full skjermstørrelse og skaleres ned med JS (fitBakern) */
+.bakern-frame iframe {
+  position: absolute;
+  top: 0; left: 0;
+  width: 1080px; height: 1920px;
+  border: 0;
+  transform-origin: 0 0;
+}
+.bakern-foot { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.bakern-hint { font-size: 13px; color: var(--muted); margin-right: auto; }
 
 /* Lykkehjulet - «Velg for meg». Hjulet er et canvas som roteres med CSS, og
    pinnen ligger fast over toppen av det. */

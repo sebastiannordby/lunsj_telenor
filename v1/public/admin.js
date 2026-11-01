@@ -305,8 +305,8 @@ $('#voteResetAll').onclick = () => resetVotes('', '');
 // ------------------------------------------------------------------ nødmodus
 
 const PLACE_NAMES = {
-  street: 'Eat The Street', m: 'Kantine M', fresh4you: 'Fresh 4 You',
-  bakern: 'Bakern', dinner: 'Eat The Street – Middag'
+  m: 'Kantine M', fresh4you: 'Fresh 4 You',
+  bakern: 'Bakern', dinner: 'Fresh 4 You – Middag'
 };
 
 function renderOverrides(all) {

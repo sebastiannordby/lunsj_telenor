@@ -33,10 +33,6 @@ RAW_HTML_DIR.mkdir(parents=True, exist_ok=True)
 
 # url + filnavn må matche PLACES["file"] i build_menu_json.py nøyaktig
 CANTEENS = {
-    "Eat The Street": {
-        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=6e5cc038-e918-4f97-9a59-d2afa0456abf&scaleToFit=true",
-        "file": "eat_the_street.txt",
-    },
     "Kantine M": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=756a5aa2-a95f-4d15-ad5a-59829741075b&scaleToFit=true",
         "file": "kantine_m.txt",
@@ -45,9 +41,9 @@ CANTEENS = {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=a8923cdb-9d92-46bc-b6a4-d026c2cf9a89&scaleToFit=true",
         "file": "fresh_4_you.txt",
     },
-    "Eat The Street - Middag": {
+    "Fresh 4 You - Middag": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=9b060d7e-6658-4d96-b953-23079d7df3b2&scaleToFit=true",
-        "file": "eat_the_street_-_middag.txt",
+        "file": "fresh_4_you_-_middag.txt",
     },
 }
 

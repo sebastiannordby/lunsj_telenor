@@ -27,7 +27,7 @@ const MENU_DIR = path.join(__dirname, 'Menyer');
 const BAKERN_TXT = path.join(MENU_DIR, 'bakern.txt');
 
 // Kantiner som kan overstyres manuelt fra /admin (nødmodus)
-const OVERRIDE_PLACES = ['street', 'm', 'fresh4you', 'bakern', 'dinner'];
+const OVERRIDE_PLACES = ['m', 'fresh4you', 'bakern', 'dinner'];
 
 // Admin-passord. Sett ADMIN_PASSWORD i miljøet (systemd-unit eller .env);
 // uten det genereres et engangspassord som skrives til loggen ved oppstart.
@@ -42,9 +42,9 @@ const NTFY_UP = process.env.NTFY_UP || 'mb-lunsjfbu-lunsjmeny-fornebu-bra';
 const NTFY_DOWN = process.env.NTFY_DOWN || 'mb-lunsjfbu-lunsjmeny-fornebu-darlig';
 const NTFY_TEXT = process.env.NTFY_TEXT || 'mb-lunsjfbu-lunsjmeny-fornebu-tekst';
 
-const VOTE_PLACES = new Set(['street', 'm', 'fresh4you']);
+const VOTE_PLACES = new Set(['m', 'fresh4you', 'bakern']);
 
-const VOTE_LABELS = { street: 'Street Food', m: 'M', fresh4you: 'Fresh4You' };
+const VOTE_LABELS = { m: 'M', fresh4you: 'Fresh4You', bakern: 'Bakern' };
 
 // Bot-brems: en klient som ikke tar imot cookien kan ellers poste stemmer i
 // det uendelige. Vi teller forsøk per IP per dag i minnet (nullstilles ved
@@ -207,6 +207,7 @@ app.get('/', async (req, res, next) => {
 });
 
 // ---------------------------------------------------------------- python
+
 //
 // Ubuntu 24.04 blokkerer globale pip-pakker, så vi bruker prosjektets venv.
 // Rekkefølge: PYTHON_BIN fra miljøet → .venv i prosjektet → system-python3.

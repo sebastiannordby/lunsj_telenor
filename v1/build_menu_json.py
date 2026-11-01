@@ -28,13 +28,6 @@ EN_DAYS = {"Monday": "mon", "Tuesday": "tue", "Wednesday": "wed", "Thursday": "t
 
 # id-en frontend bruker  ->  filnavn + statisk metadata
 PLACES = {
-    "street": {
-        "file": "eat_the_street.txt",
-        "name": "Eat The Street",
-        "hours": "10:30 – 14:00",
-        "building": "J/K",
-        "kind": "lunch",
-    },
     "m": {
         "file": "kantine_m.txt",
         "name": "Kantine M",
@@ -57,11 +50,12 @@ PLACES = {
         "building": "C",
         "kind": "static",
     },
+    # Middagen er flyttet til Fresh 4 You (Eat The Street er lagt ned)
     "dinner": {
-        "file": "eat_the_street_-_middag.txt",
-        "name": "Eat The Street – Middag",
+        "file": "fresh_4_you_-_middag.txt",
+        "name": "Fresh 4 You – Middag",
         "hours": "15:00 – 17:00",
-        "building": "J/K",
+        "building": "C/D",
         "kind": "dinner",
     },
 }
@@ -75,12 +69,15 @@ DAILY_FILES = {
 
 # Kantinenavn slik de står i dagfilene -> id-en frontend bruker
 DAILY_NAME_TO_ID = {
-    "eat the street": "street",
-    "eat the street - middag": "dinner",
+    "fresh 4 you - middag": "dinner",
+    "fresh 4 you middag": "dinner",
     "kantine m": "m",
     "fresh 4 you": "fresh4you",
     "bakern": "bakern",
 }
+
+# Nedlagte kantiner - ignoreres hvis de dukker opp i gamle dagfiler
+RETIRED_DAILY_NAMES = {"eat the street", "eat the street - middag"}
 
 
 def clean_item(line: str) -> str:
@@ -146,7 +143,7 @@ def parse_weekly(path: Path) -> dict:
     return out
 
 
-# "Eat The Street (10:30 - 14:00) - Bygg: J/K"  /  "... - Building: J/K"
+# "Kantine M (10:30 - 13:00) - Bygg: M"  /  "... - Building: J/K"
 DAILY_HEADER = re.compile(
     r"^(?P<name>.+?)\s*\((?P<hours>[^)]+)\)\s*-\s*(?:Bygg|Building):\s*(?P<building>.+)$"
 )
@@ -155,7 +152,7 @@ DAILY_HEADER = re.compile(
 def parse_daily(path: Path) -> dict:
     """
     Leser en dagfil med blokker:
-        Eat The Street (10:30 - 14:00) - Bygg: J/K
+        Kantine M (10:30 - 13:00) - Bygg: M
         - rett
         - rett
     Returnerer {place_id: {"hours":…, "building":…, "items":[…]}}.
@@ -178,7 +175,11 @@ def parse_daily(path: Path) -> dict:
         m = DAILY_HEADER.match(line)
         if m:
             name = m.group("name").strip()
-            pid = DAILY_NAME_TO_ID.get(name.lower())
+            low_name = name.lower()
+            if low_name in RETIRED_DAILY_NAMES:
+                current = None   # nedlagt kantine i en gammel dagfil - hopp over
+                continue
+            pid = DAILY_NAME_TO_ID.get(low_name)
             if pid is None:
                 pid = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
                 print(f"  Advarsel: ukjent kantine '{name}' i {path.name} -> id '{pid}'")
@@ -216,6 +217,8 @@ def read_overrides() -> dict:
         return {}
     out = {}
     for pid, entry in (data or {}).items():
+        if pid not in PLACES:
+            continue   # f.eks. 'street' fra før Eat The Street stengte
         items = [str(i).strip() for i in (entry or {}).get("items", []) if str(i).strip()]
         if items:
             out[pid] = {"items": items, "set": entry.get("set", "")}

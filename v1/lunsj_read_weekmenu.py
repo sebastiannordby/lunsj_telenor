@@ -97,10 +97,9 @@ def main():
                      if fname.lower().endswith('.txt')]
         # Sørg for spesifikk rekkefølge
         desired_order = [
-            'eat_the_street.txt',
             'kantine_m.txt',
             'fresh_4_you.txt',
-            'eat_the_street_-_middag.txt'
+            'fresh_4_you_-_middag.txt'
         ]
         ordered = []
         for name in desired_order:

@@ -4,7 +4,7 @@
 const UI = {
   no: {
     heading: 'LUNSJMENY FORNEBU',
-    sub: 'Tre kantiner og et bakeri - dagens meny på ett sted.',
+    sub: 'To kantiner og et bakeri - dagens meny på ett sted.',
     showingToday: 'Viser dagens meny', oldSite: 'Bytt til gammel side', themeDark: 'Bytt til mørk modus', themeLight: 'Bytt til lys modus',
     weekendKicker: 'Helg', weekendTitle: 'Kantinene er stengt',
     weekendBody: 'Det serveres ingen lunsj i helgen. Kom tilbake på mandag - eller se menyen for en ukedag nå.',
@@ -21,7 +21,9 @@ const UI = {
     openLabel: 'Åpent', lunchWindow: 'lunsjtilbudet gjelder',
     bakeryAlways: 'Bakevarer og nystekt brød hele åpningstiden.',
     bannerHide: 'Skjul melding', lunchWindowShort: 'Lunsjtilbud',
-    manualFlag: 'Skrevet manuelt', bakernLink: 'Åpne Bakern sin egen meny',
+    manualFlag: 'Skrevet manuelt', bakernLink: 'Åpne Bakern sin egen meny', bakernLinkShort: 'Se ukemenyen', dinnerFrom: 'Middag',
+    bakernPreviewTitle: 'Bakern – ukemeny', openNewTab: 'Åpne i ny fane',
+    bakernFrameHint: 'Vises ikke menyen? Åpne den i ny fane.',
     lastUpdated: 'Sist oppdatert',
     allergyTodayOnly: 'Allergener vises kun for dagens meny',
     wheelBtn: 'Velg for meg',
@@ -52,9 +54,9 @@ const UI = {
     fbThanks: 'Takk for tilbakemeldingen!', fbSending: 'Sender …',
     fbError: 'Kunne ikke sende - prøv igjen.',
     aboutBtn: 'Om siden', aboutTitle: 'Om denne løsningen',
-    aboutMadeH: 'Laget av', aboutMadeP: 'Siden er laget på fritiden av Marius Bråthen, som et hobbyprosjekt. Den er ikke et offisielt ISS- eller bedriftsverktøy.',
-    aboutHostH: 'Drift og hosting', aboutHostP: 'Løsningen kjører på en egen server utenfor bedriftens nettverk, hosted av Mats Danielsen. Menyene hentes automatisk fra kjøkkenets egne filer flere ganger hver morgen - ingen personopplysninger lagres, kun anonyme stemmer og tilbakemeldinger.',
-    aboutWebexH: 'Bli med i Webex-gruppen', aboutWebexP: 'Det finnes en åpen Webex-gruppe som varsler dagens meny automatisk, og hvor du kan komme med ønsker og feilmeldinger. Ta kontakt, så legges du til automatisk.',
+    aboutMadeH: 'Laget av', aboutMadeP: 'Siden er laget på fritiden av en kollega på Fornebu, som et hobbyprosjekt. Den er ikke et offisielt ISS- eller bedriftsverktøy.',
+    aboutHostH: 'Drift og hosting', aboutHostP: 'Løsningen kjører på en egen liten server utenfor bedriftens nettverk. Menyene hentes automatisk fra kjøkkenets egne filer flere ganger hver morgen - ingen personopplysninger lagres, kun anonyme stemmer og tilbakemeldinger.',
+    aboutWebexH: 'Bli med i Webex-gruppen', aboutWebexP: 'Det finnes en åpen Webex-gruppe som varsler når dagens meny er klar, og hvor du kan komme med ønsker og feilmeldinger. Ta kontakt, så legges du til automatisk.',
     aboutWebexCta: 'Send melding på Webex',
     aboutWebexAlt: 'Eller send e-post i stedet',
     aboutNote: 'Forslag og feil? Bruk «Gi tilbakemelding» nede til høyre.',
@@ -62,7 +64,7 @@ const UI = {
   },
   en: {
     heading: 'LUNCH MENU FORNEBU',
-    sub: 'Three canteens and a bakery - today\u2019s menu in one place.',
+    sub: 'Two canteens and a bakery - today\u2019s menu in one place.',
     showingToday: 'Showing today\u2019s menu', oldSite: 'Switch to the old site', themeDark: 'Switch to dark mode', themeLight: 'Switch to light mode',
     weekendKicker: 'Weekend', weekendTitle: 'The canteens are closed',
     weekendBody: 'No lunch is served at the weekend. Come back on Monday - or browse a weekday menu now.',
@@ -79,7 +81,9 @@ const UI = {
     openLabel: 'Open', lunchWindow: 'lunch offer served',
     bakeryAlways: 'Pastries and freshly baked bread all day.',
     bannerHide: 'Hide message', lunchWindowShort: 'Lunch offer',
-    manualFlag: 'Entered manually', bakernLink: 'Open Bakern\u2019s own menu',
+    manualFlag: 'Entered manually', bakernLink: 'Open Bakern\u2019s own menu', bakernLinkShort: 'See weekly menu', dinnerFrom: 'Dinner',
+    bakernPreviewTitle: 'Bakern – weekly menu', openNewTab: 'Open in new tab',
+    bakernFrameHint: 'Menu not showing? Open it in a new tab.',
     lastUpdated: 'Last updated',
     allergyTodayOnly: 'Allergens are only available for today\u2019s menu',
     wheelBtn: 'Pick for me',
@@ -122,7 +126,8 @@ const UI = {
 
 // Bakern legger ukesmenyen sin ut som bilde i denne skjermwidgeten
 const BAKERN_MENU_URL =
-  'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=e7420bcd-79cf-4268-abb6-08ccca3a7e89&scaleToFit=true';
+  'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=e7420bcd-79cf-4268-abb6-08ccca3a7e89';
+const BAKERN_FRAME_URL = BAKERN_MENU_URL;
 
 const FRIDAY_LINES = {
   no: ['Endelig fredag!', 'Ha en fin fredag!', 'Er det fredag? Ja. 🙌', 'God helg - men først lunsj.'],
@@ -132,10 +137,9 @@ const FRIDAY_IDX = Math.floor(Math.random() * 4);
 
 // Kartposisjon og farge per sted. Juster left/top for å flytte markørene.
 const GEO = {
-  street:    { color: '#1c16c5', dark: '#6f92ff', left: '30%', top: '80%', vote: true },
   m:         { color: '#0080a6', dark: '#38c9e8', left: '74%', top: '56%', vote: true },
   fresh4you: { color: '#070452', dark: '#a08cff', left: '78%', top: '21%', vote: true },
-  bakern:    { color: '#8a5a2b', dark: '#e0a066', left: '61%', top: '21%', vote: false },
+  bakern:    { color: '#8a5a2b', dark: '#e0a066', left: '61%', top: '21%', vote: true },
   // Kafeer uten meny - bare navn og åpningstid
   expo:      { color: '#7a8a5e', dark: '#b3c48c', left: '86%', top: '30%', vote: false, cafe: true,
                name: 'Café Expo', hours: '08:00 – 15:00', noteKey: 'expoFriday' },
@@ -149,13 +153,16 @@ function isDark() {
   return document.documentElement.dataset.theme === 'dark';
 }
 
-const LUNCH_IDS = ['street', 'm', 'fresh4you'];
+// Eat The Street er lagt ned. Middagen er flyttet til Fresh 4 You og vises
+// som en fane inne i det kortet.
+const LUNCH_IDS = ['m', 'fresh4you'];
+const DINNER_HOST = 'fresh4you';
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
 
 const state = {
   lang: 'no',
   day: null,
-  section: 'lunch',
+  f4yTab: null, // null = automatisk: middag etter kl. 14 i dag, ellers lunsj
   allergens: false,
   data: null,
   votes: {},
@@ -346,12 +353,13 @@ function renderTabs() {
   $('.day-row').hidden = weekend;
   $('.section-row').hidden = weekend;
   $('#weekendCard').hidden = !weekend;
-  $('#lunchSection').hidden = weekend || state.section !== 'lunch';
-  $('#dinnerSection').hidden = weekend || state.section !== 'dinner';
+  $('#lunchSection').hidden = weekend;
+}
 
-  $$('[data-section]').forEach(b => {
-    b.className = 'btn ' + (b.dataset.section === state.section ? 'btn-primary' : 'btn-ghost');
-  });
+/** Fanen i Fresh 4 You-kortet. Uten eget valg: middag etter kl. 14 i dag. */
+function f4yTab() {
+  if (state.f4yTab) return state.f4yTab;
+  return showingToday() && new Date().getHours() >= 14 ? 'dinner' : 'lunch';
 }
 
 function dishList(info) {
@@ -374,19 +382,43 @@ function dishList(info) {
 function canteenCard(info, withVote) {
   const card = el('div', 'card elev-sm canteen');
   card.style.borderTopColor = info.color;
+  const head = el('div', 'card-head');
   const kicker = el('div', 'card-kicker', t().buildingLabel + ' ' + info.building);
   if (info.manual) kicker.appendChild(el('span', 'manual-flag', t().manualFlag));
-  card.appendChild(kicker);
+  head.appendChild(kicker);
+  card.appendChild(head);
   card.appendChild(el('div', 'card-title', info.name));
+
+  let shown = info;
+  if (info.id === DINNER_HOST) {
+    const tab = f4yTab();
+    const seg = el('div', 'card-seg');
+    seg.setAttribute('role', 'tablist');
+    [['lunch', t().lunch], ['dinner', t().dinner]].forEach(([k, label]) => {
+      const b = el('button', 'card-seg-opt' + (tab === k ? ' is-on' : ''), label);
+      b.type = 'button';
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', tab === k ? 'true' : 'false');
+      b.onclick = () => { state.f4yTab = k; renderCanteens(); };
+      seg.appendChild(b);
+    });
+    head.appendChild(seg);
+    if (tab === 'dinner') shown = { ...placeInfo('dinner'), color: info.color };
+  }
 
   const hours = el('div', 'hours');
   hours.innerHTML = CLOCK;
-  hours.appendChild(el('span', null, info.hours));
+  hours.appendChild(el('span', null, shown.hours));
   card.appendChild(hours);
 
-  card.appendChild(dishList(info));
+  card.appendChild(dishList(shown));
 
-  if (withVote) {
+  if (withVote) card.appendChild(voteFoot(info));
+  return card;
+}
+
+function voteFoot(info) {
+  {
     const count = state.votes[info.id] || 0;
     const mine = state.myVote === info.id;
 
@@ -402,16 +434,15 @@ function canteenCard(info, withVote) {
     btn.onfocus = () => setHover(info.id);
     btn.onblur = () => setHover(null);
     foot.appendChild(btn);
-
-    card.appendChild(foot);
+    return foot;
   }
-  return card;
 }
 
 function renderCanteens() {
   const grid = $('#canteenCards');
   grid.textContent = '';
   LUNCH_IDS.forEach(id => grid.appendChild(canteenCard(placeInfo(id), showingToday())));
+  renderBakery(); // stemmetallene i Bakern-kortet følger kantinene
 }
 
 // Midlertidig banner satt fra /admin. Skjules per bruker via localStorage,
@@ -454,62 +485,49 @@ function renderBanner() {
   box.hidden = false;
 }
 
-// Bakern er ikke en ordinær kantine, og får derfor sin egen smale stripe
-// på tvers under kantinekortene - ikke et kort i rutenettet.
+// Bakern står som en egen, høy sidekolonne ved siden av de to kantinene -
+// tonet i Bakern-fargen så den skiller seg tydelig fra kantinekortene.
 function renderBakery() {
   const info = placeInfo('bakern');
   const card = $('#bakeryCard');
   if (!card) return;
   card.textContent = '';
-  card.style.borderTopColor = info.color;
+  card.style.setProperty('--place', info.color);
 
-  const head = el('div', 'bakery-head');
-  head.appendChild(el('span', 'bakery-name', info.name));
-  head.appendChild(el('span', 'sep', '·'));
-  head.appendChild(el('span', null, t().buildingLabel + ' ' + info.building));
+  const top = el('div', 'bakery-top');
+  top.appendChild(el('div', 'card-kicker', t().buildingLabel + ' ' + info.building));
+  top.appendChild(el('span', 'tag bakery-tag', t().staticMenu));
+  card.appendChild(top);
+  card.appendChild(el('div', 'card-title', info.name));
 
-  const hours = el('span', 'bakery-hours');
+  const hours = el('div', 'hours');
   hours.innerHTML = CLOCK;
   hours.appendChild(el('span', 'nowrap', info.hours));
-  head.appendChild(hours);
-
-  head.appendChild(el('span', 'tag tag-neutral', t().staticMenu));
-  card.appendChild(head);
-
-  const dishes = el('div', 'bakery-dishes');
-  if (info.dishes.length) {
-    info.dishes.forEach(d => {
-      const item = el('span', 'bakery-dish');
-      const dot = el('span', 'dot');
-      dot.style.background = info.color;
-      item.appendChild(dot);
-      item.appendChild(el('span', null, d));
-      dishes.appendChild(item);
-    });
-  } else {
-    dishes.appendChild(el('span', 'empty', t().noMenu));
+  card.appendChild(hours);
+  if (info.lunchHours) {
+    const w = el('div', 'bakery-window', t().lunchWindowShort + ' ');
+    w.appendChild(el('span', 'nowrap', info.lunchHours));
+    card.appendChild(w);
   }
-  card.appendChild(dishes);
 
+  card.appendChild(dishList(info));
+  card.appendChild(el('p', 'bakery-note', t().bakeryAlways));
+
+  // Forhåndsvisning i dialog; ny fane som reserve inne i dialogen
   const link = el('a', 'bakery-link');
   link.href = BAKERN_MENU_URL;
   link.target = '_blank';
   link.rel = 'noopener';
-  link.title = t().bakernLink;
-  link.setAttribute('aria-label', t().bakernLink);
-  link.innerHTML = '<svg viewBox="0 0 24 24" class="ico-14"><path d="M15 3h6v6"/><path d="M10 14 21 3"/>' +
-    '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
+  link.innerHTML = '<svg viewBox="0 0 24 24" class="ico-14"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  link.appendChild(el('span', null, t().bakernLinkShort));
+  link.onclick = e => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey) return; // la nettleseren åpne ny fane
+    e.preventDefault();
+    toggleBakern(true);
+  };
   card.appendChild(link);
 
-  const note = el('div', 'bakery-note');
-  note.appendChild(el('span', null, t().bakeryAlways));
-  if (info.lunchHours) {
-    note.appendChild(el('span', 'sep', ' · '));
-    const w = el('span', 'bakery-window', t().lunchWindowShort + ' ');
-    w.appendChild(el('span', 'nowrap', info.lunchHours));
-    note.appendChild(w);
-  }
-  card.appendChild(note);
+  if (showingToday()) card.appendChild(voteFoot(info));
 }
 
 /** Sist endret på kildefila menyen faktisk kommer fra. */
@@ -530,17 +548,6 @@ function stampText(iso) {
   return t().lastUpdated + ' ' + d.toLocaleString(locale, {
     day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
   });
-}
-
-function renderDinner() {
-  const info = placeInfo('dinner');
-  const wrap = $('#dinnerCard');
-  wrap.textContent = '';
-  info.color = GEO.street.color;
-  const card = canteenCard(info, false);
-  const stamp = stampText(updatedFor('dinner'));
-  if (stamp) card.appendChild(el('div', 'card-stamp', stamp));
-  wrap.appendChild(card);
 }
 
 function applyMapTransform() {
@@ -585,7 +592,7 @@ function renderLegend() {
   box.textContent = '';
   const c = id => placeInfo(id).color;
   const groups = [
-    { label: t().legendCanteens, fill: 'linear-gradient(100deg, ' + c('street') + ' 0 34%, ' + c('m') + ' 34% 67%, ' + c('fresh4you') + ' 67% 100%)' },
+    { label: t().legendCanteens, fill: 'linear-gradient(100deg, ' + c('m') + ' 0 50%, ' + c('fresh4you') + ' 50% 100%)' },
     { label: t().legendBakery, fill: c('bakern') },
     { label: t().legendCafes, fill: c('expo') }
   ];
@@ -727,14 +734,25 @@ function setHover(id) {
   renderMapDetail();
 }
 
+/** Nyeste endring på tvers av alle menyfilene, til bunnlinja. */
+function renderLastStamp() {
+  const box = $('#lastStamp');
+  const data = state.data;
+  if (!box || !data) return;
+  const all = [data.generated, data.dailyUpdated,
+    ...Object.values(data.places || {}).map(p => p.updated)]
+    .map(s => new Date(s)).filter(d => !isNaN(d));
+  if (!all.length) { box.textContent = ''; return; }
+  box.textContent = stampText(new Date(Math.max(...all)).toISOString());
+}
+
 function render() {
   renderStrings();
+  renderLastStamp();
   renderTabs();
   // Hjulet tegnes på nytt ved språk- og temabytte mens dialogen står åpen.
   if (wheelModal && !wheelModal.hidden) renderWheel();
   renderCanteens();
-  renderBakery();
-  renderDinner();
   renderMap();
   renderLegend();
 }
@@ -967,10 +985,6 @@ $('#allergyToggle').onclick = () => {
   writeUrl();
   render();
 };
-
-$$('[data-section]').forEach(b => {
-  b.onclick = () => { state.section = b.dataset.section; render(); };
-});
 
 $('#weekendCta').onclick = () => {
   state.day = 'mon';
@@ -1331,6 +1345,48 @@ if (wheelModal) {
   $('#wheelSpin').onclick = spinWheel;
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && !wheelModal.hidden) toggleWheel(false);
+  });
+}
+
+// ------------------------------------------------------------------ bakern-meny
+//
+// Bakern legger ukemenyen ut som en skjermwidget. Den vises i en iframe i en
+// dialog; src settes først ved åpning så siden ikke laster widgeten unødig.
+
+// Skjermen widgeten er laget for. Iframen får denne størrelsen og skaleres
+// ned til rammen, så hele menyen synes uten scrolling eller beskjæring.
+const BAKERN_W = 1080;
+const BAKERN_H = 1920;
+
+function fitBakern() {
+  const frame = $('#bakernFrame');
+  if (!frame || bakernModal.hidden) return;
+  const s = frame.parentElement.clientWidth / BAKERN_W;
+  frame.style.transform = 'scale(' + s + ')';
+}
+
+const bakernModal = $('#bakernModal');
+const bakernBackdrop = $('#bakernBackdrop');
+
+function toggleBakern(open) {
+  if (!bakernModal) return;
+  const frame = $('#bakernFrame');
+  if (open && frame.src !== BAKERN_FRAME_URL) frame.src = BAKERN_FRAME_URL;
+  $('#bakernExternal').href = BAKERN_MENU_URL;
+  bakernModal.hidden = !open;
+  bakernBackdrop.hidden = !open;
+  if (open) {
+    fitBakern();
+    $('#bakernClose').focus();
+  }
+}
+
+if (bakernModal) {
+  $('#bakernClose').onclick = () => toggleBakern(false);
+  bakernBackdrop.onclick = () => toggleBakern(false);
+  window.addEventListener('resize', fitBakern);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !bakernModal.hidden) toggleBakern(false);
   });
 }
 

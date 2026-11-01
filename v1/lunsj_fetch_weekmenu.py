@@ -27,11 +27,6 @@ DEBUG_DIR.mkdir(parents=True, exist_ok=True)
 MAX_HTML_CHARS = 60000  # ekstra sikkerhetsgrense før sending til OpenAI
 
 urls = {
-    "Eat The Street": {
-        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=6e5cc038-e918-4f97-9a59-d2afa0456abf&scaleToFit=true",
-        "opening_hours": "10:30 - 14:00",
-        "building": "J/K"
-    },
     "Kantine M": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=756a5aa2-a95f-4d15-ad5a-59829741075b&scaleToFit=true",
         "opening_hours": "10:30 - 13:00",
@@ -42,10 +37,10 @@ urls = {
         "opening_hours": "10:30 - 13:00",
         "building": "C/D"
     },
-    "Eat The Street - Middag": {
+    "Fresh 4 You - Middag": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=9b060d7e-6658-4d96-b953-23079d7df3b2&scaleToFit=true",
         "opening_hours": "15:00 - 17:00",
-        "building": "J/K"
+        "building": "C/D"
     }
 }
 

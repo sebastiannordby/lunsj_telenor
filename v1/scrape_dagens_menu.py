@@ -24,11 +24,6 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 RAW_HTML_DIR.mkdir(parents=True, exist_ok=True)
 
 CANTEENS = {
-    "Eat The Street": {
-        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=bbf807d7-b1ed-4493-8853-e40077f6adde&scaleToFit=true",
-        "opening_hours": "10:30 - 14:00",
-        "building": "J/K",
-    },
     "Kantine M": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=4a0457f8-dbfa-4783-8ebe-b5ee0486843f&scaleToFit=true",
         "opening_hours": "10:30 - 13:00",
@@ -39,10 +34,10 @@ CANTEENS = {
         "opening_hours": "10:30 - 13:00",
         "building": "C/D",
     },
-    "Eat The Street - Middag": {
+    "Fresh 4 You - Middag": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=8469c383-d042-4d2d-8b18-30b6f9f90393&scaleToFit=true",
         "opening_hours": "15:00 - 17:00",
-        "building": "J/K",
+        "building": "C/D",
     },
 }
 
