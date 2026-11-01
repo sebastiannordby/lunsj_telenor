@@ -19,11 +19,6 @@ urls = {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=aa1358ee-d30e-4289-a630-892cd1210857&scaleToFit=true",
         "opening_hours": "10:30 - 13:00",
         "building": "C/D"
-    },
-    "Fresh 4 You - Middag": {
-        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=8469c383-d042-4d2d-8b18-30b6f9f90393&scaleToFit=true",
-        "opening_hours": "15:00 - 17:00",
-        "building": "C/D"
     }
 }
 

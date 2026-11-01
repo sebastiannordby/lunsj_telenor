@@ -19,6 +19,12 @@
     var dark = saved ? saved === 'dark'
       : window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (dark) document.documentElement.dataset.theme = 'dark';
+    // Sesongpynt settes av serveren; brukeren kan ha skrudd den av
+    var root = document.documentElement, season = root.dataset.season;
+    if (season) {
+      root.dataset.seasonAvail = season;
+      try { if (localStorage.getItem('lunsj-season') === 'off') delete root.dataset.season; } catch (e) {}
+    }
   })();
 </script>
 
@@ -44,6 +50,9 @@
     <button type="button" class="btn btn-ghost btn-sm" data-lang="no">NOR</button>
     <button type="button" class="btn btn-ghost btn-sm" data-lang="en">ENG</button>
   </div>
+  <button type="button" class="btn btn-ghost btn-sm btn-icon-only season-toggle" id="seasonToggle" hidden>
+    <span class="season-ico" aria-hidden="true"></span>
+  </button>
   <button type="button" class="btn btn-ghost btn-sm btn-icon-only" id="themeToggle">
     <svg viewBox="0 0 24 24" class="ico-16 ico-moon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
     <svg viewBox="0 0 24 24" class="ico-16 ico-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.3 17.7-1.4 1.4"/><path d="m19.1 4.9-1.4 1.4"/></svg>
@@ -82,6 +91,9 @@
       <button type="button" class="btn btn-ghost btn-sm icon-btn" id="wheelBtn">
         <svg viewBox="0 0 24 24" class="ico-14"><circle cx="12" cy="12" r="9"/><path d="M12 3v9"/><path d="m20 16-8-4"/><path d="m4 16 8-4"/></svg>
         <span data-t="wheelBtn"></span>
+      </button>
+      <button type="button" class="btn btn-ghost btn-icon-only" id="pushBtn" hidden>
+        <svg viewBox="0 0 24 24" class="ico-16"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
       </button>
       <button type="button" class="btn btn-ghost btn-icon-only" id="copyBtn">
         <svg viewBox="0 0 24 24" class="ico-16"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -224,6 +236,35 @@
     <div class="wheel-result" id="wheelResult" role="status"></div>
 
     <button type="button" class="btn btn-primary btn-block" id="wheelSpin" data-t="wheelSpin"></button>
+  </div>
+</div>
+
+<div class="about-backdrop" id="pushBackdrop" hidden></div>
+<div class="about-modal push-modal" id="pushModal" role="dialog" aria-modal="true" aria-labelledby="pushTitle" hidden>
+  <div class="about-head">
+    <div class="fb-title" id="pushTitle" data-t="pushTitle"></div>
+    <button type="button" class="btn btn-ghost btn-xs" id="pushClose" aria-label="Lukk">×</button>
+  </div>
+  <div class="about-body">
+    <p class="card-body push-intro" id="pushIntro"></p>
+    <div class="push-settings" id="pushSettings">
+      <div class="field">
+        <label for="pushTime" data-t="pushTimeLabel"></label>
+        <select class="input" id="pushTime"></select>
+      </div>
+      <div class="field">
+        <label data-t="pushDaysLabel"></label>
+        <div class="wheel-opts push-days" id="pushDays"></div>
+      </div>
+    </div>
+    <p class="push-msg" id="pushMsg" role="status"></p>
+    <div class="push-actions">
+      <button type="button" class="btn btn-primary btn-block" id="pushSave"></button>
+      <div class="push-secondary">
+        <button type="button" class="btn btn-ghost btn-sm" id="pushTest" data-t="pushTest" hidden></button>
+        <button type="button" class="btn btn-ghost btn-sm" id="pushOff" data-t="pushOff" hidden></button>
+      </div>
+    </div>
   </div>
 </div>
 

@@ -44,6 +44,8 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
+import runlog
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 MENYER_DIR = SCRIPT_DIR / "Menyer"
 RAW_HTML_DIR = SCRIPT_DIR / "raw_html"
@@ -256,7 +258,7 @@ def main():
     previous = HASH_FILE.read_text().strip() if HASH_FILE.is_file() else ""
     if digest == previous and OUT_FILE.is_file() and not args.force:
         print("Menybildet er uendret siden sist - gjør ingenting.")
-        return
+        return "Bildet uendret"
 
     print(f"Sender bildet til {MODEL} ...")
     menu = read_menu_with_ai(image, mime)
@@ -278,7 +280,11 @@ def main():
     os.replace(tmp, OUT_FILE)          # atomisk, samme som /admin gjør
     HASH_FILE.write_text(digest + "\n")
     print(f"Skrev {OUT_FILE}")
+    return f"Nytt bilde - {len(menu['no'])} retter"
 
 
 if __name__ == "__main__":
-    main()
+    if "--json" in sys.argv or "--dry-run" in sys.argv:
+        main()          # forhåndsvisning fra /admin - ikke en ekte kjøring
+    else:
+        runlog.run("scrape_bakern.py", main)

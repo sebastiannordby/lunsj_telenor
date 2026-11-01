@@ -11,6 +11,14 @@ import { fileURLToPath } from 'url';
 import { randomUUID, createHmac, createHash, timingSafeEqual } from 'crypto';
 import { existsSync } from 'fs';
 
+// web-push er valgfri: mangler pakken, skrus pushvarsler bare av.
+let webpush = null;
+try {
+  webpush = (await import('web-push')).default;
+} catch {
+  console.log('web-push er ikke installert - pushvarsler er av (npm install web-push).');
+}
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -48,6 +56,9 @@ if (!process.env.ADMIN_PASSWORD) {
 const NTFY_UP = process.env.NTFY_UP || 'mb-lunsjfbu-lunsjmeny-fornebu-bra';
 const NTFY_DOWN = process.env.NTFY_DOWN || 'mb-lunsjfbu-lunsjmeny-fornebu-darlig';
 const NTFY_TEXT = process.env.NTFY_TEXT || 'mb-lunsjfbu-lunsjmeny-fornebu-tekst';
+// Driftsvarsler (meny mangler, cron står stille). Sett NTFY_ALERT=off for å skru av.
+const NTFY_ALERT = process.env.NTFY_ALERT || 'mb-lunsjfbu-lunsjmeny-fornebu-varsel';
+const NTFY_URL = process.env.NTFY_URL || 'https://ntfy.sh';
 
 const VOTE_PLACES = new Set(['m', 'fresh4you', 'bakern']);
 
@@ -187,13 +198,16 @@ async function assetStamp() {
 }
 
 async function sendPage(res, file, script) {
-  const [html, v] = await Promise.all([
+  const [html, v, season] = await Promise.all([
     fs.readFile(path.join(PUBLIC_DIR, file), 'utf-8'),
-    assetStamp()
+    assetStamp(),
+    file === 'index.html' ? currentSeason() : null
   ]);
   res.set('Cache-Control', 'no-cache, must-revalidate');
   res.type('text/html; charset=utf-8').send(
     html
+      // Sesongtema på forsiden - satt før første opptegning, ingen blink
+      .replace('<html lang="no">', season ? `<html lang="no" data-season="${season}">` : '<html lang="no">')
       // Godtar både "/styles.css" og "styles.css" - forhåndsvisning bruker
       // relative stier, serveren bryr seg ikke, men stemplet må treffe begge.
       .replace(/href="\/?styles\.css"/, `href="styles.css?v=${v}"`)
@@ -227,7 +241,10 @@ console.log(`Bruker Python: ${PYTHON_BIN}`);
 
 function runPython(args, { timeout = 120000 } = {}) {
   return new Promise((resolve, reject) => {
-    const python = spawn(PYTHON_BIN, args, { cwd: __dirname });
+    const python = spawn(PYTHON_BIN, args, {
+      cwd: __dirname,
+      env: { ...process.env, LUNSJ_TRIGGER: 'admin' }   // runlog.py skiller admin fra cron
+    });
     let out = '';
     let err = '';
     const timer = setTimeout(() => {
@@ -288,20 +305,40 @@ function cookieVote(req) {
 // Et midlertidig banner øverst på siden, satt fra /admin. Ligger i egen fil
 // (ikke state.json, som nullstilles hver midnatt) og har en utløpsdato.
 
-async function readBanner() {
+//
+// banner.json er en liste, så bannere kan planlegges fram i tid (f.eks. jul).
+// Et banner vises fra og med `from` til og med `until`. Gamle filer med ett
+// enkelt banner-objekt leses fortsatt.
+
+async function readBanners() {
   try {
-    const b = JSON.parse(await fs.readFile(BANNER_FILE, 'utf-8'));
-    if (!b?.text) return null;
-    if (b.until && b.until < todayKey()) return null;   // utløpt
-    return b;
+    const raw = JSON.parse(await fs.readFile(BANNER_FILE, 'utf-8'));
+    const list = Array.isArray(raw) ? raw : (raw?.text ? [raw] : []);
+    return list.filter(b => b?.text && b.id);
   } catch {
-    return null;
+    return [];
   }
 }
 
-async function writeBanner(banner) {
+function bannerStatus(b, today = todayKey()) {
+  if (b.until && b.until < today) return 'expired';
+  if (b.from && b.from > today) return 'planned';
+  return 'active';
+}
+
+/** Banneret som vises nå: det sist opprettede av de aktive. */
+async function readBanner() {
+  const active = (await readBanners()).filter(b => bannerStatus(b) === 'active');
+  active.sort((a, b) => String(b.created).localeCompare(String(a.created)));
+  return active[0] || null;
+}
+
+async function writeBanners(list) {
+  // Utløpte bannere ryddes bort etter en uke
+  const cutoff = new Date(Date.now() - 7 * 86400000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' });
+  const keep = list.filter(b => !b.until || b.until >= cutoff);
   const tmp = BANNER_FILE + '.tmp';
-  await fs.writeFile(tmp, JSON.stringify(banner ?? {}, null, 2), 'utf-8');
+  await fs.writeFile(tmp, JSON.stringify(keep, null, 2), 'utf-8');
   await fs.rename(tmp, BANNER_FILE);
 }
 
@@ -465,27 +502,54 @@ app.post('/api/admin/logout', (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/api/admin/banners', requireAdmin, async (req, res) => {
+  const today = todayKey();
+  const list = (await readBanners())
+    .map(b => ({ ...b, status: bannerStatus(b, today) }))
+    .sort((a, b) => String(a.from || '').localeCompare(String(b.from || '')));
+  res.json({ banners: list, today });
+});
+
+// Nytt banner, eller endring av et eksisterende (med id)
 app.post('/api/admin/banner', requireAdmin, async (req, res) => {
   const text = String(req.body?.text || '').trim().slice(0, 240);
   if (!text) return res.status(400).json({ error: 'Banneret må ha tekst' });
 
+  const isDate = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '');
+  const from = isDate(req.body?.from) ? req.body.from : todayKey();
+  const until = isDate(req.body?.until) ? req.body.until : from;
+  if (until < from) return res.status(400).json({ error: '«Til og med» er før «Vis fra»' });
+
+  const list = await readBanners();
+  const id = String(req.body?.id || '');
+  const existing = list.find(b => b.id === id);
+
   const tones = ['info', 'good', 'warn'];
   const banner = {
-    id: randomUUID().slice(0, 8),
+    // Endret tekst får ny id, så de som lukket det gamle ser det nye
+    id: existing && existing.text === text ? existing.id : randomUUID().slice(0, 8),
     text,
     textEn: String(req.body?.textEn || '').trim().slice(0, 240) || null,
     emoji: String(req.body?.emoji || '').trim().slice(0, 4) || 'ℹ️',
     tone: tones.includes(req.body?.tone) ? req.body.tone : 'info',
-    until: /^\d{4}-\d{2}-\d{2}$/.test(req.body?.until || '') ? req.body.until : todayKey(),
+    from,
+    until,
     dismissible: req.body?.dismissible !== false,
-    created: new Date().toISOString()
+    created: existing?.created || new Date().toISOString()
   };
-  await writeBanner(banner);
-  res.json({ ok: true, banner });
+  const next = list.filter(b => b.id !== id);
+  next.push(banner);
+  await writeBanners(next);
+  res.json({ ok: true, banner, status: bannerStatus(banner) });
 });
 
+// ?id=... fjerner ett banner. Uten id fjernes de som er aktive nå.
 app.delete('/api/admin/banner', requireAdmin, async (req, res) => {
-  await writeBanner(null);
+  const id = String(req.query.id || '');
+  const list = await readBanners();
+  await writeBanners(id
+    ? list.filter(b => b.id !== id)
+    : list.filter(b => bannerStatus(b) !== 'active'));
   res.json({ ok: true });
 });
 
@@ -589,8 +653,11 @@ app.get('/api/admin/status', requireAdmin, async (req, res) => {
     lastRun = JSON.parse(await fs.readFile(STATUS_FILE, 'utf-8'));
   } catch {}
 
+  const pushSubs = pushReady ? Object.keys(await readSubs()).length : null;
+
   res.json({
     generated: menu?.generated || null,
+    pushSubs,
     today,
     weekend,
     dailyFresh,
@@ -777,6 +844,152 @@ app.post('/api/admin/bakern', requireAdmin, async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// ------------------------------------------------------------- kjørelogg
+//
+// runs.json skrives av runlog.py i hvert Python-skript. Her vises siste
+// kjøring per skript, og om den er for gammel ut fra hvor ofte den skal gå.
+
+const RUNS_FILE = path.join(__dirname, 'runs.json');
+const SCRIPTS = [
+  { script: 'scrape_dagens_menu.py', label: 'Dagsmeny (lunsj)', maxAgeH: 2, weekdayMorning: true },
+  { script: 'scrape_ukens_menu.py', label: 'Ukesmenyer og middag', maxAgeH: 26 },
+  { script: 'build_menu_json.py', label: 'Bygg menu.json', maxAgeH: 2, weekdayMorning: true },
+  { script: 'scrape_bakern.py', label: 'Bakern (bilde + AI)', maxAgeH: 8 * 24 }
+];
+
+async function readRuns() {
+  try {
+    return JSON.parse(await fs.readFile(RUNS_FILE, 'utf-8')).history || [];
+  } catch {
+    return [];
+  }
+}
+
+app.get('/api/admin/runs', requireAdmin, async (req, res) => {
+  const history = await readRuns();
+  const { weekday, minutes } = osloClock();
+  // Hyppige skript vurderes bare når de faktisk skal gå (hverdager 07-13)
+  const inWindow = weekday <= 4 && minutes >= 7 * 60 && minutes <= 13 * 60;
+
+  const scripts = SCRIPTS.map(s => {
+    const runs = history.filter(r => r.script === s.script);
+    const last = runs[0] || null;
+    const lastOk = runs.find(r => r.ok) || null;
+    const ageH = last ? (Date.now() - new Date(last.at)) / 3600000 : Infinity;
+    const stale = !!last && (!s.weekdayMorning || inWindow) && ageH > s.maxAgeH;
+    return { ...s, last, lastOk, stale, runs: runs.slice(0, 15) };
+  });
+  res.json({ scripts, logMissing: !history.length });
+});
+
+// ------------------------------------------------------------- rå HTML
+//
+// Det scraperne faktisk lastet ned (raw_html/). Vises som ren tekst - aldri
+// som HTML på vår egen side - så innholdet fra inisign ikke kan kjøre noe.
+
+const RAW_NAME = /^[\w.\-]+\.html$/;
+
+app.get('/api/admin/raw', requireAdmin, async (req, res) => {
+  try {
+    const names = (await fs.readdir(RAW_DIR)).filter(n => RAW_NAME.test(n));
+    const files = await Promise.all(names.map(async name => {
+      const st = await fs.stat(path.join(RAW_DIR, name));
+      return { name, size: st.size, updated: st.mtime.toISOString() };
+    }));
+    files.sort((a, b) => a.name.localeCompare(b.name));
+    res.json({ files });
+  } catch {
+    res.json({ files: [] });
+  }
+});
+
+app.get('/api/admin/raw/file', requireAdmin, async (req, res) => {
+  const name = String(req.query.name || '');
+  if (!RAW_NAME.test(name)) return res.status(400).send('Ugyldig filnavn');
+  try {
+    const text = await fs.readFile(path.join(RAW_DIR, name), 'utf-8');
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.set('Content-Security-Policy', "default-src 'none'");
+    res.type('text/plain; charset=utf-8').send(text || '(tom fil - hentingen feilet sist)');
+  } catch {
+    res.status(404).send('Fant ikke filen');
+  }
+});
+
+// Tekstlinjene parseren ser, med markering av dagoverskrifter og hvor den stopper
+app.get('/api/admin/raw/text', requireAdmin, async (req, res) => {
+  const name = String(req.query.name || '');
+  if (!RAW_NAME.test(name)) return res.status(400).json({ error: 'Ugyldig filnavn' });
+  try {
+    const out = await runPython(['debug_raw.py', path.join('raw_html', name)], { timeout: 30000 });
+    res.json({ text: out });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ------------------------------------------------------------- sesongtema
+//
+// Temaet settes som data-season på <html> når siden sendes, så pynten er der
+// fra første opptegning. «auto» velger etter dato; admin kan overstyre.
+
+const THEME_FILE = path.join(__dirname, 'theme.json');
+const SEASONS = ['host', 'vinter', 'jul', 'paske', '17mai'];
+const SEASON_LABELS = { host: 'Høst', vinter: 'Vinter', jul: 'Jul', paske: 'Påske', '17mai': '17. mai' };
+
+/** Første påskedag (gregoriansk, Meeus/Jones/Butcher) som YYYY-MM-DD. */
+function easterSunday(year) {
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function autoSeason(isoDay = todayKey()) {
+  const [y, mo, d] = isoDay.split('-').map(Number);
+  const md = mo * 100 + d;
+  const today = Date.UTC(y, mo - 1, d);
+  const easter = easterSunday(y).getTime();
+  if (md >= 510 && md <= 517) return '17mai';
+  if (today >= easter - 7 * 86400000 && today <= easter + 86400000) return 'paske';  // palmesøndag - 2. påskedag
+  if (mo === 12) return 'jul';
+  if (mo === 1 || mo === 2) return 'vinter';
+  if (md >= 915 && md <= 1130) return 'host';
+  return null;
+}
+
+async function readTheme() {
+  try {
+    const t = JSON.parse(await fs.readFile(THEME_FILE, 'utf-8'));
+    if (t.mode === 'off' || t.mode === 'auto' || SEASONS.includes(t.mode)) return t;
+  } catch {}
+  return { mode: 'auto' };
+}
+
+async function currentSeason() {
+  const { mode } = await readTheme();
+  if (mode === 'off') return null;
+  return mode === 'auto' ? autoSeason() : mode;
+}
+
+app.get('/api/admin/theme', requireAdmin, async (req, res) => {
+  const { mode } = await readTheme();
+  const auto = autoSeason();
+  res.json({ mode, auto, autoLabel: auto ? SEASON_LABELS[auto] : null, current: await currentSeason(), seasons: SEASON_LABELS });
+});
+
+app.post('/api/admin/theme', requireAdmin, async (req, res) => {
+  const mode = String(req.body?.mode || '');
+  if (!(mode === 'auto' || mode === 'off' || SEASONS.includes(mode))) {
+    return res.status(400).json({ error: 'Ukjent tema' });
+  }
+  await fs.writeFile(THEME_FILE, JSON.stringify({ mode, set: new Date().toISOString() }, null, 2), 'utf-8');
+  res.json({ ok: true, mode, current: await currentSeason() });
 });
 
 // Henter Bakern-menyen fra bildet i widgeten via AI, uten å lagre noe.
@@ -1110,6 +1323,350 @@ app.get('/test', async (req, res) => {
   } catch (e) {
     res.status(500).type('text/plain; charset=utf-8').send(`Feil: ${e.message}`);
   }
+});
+
+// ---------------------------------------------------------------- driftsvarsler
+//
+// Sjekker hvert 10. minutt på hverdager om noe er galt, og sender ntfy-varsel
+// til NTFY_ALERT. Hvert problem varsles én gang per dag, og du får en
+// «Løst»-melding når det går over. Tilstanden ligger i alerts.json, så en
+// omstart av serveren ikke sender de samme varslene på nytt.
+
+const ALERT_FILE = path.join(__dirname, 'alerts.json');
+const HEALTH_EVERY_MS = 10 * 60 * 1000;
+
+function osloClock() {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+  return { weekday: (d.getDay() + 6) % 7, minutes: d.getHours() * 60 + d.getMinutes() };
+}
+
+/** Problemer akkurat nå. Tomt i helgen og utenfor tidsvinduene. */
+async function healthProblems() {
+  const { weekday, minutes } = osloClock();
+  if (weekday > 4) return [];
+
+  let menu;
+  try {
+    menu = JSON.parse(await fs.readFile(MENU_JSON, 'utf-8'));
+  } catch {
+    return [{ key: 'menujson', text: 'menu.json mangler eller er ødelagt - forsiden viser ingenting.' }];
+  }
+
+  const problems = [];
+  const ageMin = Math.round((Date.now() - new Date(menu.generated)) / 60000);
+
+  // Cron bygger menu.json flere ganger i timen om morgenen
+  if (minutes >= 7 * 60 && minutes <= 13 * 60 && ageMin > 75) {
+    problems.push({ key: 'stale', text: `menu.json er ikke bygget på ${ageMin} min. Kjører cron?` });
+  }
+
+  const { places, dailyFresh } = resolveMenu(menu);
+
+  if (minutes >= 9 * 60 && !dailyFresh) {
+    problems.push({ key: 'daily', text: 'Dagsmenyen er ikke hentet i dag (scrape_dagens_menu.py har ikke kjørt).' });
+  }
+
+  // Skript som feilet sist de kjørte i dag
+  const runs = await readRuns();
+  for (const s of SCRIPTS) {
+    const last = runs.find(r => r.script === s.script);
+    if (last && !last.ok && osloDate(last.at) === todayKey()) {
+      problems.push({ key: 'fail:' + s.script, text: `${s.label} feilet ${new Date(last.at).toLocaleTimeString('no-NO', { timeZone: 'Europe/Oslo', hour: '2-digit', minute: '2-digit' })}: ${String(last.summary).split('\n').pop().slice(0, 160)}` });
+    }
+  }
+
+  if (minutes >= 10 * 60) {
+    const empty = places.filter(p => p.source === 'none').map(p => p.name);
+    if (empty.length) {
+      problems.push({ key: 'empty:' + empty.join(','), text: `Ingen meny for: ${empty.join(', ')}. Skriv den inn under Nødmodus i /admin.` });
+    }
+    // Dagsmenyen er hentet, men fant ikke noe for en lunsjkantine
+    const fallback = dailyFresh
+      ? places.filter(p => p.source === 'weekly' && !p.weeklySource).map(p => p.name)
+      : [];
+    if (fallback.length) {
+      problems.push({ key: 'fallback:' + fallback.join(','), text: `Fant ikke dagens meny for: ${fallback.join(', ')}. Viser ukesmenyen i stedet.` });
+    }
+  }
+  return problems;
+}
+
+async function sendAlert(title, body, tags, priority = 'default') {
+  if (NTFY_ALERT === 'off') return;
+  try {
+    const r = await fetch(`${NTFY_URL}/${encodeURIComponent(NTFY_ALERT)}`, {
+      method: 'POST',
+      // Title må være ren ASCII - æøå og emoji går i body/tags
+      headers: { 'Content-Type': 'text/plain; charset=utf-8', Title: title, Tags: tags, Priority: priority },
+      body
+    });
+    if (!r.ok) throw new Error(`ntfy ${r.status}`);
+  } catch (e) {
+    console.error('Driftsvarsel feilet:', e.message);
+  }
+}
+
+async function readAlerts() {
+  try {
+    const s = JSON.parse(await fs.readFile(ALERT_FILE, 'utf-8'));
+    if (s.date === todayKey()) return s;
+  } catch {}
+  return { date: todayKey(), active: {} };
+}
+
+async function runHealthCheck() {
+  try {
+    const problems = await healthProblems();
+    const state = await readAlerts();
+    const now = new Set(problems.map(p => p.key));
+
+    for (const p of problems) {
+      if (state.active[p.key]) continue;
+      await sendAlert('Lunsjmeny: problem', p.text, 'warning', 'high');
+      state.active[p.key] = p.text;
+    }
+    for (const [key, text] of Object.entries(state.active)) {
+      if (now.has(key)) continue;
+      await sendAlert('Lunsjmeny: OK', 'Løst: ' + text, 'white_check_mark');
+      delete state.active[key];
+    }
+    await fs.writeFile(ALERT_FILE, JSON.stringify(state, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('Helsesjekk feilet:', e);
+  }
+}
+
+setTimeout(runHealthCheck, 60 * 1000);   // ett minutt etter oppstart
+setInterval(runHealthCheck, HEALTH_EVERY_MS);
+
+app.get('/api/admin/health', requireAdmin, async (req, res) => {
+  res.json({ topic: NTFY_ALERT, problems: await healthProblems() });
+});
+
+app.post('/api/admin/health/test', requireAdmin, async (req, res) => {
+  if (NTFY_ALERT === 'off') return res.status(400).json({ error: 'Varsler er skrudd av (NTFY_ALERT=off)' });
+  await sendAlert('Lunsjmeny: testvarsel', 'Testvarsel fra /admin. Varslene kommer hit.', 'bell');
+  res.json({ ok: true, topic: NTFY_ALERT });
+});
+
+// ---------------------------------------------------------------- pushvarsler
+//
+// Hver bruker velger klokkeslett og ukedager. Abonnementene ligger i
+// push-subs.json, nøklet på en hash av push-adressen - ingen navn eller
+// e-post. VAPID-nøklene lages ved første oppstart (vapid.json), eller settes
+// med VAPID_PUBLIC / VAPID_PRIVATE i miljøet.
+
+const PUSH_FILE = path.join(__dirname, 'push-subs.json');
+const VAPID_FILE = path.join(__dirname, 'vapid.json');
+const PUSH_MAX_SUBS = 3000;
+const PUSH_WINDOW_MIN = 30;            // sendes innen 30 min etter valgt tid
+const DAY_NAMES = {
+  no: ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag'],
+  en: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+};
+const PUSH_PLACES = ['m', 'fresh4you', 'bakern'];
+
+let pushReady = false;
+
+async function initPushKeys() {
+  if (!webpush) return;
+  let keys = process.env.VAPID_PUBLIC && process.env.VAPID_PRIVATE
+    ? { publicKey: process.env.VAPID_PUBLIC, privateKey: process.env.VAPID_PRIVATE }
+    : null;
+  if (!keys) {
+    try {
+      keys = JSON.parse(await fs.readFile(VAPID_FILE, 'utf-8'));
+    } catch {
+      keys = webpush.generateVAPIDKeys();
+      await fs.writeFile(VAPID_FILE, JSON.stringify(keys, null, 2), { encoding: 'utf-8', mode: 0o600 });
+      console.log('Laget nye VAPID-nøkler i vapid.json');
+    }
+  }
+  webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:lunsj@fornebu.no', keys.publicKey, keys.privateKey);
+  app.locals.vapidPublic = keys.publicKey;
+  pushReady = true;
+}
+await initPushKeys();
+
+async function readSubs() {
+  try {
+    return JSON.parse(await fs.readFile(PUSH_FILE, 'utf-8')) || {};
+  } catch {
+    return {};
+  }
+}
+
+async function writeSubs(subs) {
+  const tmp = PUSH_FILE + '.tmp';
+  await fs.writeFile(tmp, JSON.stringify(subs, null, 1), 'utf-8');
+  await fs.rename(tmp, PUSH_FILE);
+}
+
+const subId = endpoint => createHash('sha256').update(String(endpoint)).digest('hex').slice(0, 20);
+
+/** Rettene for et sted i dag, i ønsket språk - samme prioritet som forsiden. */
+function pushItems(menu, id, lang, day, dailyFresh) {
+  const manual = menu?.manual?.[id]?.items;
+  if (manual?.length) return manual;
+  if (dailyFresh && !WEEKLY_SOURCE.has(id)) {
+    const daily = menu?.todayOverride?.[lang]?.[id]?.items;
+    if (daily?.length) return daily;
+  }
+  const week = menu?.places?.[id]?.week;
+  return week?.[lang]?.[day]?.length ? week[lang][day] : (week?.no?.[day] || []);
+}
+
+/** Varselets innhold: én linje per sted med første rett. */
+async function buildPushPayload(lang, withDinner) {
+  let menu;
+  try {
+    menu = JSON.parse(await fs.readFile(MENU_JSON, 'utf-8'));
+  } catch {
+    return null;
+  }
+  const { weekday } = osloClock();
+  if (weekday > 4) return null;
+  const day = DAY_KEYS[weekday];
+  const dailyFresh = osloDate(menu?.dailyUpdated) === todayKey();
+  const ids = withDinner ? [...PUSH_PLACES, 'dinner'] : PUSH_PLACES;
+
+  const lines = ids.map(id => {
+    const items = pushItems(menu, id, lang, day, dailyFresh);
+    if (!items.length) return null;
+    const name = menu.places?.[id]?.name || id;
+    return `${name}: ${items[0]}` + (items.length > 1 ? ` (+${items.length - 1})` : '');
+  }).filter(Boolean);
+  if (!lines.length) return null;
+
+  return {
+    title: (lang === 'en' ? 'Today\u2019s lunch – ' : 'Dagens lunsj – ') + DAY_NAMES[lang][weekday],
+    body: lines.join('\n'),
+    url: '/',
+    tag: 'lunsj-' + todayKey()
+  };
+}
+
+async function sendPush(entry, payload) {
+  try {
+    await webpush.sendNotification(entry.sub, JSON.stringify(payload), { TTL: 3 * 3600, urgency: 'normal' });
+    return 'ok';
+  } catch (e) {
+    // 404/410 = abonnementet finnes ikke lenger (avinstallert, nullstilt nettleser)
+    if (e.statusCode === 404 || e.statusCode === 410) return 'gone';
+    console.error('Push feilet:', e.statusCode || '', e.body || e.message);
+    return 'error';
+  }
+}
+
+let pushRunning = false;
+
+async function runPushSchedule() {
+  if (!pushReady || pushRunning) return;
+  pushRunning = true;
+  try {
+    const { weekday, minutes } = osloClock();
+    if (weekday > 4) return;
+    const today = todayKey();
+    const subs = await readSubs();
+    const payloads = {};
+    let changed = false;
+
+    for (const [id, entry] of Object.entries(subs)) {
+      if (entry.lastSent === today || !entry.days.includes(weekday)) continue;
+      const [h, m] = entry.time.split(':').map(Number);
+      const at = h * 60 + m;
+      if (minutes < at || minutes > at + PUSH_WINDOW_MIN) continue;
+
+      const key = entry.lang + (at >= 13 * 60 ? '+dinner' : '');
+      if (!(key in payloads)) payloads[key] = await buildPushPayload(entry.lang, at >= 13 * 60);
+      if (!payloads[key]) continue;          // menyen er ikke klar - prøv igjen neste runde
+
+      const result = await sendPush(entry, payloads[key]);
+      if (result === 'gone') delete subs[id];
+      else if (result === 'ok') entry.lastSent = today;
+      changed = true;
+    }
+    if (changed) await writeSubs(subs);
+  } catch (e) {
+    console.error('Push-planlegger feilet:', e);
+  } finally {
+    pushRunning = false;
+  }
+}
+
+setInterval(runPushSchedule, 30 * 1000);
+
+function validTime(v) {
+  const m = /^(\d{2}):(\d{2})$/.exec(v || '');
+  return m && +m[1] >= 6 && +m[1] <= 15 && +m[2] < 60 && +m[2] % 5 === 0;
+}
+
+app.get('/api/push/key', (req, res) => {
+  if (!pushReady) return res.status(503).json({ error: 'Push er ikke skrudd på' });
+  res.json({ key: app.locals.vapidPublic });
+});
+
+app.post('/api/push/subscribe', async (req, res) => {
+  if (!pushReady) return res.status(503).json({ error: 'Push er ikke skrudd på' });
+  const sub = req.body?.subscription;
+  const endpoint = String(sub?.endpoint || '');
+  if (!/^https:\/\//.test(endpoint) || endpoint.length > 1000 || !sub?.keys?.p256dh || !sub?.keys?.auth) {
+    return res.status(400).json({ error: 'Ugyldig abonnement' });
+  }
+  const time = String(req.body?.time || '');
+  if (!validTime(time)) return res.status(400).json({ error: 'Ugyldig tidspunkt' });
+  const days = [...new Set((req.body?.days || []).map(Number))].filter(d => d >= 0 && d <= 4).sort();
+  if (!days.length) return res.status(400).json({ error: 'Velg minst én dag' });
+
+  const subs = await readSubs();
+  const id = subId(endpoint);
+  if (!subs[id] && Object.keys(subs).length >= PUSH_MAX_SUBS) {
+    return res.status(429).json({ error: 'For mange abonnenter' });
+  }
+  subs[id] = {
+    sub: { endpoint, keys: { p256dh: String(sub.keys.p256dh), auth: String(sub.keys.auth) } },
+    time,
+    days,
+    lang: req.body?.lang === 'en' ? 'en' : 'no',
+    created: subs[id]?.created || new Date().toISOString(),
+    // Ny tid senere i dag skal fortsatt gi varsel i dag
+    lastSent: subs[id]?.time === time ? subs[id]?.lastSent : null
+  };
+  await writeSubs(subs);
+  res.json({ ok: true });
+});
+
+app.post('/api/push/lookup', async (req, res) => {
+  const entry = (await readSubs())[subId(req.body?.endpoint)];
+  res.json(entry ? { found: true, time: entry.time, days: entry.days, lang: entry.lang } : { found: false });
+});
+
+app.post('/api/push/unsubscribe', async (req, res) => {
+  const subs = await readSubs();
+  delete subs[subId(req.body?.endpoint)];
+  await writeSubs(subs);
+  res.json({ ok: true });
+});
+
+const pushTestAt = new Map();
+app.post('/api/push/test', async (req, res) => {
+  if (!pushReady) return res.status(503).json({ error: 'Push er ikke skrudd på' });
+  const id = subId(req.body?.endpoint);
+  const entry = (await readSubs())[id];
+  if (!entry) return res.status(404).json({ error: 'Fant ikke abonnementet - slå på varsel på nytt' });
+  if (Date.now() - (pushTestAt.get(id) || 0) < 20000) {
+    return res.status(429).json({ error: 'Vent litt før du tester igjen' });
+  }
+  pushTestAt.set(id, Date.now());
+  const lang = req.body?.lang === 'en' ? 'en' : entry.lang;
+  const payload = await buildPushPayload(lang, false) || {
+    title: lang === 'en' ? 'Lunch menu Fornebu' : 'Lunsjmeny Fornebu',
+    body: lang === 'en' ? 'Test notification - it works! 🎉' : 'Testvarsel - det virker! 🎉',
+    url: '/', tag: 'lunsj-test'
+  };
+  const result = await sendPush(entry, payload);
+  if (result !== 'ok') return res.status(502).json({ error: 'Kunne ikke sende (' + result + ')' });
+  res.json({ ok: true });
 });
 
 // ---------------------------------------------------------------- statiske filer

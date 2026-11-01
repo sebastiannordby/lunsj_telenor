@@ -16,6 +16,8 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+import runlog
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 MENU_DIR = SCRIPT_DIR / "Menyer"                    # ukesmenyene (kantinenavn.txt)
 OVERRIDES = SCRIPT_DIR / "overrides.json"           # manuelle menyer satt fra /admin
@@ -301,7 +303,9 @@ def main():
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(tmp, out)  # atomisk, så nettsiden aldri leser en halvskrevet fil
     print(f"Skrev {out}")
+    filled = sum(1 for p in data["places"].values() if any(p["week"]["no"].values()))
+    return f"{out.name}: {filled}/{len(data['places'])} steder med meny"
 
 
 if __name__ == "__main__":
-    main()
+    runlog.run("build_menu_json.py", main)

@@ -1,6 +1,7 @@
 // admin.js - /admin: manuell menyoppdatering og midlertidig banner.
 
 const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
 
 const loginCard = $('#loginCard');
 const adminBody = $('#adminBody');
@@ -23,7 +24,7 @@ function showLoggedIn(yes) {
   loginCard.hidden = yes;
   adminBody.hidden = !yes;
   $('#logoutBtn').hidden = !yes;
-  if (yes) { loadBanner(); loadStatus(); loadVotes(); loadOverrides(); loadBakern(); }
+  if (yes) { loadBanner(); loadStatus(); loadVotes(); loadOverrides(); loadBakern(); loadHealth(); loadRuns(); loadRaw(); loadTheme(); }
 }
 
 const el = (tag, cls, text) => {
@@ -188,6 +189,7 @@ async function loadStatus() {
 
     const bits = ['menu.json bygget ' + when(s.generated)];
     if (s.weekend) bits.unshift('Helg - viser mandagens ukesmeny');
+    if (s.pushSubs != null) bits.push(s.pushSubs + ' har pushvarsel');
     if (s.files.dayFile) bits.push('dagsfil skrevet ' + when(s.files.dayFile) + (s.dailyFresh || s.weekend ? '' : ' (ikke fra i dag - brukes ikke)'));
     if (s.lastRun) {
       bits.push(s.lastRun.ok
@@ -203,6 +205,47 @@ async function loadStatus() {
     meta.hidden = false;
   }
 }
+
+// ------------------------------------------------------------------ driftsvarsler
+
+async function loadHealth() {
+  const list = $('#healthList');
+  try {
+    const h = await api('api/admin/health');
+    $('#healthTopic').textContent = h.topic;
+    list.textContent = '';
+    if (!h.problems.length) {
+      const row = el('div', 'status-row');
+      row.appendChild(el('span', 'status-dot ok'));
+      row.appendChild(el('span', 'status-src', 'Ingen problemer akkurat nå'));
+      list.appendChild(row);
+      return;
+    }
+    h.problems.forEach(p => {
+      const row = el('div', 'status-row');
+      row.appendChild(el('span', 'status-dot bad'));
+      row.appendChild(el('span', null, p.text));
+      list.appendChild(row);
+    });
+  } catch (e) {
+    list.textContent = 'Kunne ikke sjekke: ' + e.message;
+  }
+}
+
+$('#healthTest').onclick = async () => {
+  const s = $('#healthStatus');
+  s.hidden = false;
+  s.className = 'admin-status';
+  s.textContent = 'Sender …';
+  try {
+    const r = await api('api/admin/health/test', { method: 'POST' });
+    s.className = 'admin-status ok';
+    s.textContent = 'Sendt til ' + r.topic + ' - sjekk ntfy-appen.';
+  } catch (e) {
+    s.className = 'admin-status bad';
+    s.textContent = e.message;
+  }
+};
 
 // ------------------------------------------------------------------ stemmer
 
@@ -464,28 +507,116 @@ $('#bakernDiscard').onclick = () => {
 
 // ------------------------------------------------------------------ banner
 
-async function loadBanner() {
-  const { banner } = await api('api/banner').catch(() => ({ banner: null }));
-  const box = $('#bannerCurrent');
-  if (!banner) {
-    box.hidden = true;
-    if (!$('#bUntil').value) $('#bUntil').value = todayIso();
-    return;
-  }
-  box.hidden = false;
-  $('#bannerLive').className = 'site-banner tone-' + banner.tone;
-  $('#bannerLiveEmoji').textContent = banner.emoji || '';
-  $('#bannerLiveText').textContent = banner.text;
-  $('#bannerUntil').textContent = 'Vises til og med ' + banner.until;
+const BANNER_STATUS = {
+  active: ['Vises nå', 'tag tag-accent'],
+  planned: ['Planlagt', 'tag tag-neutral'],
+  expired: ['Utløpt', 'tag tag-outline']
+};
 
-  $('#bText').value = banner.text;
-  $('#bTextEn').value = banner.textEn || '';
-  $('#bEmoji').value = banner.emoji || '';
-  $('#bUntil').value = banner.until;
-  $('#bDismiss').checked = banner.dismissible !== false;
-  const tone = document.querySelector(`input[name="tone"][value="${banner.tone}"]`);
-  if (tone) tone.checked = true;
+function niceDate(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('no-NO', { weekday: 'short', day: 'numeric', month: 'short' });
 }
+
+/** Neste forekomst (i år eller neste år) av en dato på formen MM-DD. */
+function nextDate(md) {
+  const today = todayIso();
+  const y = Number(today.slice(0, 4));
+  return `${y}-${md}` >= today ? `${y}-${md}` : `${y + 1}-${md}`;
+}
+
+let bannerCache = [];
+
+async function loadBanner() {
+  const list = $('#bannerList');
+  const { banners } = await api('api/admin/banners').catch(() => ({ banners: [] }));
+  bannerCache = banners;
+  list.textContent = '';
+  if (!banners.length) {
+    list.appendChild(el('p', 'admin-status', 'Ingen bannere er aktive eller planlagt.'));
+  }
+  banners.forEach(b => {
+    const row = el('div', 'admin-ov');
+    const head = el('div', 'admin-ov-head');
+    const [label, cls] = BANNER_STATUS[b.status] || BANNER_STATUS.active;
+    head.appendChild(el('span', cls, label));
+    head.appendChild(el('span', 'admin-current-until',
+      b.from === b.until ? niceDate(b.from) : niceDate(b.from) + ' – ' + niceDate(b.until)));
+    const edit = el('button', 'btn btn-ghost btn-xs', 'Rediger');
+    edit.type = 'button';
+    edit.style.marginLeft = 'auto';
+    edit.onclick = () => fillBannerForm(b);
+    const rm = el('button', 'btn btn-ghost btn-xs', 'Fjern');
+    rm.type = 'button';
+    rm.style.marginLeft = '0';
+    rm.onclick = async () => {
+      if (!confirm('Fjerne banneret?')) return;
+      await api('api/admin/banner?id=' + encodeURIComponent(b.id), { method: 'DELETE' }).catch(() => {});
+      loadBanner();
+    };
+    head.appendChild(edit);
+    head.appendChild(rm);
+    row.appendChild(head);
+    const preview = el('div', 'site-banner tone-' + b.tone);
+    preview.style.margin = '8px 0 0';
+    preview.appendChild(el('span', 'site-banner-emoji', b.emoji || ''));
+    preview.appendChild(el('span', null, b.text));
+    row.appendChild(preview);
+    list.appendChild(row);
+  });
+  if (!$('#bFrom').value) $('#bFrom').value = todayIso();
+  if (!$('#bUntil').value) $('#bUntil').value = todayIso();
+}
+
+function fillBannerForm(b) {
+  $('#bId').value = b.id || '';
+  $('#bText').value = b.text || '';
+  $('#bTextEn').value = b.textEn || '';
+  $('#bEmoji').value = b.emoji || '';
+  $('#bFrom').value = b.from || todayIso();
+  $('#bUntil').value = b.until || b.from || todayIso();
+  $('#bDismiss').checked = b.dismissible !== false;
+  const tone = document.querySelector(`input[name="tone"][value="${b.tone || 'info'}"]`);
+  if (tone) tone.checked = true;
+  const editing = !!b.id;
+  $('#bannerFormTitle').textContent = editing ? 'Endre banner' : 'Nytt banner';
+  $('#bannerCancel').hidden = !editing;
+  $('#bannerForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// Utgangspunkt for vanlige bannere - juster tekst og datoer før lagring
+const BANNER_PRESETS = {
+  jul: () => ({
+    emoji: '🎄', tone: 'good', from: nextDate('12-01'), until: nextDate('12-23'),
+    text: 'God jul fra lunsjmenyen! Følg med her for endrede åpningstider i romjula.',
+    textEn: 'Merry Christmas from the lunch menu! Watch this space for changed opening hours over the holidays.'
+  }),
+  romjul: () => ({
+    emoji: '⭐', tone: 'warn', from: nextDate('12-22'), until: nextDate('12-31'),
+    text: 'Romjul: redusert åpningstid i kantinene. Sjekk menyen før du går.',
+    textEn: 'Between Christmas and New Year the canteens have reduced opening hours. Check the menu before you go.'
+  }),
+  paske: () => ({
+    emoji: '🐣', tone: 'good', from: todayIso(), until: todayIso(),
+    text: 'God påske! Kantinene har redusert åpningstid i påskeuka.',
+    textEn: 'Happy Easter! The canteens have reduced opening hours during Easter week.'
+  }),
+  stengt: () => ({
+    emoji: '🔒', tone: 'warn', from: todayIso(), until: todayIso(),
+    text: 'Kantina er stengt i dag.',
+    textEn: 'The canteen is closed today.'
+  })
+};
+
+$$('[data-preset]').forEach(b => {
+  b.onclick = () => fillBannerForm({ ...BANNER_PRESETS[b.dataset.preset](), dismissible: true });
+});
+
+$('#bannerCancel').onclick = () => {
+  $('#bannerForm').reset();
+  fillBannerForm({ from: todayIso(), until: todayIso(), emoji: '✅', dismissible: true });
+};
 
 $('#bannerForm').onsubmit = async e => {
   e.preventDefault();
@@ -494,9 +625,11 @@ $('#bannerForm').onsubmit = async e => {
   status.className = 'admin-status';
   status.textContent = 'Lagrer …';
   try {
-    await api('api/admin/banner', {
+    const r = await api('api/admin/banner', {
       method: 'POST',
       body: JSON.stringify({
+        id: $('#bId').value || undefined,
+        from: $('#bFrom').value || todayIso(),
         text: $('#bText').value,
         textEn: $('#bTextEn').value,
         emoji: $('#bEmoji').value,
@@ -506,7 +639,11 @@ $('#bannerForm').onsubmit = async e => {
       })
     });
     status.className = 'admin-status ok';
-    status.textContent = 'Banneret er publisert.';
+    status.textContent = r.status === 'planned'
+      ? 'Banneret er planlagt fra ' + niceDate(r.banner.from).replace(/\.$/, '') + '.'
+      : 'Banneret vises på forsiden nå.';
+    $('#bannerForm').reset();
+    fillBannerForm({ from: todayIso(), until: todayIso(), emoji: '✅', dismissible: true });
     loadBanner();
   } catch (e) {
     status.className = 'admin-status bad';
@@ -514,14 +651,171 @@ $('#bannerForm').onsubmit = async e => {
   }
 };
 
-$('#bannerRemove').onclick = async () => {
-  await api('api/admin/banner', { method: 'DELETE' }).catch(() => {});
-  $('#bannerCurrent').hidden = true;
-  const status = $('#bannerStatus');
-  status.hidden = false;
-  status.className = 'admin-status ok';
-  status.textContent = 'Banneret er fjernet.';
-};
+// ------------------------------------------------------------------ kjøringer
+
+function ago(iso) {
+  if (!iso) return 'aldri';
+  const mins = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (mins < 1) return 'nå nettopp';
+  if (mins < 60) return mins + ' min siden';
+  if (mins < 48 * 60) return Math.round(mins / 60) + ' t siden';
+  return Math.round(mins / 1440) + ' dager siden';
+}
+
+function clockTime(iso) {
+  return new Date(iso).toLocaleString('no-NO', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+async function loadRuns() {
+  const box = $('#runList');
+  try {
+    const r = await api('api/admin/runs');
+    box.textContent = '';
+    if (r.logMissing) {
+      box.appendChild(el('p', 'admin-status',
+        'Ingen kjøringer logget ennå. Loggen fylles når skriptene kjører neste gang (runs.json).'));
+    }
+    r.scripts.forEach(s => {
+      const row = el('div', 'admin-ov');
+      const head = el('div', 'status-row');
+      head.style.borderBottom = '0';
+      head.style.padding = '0';
+      const tone = !s.last ? 'warn' : !s.last.ok ? 'bad' : s.stale ? 'warn' : 'ok';
+      head.appendChild(el('span', 'status-dot ' + tone));
+      head.appendChild(el('span', 'status-name', s.label));
+      head.appendChild(el('code', 'admin-code', s.script));
+      head.appendChild(el('span', 'status-count', s.last
+        ? ago(s.last.at) + (s.last.trigger === 'admin' ? ' (admin)' : '')
+        : 'aldri'));
+      row.appendChild(head);
+
+      if (s.last) {
+        const detail = (s.last.ok ? '' : 'FEILET: ') + (s.last.summary || (s.last.ok ? 'OK' : ''));
+        const p = el('div', 'admin-current-until', detail.split('\n').pop());
+        p.style.marginTop = '4px';
+        row.appendChild(p);
+        if (!s.last.ok && s.lastOk) {
+          row.appendChild(el('div', 'admin-current-until', 'Sist OK: ' + clockTime(s.lastOk.at)));
+        }
+      }
+      if (!s.last) {
+        row.appendChild(el('div', 'admin-current-until', 'Ikke logget ennå - vises etter neste kjøring.'));
+      }
+      if (s.stale) {
+        row.appendChild(el('div', 'admin-status warn',
+          'Har ikke kjørt på over ' + (s.maxAgeH >= 48 ? Math.round(s.maxAgeH / 24) + ' dager' : s.maxAgeH + ' t') + ' - sjekk crontab.'));
+      }
+      if (s.runs.length > 1) {
+        const det = el('details');
+        det.appendChild(el('summary', 'admin-current-until', 'Siste ' + s.runs.length + ' kjøringer'));
+        const ul = el('ul', 'admin-ov-items');
+        s.runs.forEach(run => ul.appendChild(el('li', null,
+          (run.ok ? '✓ ' : '✗ ') + clockTime(run.at) + (run.trigger === 'admin' ? ' (admin)' : '') +
+          ' - ' + (run.summary || 'OK').split('\n').pop())));
+        det.appendChild(ul);
+        row.appendChild(det);
+      }
+      box.appendChild(row);
+    });
+  } catch (e) {
+    box.textContent = 'Kunne ikke hente kjøreloggen: ' + e.message;
+  }
+}
+
+$('#runReload').onclick = loadRuns;
+
+// ------------------------------------------------------------------ rå HTML
+
+function kb(n) {
+  return n < 1024 ? n + ' B' : Math.round(n / 1024) + ' kB';
+}
+
+async function loadRaw() {
+  const box = $('#rawList');
+  const { files } = await api('api/admin/raw').catch(() => ({ files: [] }));
+  box.textContent = '';
+  if (!files.length) {
+    box.appendChild(el('p', 'admin-status', 'Ingen filer i raw_html/ ennå.'));
+    return;
+  }
+  files.forEach(f => {
+    const row = el('div', 'admin-ov');
+    const head = el('div', 'admin-ov-head');
+    head.appendChild(el('strong', null, f.name.replace(/\.html$/, '')));
+    head.appendChild(el('span', 'admin-current-until',
+      (f.size ? kb(f.size) : 'tom - hentingen feilet') + ' · ' + ago(f.updated)));
+
+    const text = el('button', 'btn btn-ghost btn-xs', 'Tekst');
+    text.type = 'button';
+    text.style.marginLeft = 'auto';
+    text.onclick = async () => {
+      const pre = $('#rawText');
+      pre.hidden = false;
+      pre.textContent = 'Leser ' + f.name + ' …';
+      try {
+        const r = await api('api/admin/raw/text?name=' + encodeURIComponent(f.name));
+        pre.textContent = f.name + '\n\n' + r.text;
+      } catch (e) {
+        pre.textContent = 'Feil: ' + e.message;
+      }
+      pre.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+    const src = el('a', 'btn btn-ghost btn-xs', 'Kilde');
+    src.href = 'api/admin/raw/file?name=' + encodeURIComponent(f.name);
+    src.target = '_blank';
+    src.rel = 'noopener';
+    src.style.marginLeft = '0';
+    src.style.textDecoration = 'none';
+    head.appendChild(text);
+    head.appendChild(src);
+    row.appendChild(head);
+    box.appendChild(row);
+  });
+}
+
+// ------------------------------------------------------------------ tema
+
+async function loadTheme() {
+  const seg = $('#themeSeg');
+  const status = $('#themeStatus');
+  try {
+    const t = await api('api/admin/theme');
+    seg.textContent = '';
+    const opts = [['auto', 'Automatisk'], ...Object.entries(t.seasons), ['off', 'Av']];
+    opts.forEach(([value, label]) => {
+      const opt = el('label', 'seg-opt');
+      const input = el('input');
+      input.type = 'radio';
+      input.name = 'themeMode';
+      input.value = value;
+      input.checked = t.mode === value;
+      input.onchange = () => saveTheme(value);
+      opt.appendChild(input);
+      opt.appendChild(el('span', null, label));
+      seg.appendChild(opt);
+    });
+    status.className = 'admin-status';
+    status.textContent = t.mode === 'auto'
+      ? (t.autoLabel ? 'Automatisk: ' + t.autoLabel + ' nå.' : 'Automatisk: ingen sesong akkurat nå.')
+      : t.mode === 'off' ? 'Ingen pynt vises.' : 'Låst til ' + t.seasons[t.mode] + ' uansett dato.';
+  } catch (e) {
+    status.className = 'admin-status bad';
+    status.textContent = 'Kunne ikke hente tema: ' + e.message;
+  }
+}
+
+async function saveTheme(mode) {
+  const status = $('#themeStatus');
+  try {
+    await api('api/admin/theme', { method: 'POST', body: JSON.stringify({ mode }) });
+    await loadTheme();
+    status.className = 'admin-status ok';
+    status.textContent += ' Lagret - gjelder neste gang forsiden lastes.';
+  } catch (e) {
+    status.className = 'admin-status bad';
+    status.textContent = e.message;
+  }
+}
 
 // ------------------------------------------------------------------ boot
 

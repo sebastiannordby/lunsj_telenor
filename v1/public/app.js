@@ -60,6 +60,19 @@ const UI = {
     aboutWebexCta: 'Send melding på Webex',
     aboutWebexAlt: 'Eller send e-post i stedet',
     aboutNote: 'Forslag og feil? Bruk «Gi tilbakemelding» nede til høyre.',
+    opensIn: 'Åpner om {n} min', opensAt: 'Åpner kl. {t}', openNow: 'Åpent nå',
+    closesIn: 'Stenger om {n} min', closedToday: 'Stengt for i dag',
+    walkTitle: 'Beregnet gangtid fra A3 og J3', dinnerKicker: 'Middag',
+    seasonOff: 'Skru av sesongpynt', seasonOn: 'Skru på sesongpynt',
+    pushBtn: 'Varsel om dagens meny', pushTitle: 'Dagens meny som varsel',
+    pushIntroOff: 'Få dagens lunsj som varsel på PC eller mobil, til tiden du velger. Varselet kommer selv om siden er lukket.',
+    pushIntroOn: 'Varselet er på. Du kan endre tidspunkt og dager når du vil.',
+    pushIos: 'På iPhone og iPad virker varsler bare når siden er lagt til på Hjem-skjermen: trykk Del-ikonet og velg «Legg til på Hjem-skjerm». Åpne den derfra og trykk på bjella igjen.',
+    pushTimeLabel: 'Tidspunkt', pushDaysLabel: 'Dager',
+    pushEnable: 'Slå på varsel', pushSaveBtn: 'Lagre endringer', pushOff: 'Slå av varsel', pushTest: 'Send et testvarsel nå',
+    pushSaved: 'Lagret - du får varsel kl. {t}.', pushOffDone: 'Varselet er slått av.', pushTestSent: 'Testvarsel sendt.',
+    pushDenied: 'Nettleseren har blokkert varsler for denne siden. Tillat varsler i nettleserens innstillinger og prøv igjen.',
+    pushNeedDay: 'Velg minst én dag.', pushError: 'Noe gikk galt: {e}',
     footerNote: 'Menyene hentes automatisk fra kjøkkenets egne filer, som før.'
   },
   en: {
@@ -120,6 +133,19 @@ const UI = {
     aboutWebexCta: 'Message on Webex',
     aboutWebexAlt: 'Or send an email instead',
     aboutNote: 'Suggestions or bugs? Use “Give feedback” in the bottom right.',
+    opensIn: 'Opens in {n} min', opensAt: 'Opens at {t}', openNow: 'Open now',
+    closesIn: 'Closes in {n} min', closedToday: 'Closed for today',
+    walkTitle: 'Estimated walking time from A3 and J3', dinnerKicker: 'Dinner',
+    seasonOff: 'Turn off seasonal decorations', seasonOn: 'Turn on seasonal decorations',
+    pushBtn: 'Notify me about today\u2019s menu', pushTitle: 'Today\u2019s menu as a notification',
+    pushIntroOff: 'Get today\u2019s lunch as a notification on your computer or phone, at a time you choose. It arrives even when the site is closed.',
+    pushIntroOn: 'Notifications are on. Change the time and days whenever you like.',
+    pushIos: 'On iPhone and iPad, notifications only work when the site is added to the Home Screen: tap the Share icon and choose \u201cAdd to Home Screen\u201d. Open it from there and tap the bell again.',
+    pushTimeLabel: 'Time', pushDaysLabel: 'Days',
+    pushEnable: 'Turn on notifications', pushSaveBtn: 'Save changes', pushOff: 'Turn off', pushTest: 'Send a test notification now',
+    pushSaved: 'Saved - you will be notified at {t}.', pushOffDone: 'Notifications are turned off.', pushTestSent: 'Test notification sent.',
+    pushDenied: 'The browser has blocked notifications for this site. Allow them in the browser settings and try again.',
+    pushNeedDay: 'Pick at least one day.', pushError: 'Something went wrong: {e}',
     footerNote: 'Menus are still pulled automatically from the kitchen\u2019s own files, same as before.'
   }
 };
@@ -158,6 +184,69 @@ function isDark() {
 const LUNCH_IDS = ['m', 'fresh4you'];
 const DINNER_HOST = 'fresh4you';
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
+
+// Beregnet gangtid i minutter fra A3 og J3. Vises i kartpopupen.
+const WALK = {
+  bakern:    { A3: 3, J3: 4 },
+  fresh4you: { A3: 4, J3: 5 },
+  m:         { A3: 5, J3: 4 }
+};
+
+function walkText(id) {
+  const w = WALK[id];
+  return w ? '🚶 ' + Object.entries(w).map(([from, min]) => `${from}: ${min} min`).join(' · ') : '';
+}
+
+/** "10:30 – 13:00" -> [630, 780] i minutter, eller null. */
+function parseHours(hours) {
+  const m = String(hours || '').match(/(\d{1,2})[:.](\d{2})\s*[–-]\s*(\d{1,2})[:.](\d{2})/);
+  return m ? [m[1] * 60 + +m[2], m[3] * 60 + +m[4]] : null;
+}
+
+/** Åpner/stenger-tekst for dagens tidspunkt, eller null når den ikke gjelder. */
+function openState(hours) {
+  const span = parseHours(hours);
+  if (!span || !showingToday()) return null;
+  const now = new Date();
+  const mins = now.getHours() * 60 + now.getMinutes();
+  const [open, close] = span;
+  const fmt = (s, v) => t()[s].replace('{n}', v).replace('{t}', v);
+  if (mins < open - 90) {
+    const hh = String(Math.floor(open / 60)).padStart(2, '0') + ':' + String(open % 60).padStart(2, '0');
+    return { cls: 'later', text: fmt('opensAt', hh) };
+  }
+  if (mins < open) return { cls: 'soon', text: fmt('opensIn', open - mins) };
+  if (mins >= close) return { cls: 'closed', text: t().closedToday };
+  if (close - mins <= 45) return { cls: close - mins <= 15 ? 'closing' : 'open', text: fmt('closesIn', close - mins) };
+  return { cls: 'open', text: t().openNow };
+}
+
+/** Liten status-tekst som oppdateres av klokka hvert halve minutt. */
+function openBadge(hours) {
+  const span = el('span', 'open-state');
+  span.dataset.hours = hours || '';
+  fillOpenBadge(span);
+  return span;
+}
+
+function fillOpenBadge(span) {
+  const s = openState(span.dataset.hours);
+  span.hidden = !s;
+  if (s) {
+    span.className = 'open-state is-' + s.cls;
+    span.textContent = s.text;
+  }
+}
+
+setInterval(() => $$('.open-state').forEach(fillOpenBadge), 30000);
+
+/** Fresh 4 You viser middagen (i kort og kart) når middagsfanen er valgt. */
+function shownPlace(id) {
+  const info = placeInfo(id);
+  if (id !== DINNER_HOST || f4yTab() !== 'dinner') return info;
+  return { ...placeInfo('dinner'), id, color: info.color, left: info.left, top: info.top,
+           name: info.name, building: info.building, isDinner: true };
+}
 
 const state = {
   lang: 'no',
@@ -299,6 +388,8 @@ function renderStrings() {
   ) + ' (' + (state.lang === 'en' ? 'Week ' : 'Uke ') + isoWeek(now) + ')';
   document.title = state.lang === 'en' ? 'Lunch Menu Fornebu' : 'Lunsjmeny Fornebu';
   syncThemeLabel();
+  if (typeof syncSeasonBtn === 'function') syncSeasonBtn();
+  if (typeof syncPushBtn === 'function') syncPushBtn();
 
   const brand = $('.nav-brand');
   if (brand) brand.textContent = '🍽️ ' + (state.lang === 'en' ? 'Lunch Menu Fornebu' : 'Lunsjmeny Fornebu');
@@ -400,7 +491,7 @@ function canteenCard(info, withVote) {
       b.type = 'button';
       b.setAttribute('role', 'tab');
       b.setAttribute('aria-selected', tab === k ? 'true' : 'false');
-      b.onclick = () => { state.f4yTab = k; renderCanteens(); };
+      b.onclick = () => { state.f4yTab = k; renderCanteens(); renderMap(); };
       seg.appendChild(b);
     });
     head.appendChild(seg);
@@ -410,6 +501,7 @@ function canteenCard(info, withVote) {
   const hours = el('div', 'hours');
   hours.innerHTML = CLOCK;
   hours.appendChild(el('span', null, shown.hours));
+  hours.appendChild(openBadge(shown.hours));
   card.appendChild(hours);
 
   card.appendChild(dishList(shown));
@@ -504,6 +596,7 @@ function renderBakery() {
   const hours = el('div', 'hours');
   hours.innerHTML = CLOCK;
   hours.appendChild(el('span', 'nowrap', info.hours));
+  hours.appendChild(openBadge(info.hours));
   card.appendChild(hours);
   if (info.lunchHours) {
     const w = el('div', 'bakery-window', t().lunchWindowShort + ' ');
@@ -615,7 +708,7 @@ function renderMap() {
   map.appendChild(img);
 
   Object.keys(GEO).forEach(id => {
-    const info = placeInfo(id);
+    const info = shownPlace(id);
     const holder = el('div', 'pin-holder' + (state.hovered === id ? ' hot' : ''));
     holder.style.left = info.left;
     holder.style.top = info.top;
@@ -658,11 +751,19 @@ function renderMap() {
     // detaljkortet under kartet. Bare navn og retter får plass.
     if (!narrow) {
       pop.appendChild(el('div', 'pin-pop-kicker',
-        info.cafe ? t().cafeLabel : t().buildingLabel + ' ' + info.building));
+        (info.cafe ? t().cafeLabel : t().buildingLabel + ' ' + info.building) +
+        (info.isDinner ? ' · ' + t().dinnerKicker : '')));
     }
     pop.appendChild(el('div', 'pin-pop-name', info.name));
     if (!narrow || info.cafe) {
-      pop.appendChild(el('div', 'pin-pop-hours', info.hours));
+      const ph = el('div', 'pin-pop-hours', info.hours);
+      ph.appendChild(openBadge(info.hours));
+      pop.appendChild(ph);
+    }
+    if (!narrow && WALK[id]) {
+      const walk = el('div', 'pin-pop-walk', walkText(id));
+      walk.title = t().walkTitle;
+      pop.appendChild(walk);
     }
     if (info.lunchHours && !narrow) {
       pop.appendChild(el('div', 'pin-pop-window',
@@ -700,12 +801,20 @@ function renderMapDetail() {
     detail.appendChild(el('p', 'map-hint', t().mapEmpty));
     return;
   }
-  const info = placeInfo(shownId);
+  const info = shownPlace(shownId);
   const card = el('div', 'card map-detail');
   card.appendChild(el('div', 'card-kicker',
-    info.cafe ? t().cafeLabel : t().buildingLabel + ' ' + info.building));
+    (info.cafe ? t().cafeLabel : t().buildingLabel + ' ' + info.building) +
+    (info.isDinner ? ' · ' + t().dinnerKicker : '')));
   card.appendChild(el('div', 'card-title', info.name));
-  card.appendChild(el('div', 'detail-hours', info.hours));
+  const dh = el('div', 'detail-hours', info.hours);
+  dh.appendChild(openBadge(info.hours));
+  card.appendChild(dh);
+  if (WALK[shownId]) {
+    const walk = el('div', 'detail-walk', walkText(shownId));
+    walk.title = t().walkTitle;
+    card.appendChild(walk);
+  }
   if (info.lunchHours) {
     card.appendChild(el('div', 'detail-window',
       '(' + t().lunchWindow + ' ' + info.lunchHours + ')'));
@@ -1427,6 +1536,239 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// ------------------------------------------------------------------ sesongpynt
+//
+// Serveren setter data-season på <html> (høst, vinter, jul, påske, 17. mai).
+// Her legges snø/løv i bakgrunnen, og brukeren kan skru pynten av og på.
+// Partiklene ligger bak innholdet, så de aldri dekker tekst.
+
+const SEASON_ICON = { host: '🍂', vinter: '❄️', jul: '🎄', paske: '🐣', '17mai': '🇳🇴' };
+const SEASON_FX = {
+  host: { count: 9, glyphs: ['🍂', '🍁', '🍂'] },
+  vinter: { count: 18 },
+  jul: { count: 22 }
+};
+
+function renderSeasonFx() {
+  document.querySelector('.season-fx')?.remove();
+  const season = document.documentElement.dataset.season;
+  const fx = SEASON_FX[season];
+  if (!fx) return;
+  const layer = el('div', 'season-fx');
+  layer.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < fx.count; i++) {
+    const p = el('i', fx.glyphs ? 'leaf' : 'flake');
+    if (fx.glyphs) p.textContent = fx.glyphs[i % fx.glyphs.length];
+    const size = fx.glyphs ? 12 + Math.random() * 8 : 3 + Math.random() * 4;
+    p.style.left = (Math.random() * 100).toFixed(1) + '%';
+    p.style.setProperty('--size', size.toFixed(1) + 'px');
+    p.style.setProperty('--drift', ((Math.random() - 0.5) * 120).toFixed(0) + 'px');
+    p.style.animationDuration = (fx.glyphs ? 16 + Math.random() * 12 : 12 + Math.random() * 14).toFixed(1) + 's';
+    p.style.animationDelay = (-Math.random() * 26).toFixed(1) + 's';
+    layer.appendChild(p);
+  }
+  document.body.prepend(layer);
+}
+
+const seasonBtn = $('#seasonToggle');
+
+function syncSeasonBtn() {
+  const avail = document.documentElement.dataset.seasonAvail;
+  if (!seasonBtn) return;
+  seasonBtn.hidden = !avail;
+  if (!avail) return;
+  const on = !!document.documentElement.dataset.season;
+  seasonBtn.querySelector('.season-ico').textContent = SEASON_ICON[avail] || '✨';
+  seasonBtn.classList.toggle('is-off', !on);
+  const label = on ? t().seasonOff : t().seasonOn;
+  seasonBtn.title = label;
+  seasonBtn.setAttribute('aria-label', label);
+  seasonBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+}
+
+if (seasonBtn) {
+  seasonBtn.onclick = () => {
+    const root = document.documentElement;
+    const on = !!root.dataset.season;
+    if (on) delete root.dataset.season;
+    else root.dataset.season = root.dataset.seasonAvail;
+    try { localStorage.setItem('lunsj-season', on ? 'off' : 'on'); } catch (e) {}
+    renderSeasonFx();
+    syncSeasonBtn();
+  };
+}
+
+// ------------------------------------------------------------------ push
+//
+// Daglig varsel med dagens meny, til et tidspunkt og dager hver bruker velger
+// selv. Abonnementet lagres på serveren (uten navn eller e-post - bare
+// nettleserens push-adresse), som sender varselet via Web Push.
+
+const pushBtn = $('#pushBtn');
+const pushModal = $('#pushModal');
+const pushBackdrop = $('#pushBackdrop');
+const PUSH = { key: null, sub: null, on: false, time: '10:25', days: [0, 1, 2, 3, 4], iosHint: false };
+const pushSupported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+
+function b64ToBytes(b64) {
+  const pad = '='.repeat((4 - (b64.length % 4)) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(raw, c => c.charCodeAt(0));
+}
+
+async function pushApi(path, body) {
+  const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || 'HTTP ' + r.status);
+  return data;
+}
+
+async function initPush() {
+  if (!pushBtn) return;
+  if (!pushSupported) {
+    // iPhone uten Hjem-skjerm: vis bjella, men forklar hva som må til
+    if (isIos() && !isStandalone()) { PUSH.iosHint = true; pushBtn.hidden = false; syncPushBtn(); }
+    return;
+  }
+  try {
+    const r = await fetch('/api/push/key');
+    if (!r.ok) return;               // serveren har ikke push skrudd på
+    PUSH.key = (await r.json()).key;
+  } catch (e) { return; }
+  pushBtn.hidden = false;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    PUSH.sub = await reg.pushManager.getSubscription();
+    if (PUSH.sub) {
+      const r = await pushApi('/api/push/lookup', { endpoint: PUSH.sub.endpoint });
+      if (r.found) Object.assign(PUSH, { on: true, time: r.time, days: r.days });
+    }
+  } catch (e) {}
+  syncPushBtn();
+}
+
+function syncPushBtn() {
+  if (!pushBtn) return;
+  pushBtn.classList.toggle('btn-secondary', PUSH.on);
+  pushBtn.classList.toggle('btn-ghost', !PUSH.on);
+  pushBtn.title = t().pushBtn;
+  pushBtn.setAttribute('aria-label', t().pushBtn);
+}
+
+function pushMsg(text, bad) {
+  const m = $('#pushMsg');
+  m.textContent = text || '';
+  m.className = 'push-msg' + (bad ? ' bad' : text ? ' ok' : '');
+}
+
+function renderPushModal() {
+  $('#pushIntro').textContent = PUSH.iosHint ? t().pushIos : (PUSH.on ? t().pushIntroOn : t().pushIntroOff);
+  $('#pushSettings').hidden = PUSH.iosHint;
+  $('#pushSave').hidden = PUSH.iosHint;
+  $('#pushSave').textContent = PUSH.on ? t().pushSaveBtn : t().pushEnable;
+  $('#pushOff').hidden = !PUSH.on;
+  $('#pushTest').hidden = !PUSH.on;
+
+  const sel = $('#pushTime');
+  if (!sel.options.length) {
+    for (let m = 7 * 60; m <= 14 * 60; m += 5) {
+      const v = String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+      sel.appendChild(new Option(v, v));
+    }
+  }
+  sel.value = PUSH.time;
+
+  const days = $('#pushDays');
+  days.textContent = '';
+  DAY_KEYS.forEach((k, i) => {
+    const b = el('button', 'wheel-opt' + (PUSH.days.includes(i) ? ' is-on' : ''), t()[k + 'Short']);
+    b.type = 'button';
+    b.setAttribute('aria-pressed', PUSH.days.includes(i) ? 'true' : 'false');
+    b.onclick = () => {
+      PUSH.days = PUSH.days.includes(i) ? PUSH.days.filter(d => d !== i) : [...PUSH.days, i].sort();
+      renderPushModal();
+    };
+    days.appendChild(b);
+  });
+}
+
+function togglePush(open) {
+  if (!pushModal) return;
+  pushModal.hidden = !open;
+  pushBackdrop.hidden = !open;
+  if (open) {
+    pushMsg('');
+    renderPushModal();
+    $('#pushClose').focus();
+  } else {
+    pushBtn.focus();
+  }
+}
+
+async function savePush() {
+  PUSH.time = $('#pushTime').value;
+  if (!PUSH.days.length) return pushMsg(t().pushNeedDay, true);
+  const btn = $('#pushSave');
+  btn.disabled = true;
+  try {
+    if (Notification.permission !== 'granted') {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') return pushMsg(t().pushDenied, true);
+    }
+    const reg = await navigator.serviceWorker.ready;
+    PUSH.sub = await reg.pushManager.getSubscription() ||
+      await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(PUSH.key) });
+    await pushApi('/api/push/subscribe', {
+      subscription: PUSH.sub.toJSON(), time: PUSH.time, days: PUSH.days, lang: state.lang
+    });
+    PUSH.on = true;
+    renderPushModal();
+    syncPushBtn();
+    pushMsg(t().pushSaved.replace('{t}', PUSH.time));
+  } catch (e) {
+    pushMsg(t().pushError.replace('{e}', e.message), true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function disablePush() {
+  try {
+    if (PUSH.sub) {
+      await pushApi('/api/push/unsubscribe', { endpoint: PUSH.sub.endpoint }).catch(() => {});
+      await PUSH.sub.unsubscribe().catch(() => {});
+    }
+    PUSH.sub = null;
+    PUSH.on = false;
+    renderPushModal();
+    syncPushBtn();
+    pushMsg(t().pushOffDone);
+  } catch (e) {
+    pushMsg(t().pushError.replace('{e}', e.message), true);
+  }
+}
+
+async function testPush() {
+  try {
+    await pushApi('/api/push/test', { endpoint: PUSH.sub?.endpoint, lang: state.lang });
+    pushMsg(t().pushTestSent);
+  } catch (e) {
+    pushMsg(t().pushError.replace('{e}', e.message), true);
+  }
+}
+
+if (pushModal) {
+  pushBtn.onclick = () => togglePush(true);
+  $('#pushClose').onclick = () => togglePush(false);
+  pushBackdrop.onclick = () => togglePush(false);
+  $('#pushSave').onclick = savePush;
+  $('#pushOff').onclick = disablePush;
+  $('#pushTest').onclick = testPush;
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !pushModal.hidden) togglePush(false);
+  });
+}
+
 // ------------------------------------------------------------------ boot
 
 async function boot() {
@@ -1442,6 +1784,8 @@ async function boot() {
   render();
   loadTraffic();
   loadBanner();
+  renderSeasonFx();
+  initPush();
 }
 
 let resizeTimer = null;

@@ -16,6 +16,8 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
+import runlog
+
 DEBUG = os.environ.get("DEBUG") == "1"
 
 OUTPUT_DIR = Path("outputs")
@@ -168,6 +170,7 @@ def format_block(canteen: str, info: dict, dishes: list[tuple[str, list[int]]], 
 
 def main():
     no_blocks, en_blocks, al_blocks = [], [], []
+    summary, failed = [], []
 
     for canteen, info in CANTEENS.items():
         print(f"Behandler: {canteen}")
@@ -178,6 +181,9 @@ def main():
 
         parsed = parse_dagens(html) if html else {"no": [], "en": []}
         print(f"  {len(parsed['no'])} retter (no), {len(parsed['en'])} retter (en)")
+        summary.append(f"{canteen}: {len(parsed['no'])}" if html else f"{canteen}: henting feilet")
+        if not html:
+            failed.append(canteen)
 
         no_blocks.append(format_block(canteen, info, parsed["no"], "no", allergen_names=False))
         en_blocks.append(format_block(canteen, info, parsed["en"], "en", allergen_names=False))
@@ -187,7 +193,8 @@ def main():
     (OUTPUT_DIR / "menus_en.txt").write_text("\n\n".join(en_blocks) + "\n", encoding="utf-8")
     (OUTPUT_DIR / "menus_al.txt").write_text("\n\n".join(al_blocks) + "\n", encoding="utf-8")
     print("Skrev outputs/menus_no.txt, menus_en.txt, menus_al.txt")
+    return (not failed, ", ".join(summary))
 
 
 if __name__ == "__main__":
-    main()
+    runlog.run("scrape_dagens_menu.py", main)

@@ -26,6 +26,8 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup, Tag
 
+import runlog
+
 MENYER_DIR = Path("Menyer")
 RAW_HTML_DIR = Path("raw_html")
 MENYER_DIR.mkdir(parents=True, exist_ok=True)
@@ -186,6 +188,7 @@ def format_week_file(week: dict[str, dict[int, list[str]]]) -> str:
 
 
 def main():
+    summary, failed = [], []
     for canteen, info in CANTEENS.items():
         print(f"Behandler: {canteen}")
         html = fetch_html(info["url"])
@@ -201,11 +204,15 @@ def main():
         # Ellers ville en nettverksfeil tømt ukesmenyen for resten av uka.
         if dishes == 0 and filepath.is_file():
             print(f"  Fant ingen retter - beholder eksisterende {filepath}")
+            summary.append(f"{canteen}: beholdt gammel fil")
+            failed.append(canteen)
             continue
+        summary.append(f"{canteen}: {dishes}")
 
         filepath.write_text(format_week_file(week or {"no": {i: [] for i in range(5)}, "en": {i: [] for i in range(5)}}), encoding="utf-8")
         print(f"  Skrev {filepath} ({dishes} retter)")
+    return (not failed, ", ".join(summary))
 
 
 if __name__ == "__main__":
-    main()
+    runlog.run("scrape_ukens_menu.py", main)

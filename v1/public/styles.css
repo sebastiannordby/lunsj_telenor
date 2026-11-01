@@ -305,6 +305,7 @@ svg.ico-18 { width: 18px; height: 18px; }
 }
 .admin-status.ok { color: #2f7a4d; }
 .admin-status.bad { color: #c0392b; }
+.admin-status.warn { color: #c46a12; }
 .admin-status[hidden] { display: none; }
 .admin-error {
   margin: var(--s3) 0 0;
@@ -463,6 +464,10 @@ svg.ico-18 { width: 18px; height: 18px; }
 @media (max-width: 560px) {
   .admin-bakern-compare { grid-template-columns: minmax(0, 1fr); }
 }
+/* Tema-velgeren har mange valg - la dem bryte linje i stedet for å presses */
+#themeSeg { flex-wrap: wrap; border-radius: var(--radius); }
+#themeSeg .seg-opt { flex: 1 0 auto; }
+.admin-ov details summary { cursor: pointer; margin-top: 6px; }
 textarea.input { min-height: 90px; }
 select.input { cursor: pointer; }
 
@@ -1409,4 +1414,131 @@ select.input { cursor: pointer; }
 }
 @media (prefers-reduced-motion: reduce) {
   .confetti { display: none; }
+}
+
+/* ---------------------------------------------------------------- åpner/stenger */
+
+/* Liten statustekst etter åpningstiden: «Åpent nå», «Stenger om 12 min» … */
+.open-state {
+  margin-left: 6px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.open-state[hidden] { display: none; }
+.open-state::before { content: '·'; margin-right: 6px; color: var(--muted); font-weight: 400; }
+.open-state.is-open { color: #2f7a4d; }
+.open-state.is-soon { color: var(--accent-ink); }
+.open-state.is-closing { color: #c46a12; }
+.open-state.is-closed { font-weight: 500; }
+:root[data-theme="dark"] .open-state.is-open { color: #6fcf97; }
+:root[data-theme="dark"] .open-state.is-closing { color: #f0a050; }
+
+/* Gangtid fra A3/J3 i kartet */
+.pin-pop-walk { font-size: 12px; color: var(--muted); margin: -4px 0 var(--s2); font-variant-numeric: tabular-nums; }
+.map-detail .detail-walk { font-size: 13px; color: var(--muted); margin-bottom: var(--s2); font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------- push */
+
+.push-modal .about-head { justify-content: space-between; }
+.push-modal .push-intro { margin: 0; }
+.push-settings { display: flex; flex-direction: column; gap: var(--s3); }
+.push-settings[hidden] { display: none; }
+.push-settings .field { display: flex; flex-direction: column; gap: 6px; }
+.push-settings .field label {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--muted);
+}
+.push-days .wheel-opt { min-height: 36px; padding: 4px var(--s3); }
+.push-days .wheel-opt.is-on { background: var(--blue-500); border-color: var(--blue-500); color: var(--on-accent); }
+.push-msg { margin: 0; font-size: 14px; font-weight: 600; min-height: 1em; text-wrap: pretty; }
+.push-msg:empty { display: none; }
+.push-msg.ok { color: #2f7a4d; }
+.push-msg.bad { color: #c0392b; }
+:root[data-theme="dark"] .push-msg.ok { color: #6fcf97; }
+.push-actions { display: flex; flex-direction: column; gap: var(--s2); }
+.push-secondary { display: flex; gap: var(--s2); flex-wrap: wrap; justify-content: center; }
+.btn-primary[hidden] { display: none; }
+
+/* ---------------------------------------------------------------- sesongpynt
+   Bevisst diskret: en stripe under menylinjen, et symbol ved datoen og
+   partikler i bakgrunnen. Kort, farger og layout er uendret. */
+
+.season-toggle .season-ico { font-size: 14px; line-height: 1; }
+.season-toggle.is-off .season-ico { filter: grayscale(1); opacity: 0.55; }
+.season-toggle[hidden] { display: none; }
+
+html[data-season] .nav { position: relative; z-index: 2; }
+html[data-season] .nav::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 4px;
+  pointer-events: none;
+}
+html[data-season] .wrap { position: relative; z-index: 1; }
+html[data-season] .datestamp::before { margin-right: 6px; }
+
+html[data-season="host"] .nav::after {
+  background: linear-gradient(90deg, #b5452c, #d98324, #e2b33c, #9c5b2c, #d98324, #b5452c);
+}
+html[data-season="host"] .datestamp::before { content: '🍂'; }
+
+html[data-season="vinter"] .nav::after {
+  background: linear-gradient(90deg, #cfe8fb, #7fbcec, #e4f2fc, #7fbcec, #cfe8fb);
+}
+html[data-season="vinter"] .datestamp::before { content: '❄️'; }
+
+html[data-season="jul"] .nav::after {
+  height: 5px;
+  background: repeating-linear-gradient(90deg,
+    #c0392b 0 16px, #f4f1ea 16px 22px, #2f7a4d 22px 38px, #f4f1ea 38px 44px);
+}
+html[data-season="jul"] .datestamp::before { content: '🎄'; }
+
+html[data-season="paske"] .nav::after {
+  background: repeating-linear-gradient(90deg, #f6cf3f 0 22px, #f39c2f 22px 30px);
+}
+html[data-season="paske"] .datestamp::before { content: '🐣'; }
+
+html[data-season="17mai"] .nav::after {
+  height: 6px;
+  background: linear-gradient(180deg,
+    #ba0c2f 0 30%, #ffffff 30% 40%, #00205b 40% 60%, #ffffff 60% 70%, #ba0c2f 70%);
+}
+html[data-season="17mai"] .datestamp::before { content: '🇳🇴'; }
+
+/* Snø og løv - bak innholdet, aldri over tekst */
+.season-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+html:not([data-season]) .season-fx { display: none; }
+.season-fx i {
+  position: absolute;
+  top: -24px;
+  font-style: normal;
+  animation-name: season-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+.season-fx .flake {
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: rgba(120, 150, 190, 0.35);
+}
+:root[data-theme="dark"] .season-fx .flake { background: rgba(255, 255, 255, 0.55); }
+.season-fx .leaf { font-size: var(--size); opacity: 0.32; }
+:root[data-theme="dark"] .season-fx .leaf { opacity: 0.28; }
+@keyframes season-fall {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  100% { transform: translate(var(--drift), 110vh) rotate(260deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .season-fx { display: none; }
 }
