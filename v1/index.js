@@ -9,7 +9,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { randomUUID, createHmac, createHash, timingSafeEqual } from 'crypto';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 
 // web-push er valgfri: mangler pakken, skrus pushvarsler bare av.
 let webpush = null;
@@ -19,11 +19,36 @@ try {
   console.log('web-push er ikke installert - pushvarsler er av (npm install web-push).');
 }
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Leser v1/.env (NAVN=verdi per linje) hvis den finnes. Verdier som allerede
+// er satt i miljøet (f.eks. i systemd-uniten) vinner over fila.
+function loadDotEnv(file) {
+  let text;
+  try { text = readFileSync(file, 'utf-8'); } catch { return; }
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const m = line.match(/^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    if (!m) continue;
+    let value = m[2].trim();
+    if (/^(["']).*\1$/.test(value)) value = value.slice(1, -1);
+    else value = value.replace(/\s+#.*$/, '');
+    if (process.env[m[1]] === undefined) process.env[m[1]] = value;
+  }
+}
+loadDotEnv(path.join(__dirname, '.env'));
+
 const app = express();
 const port = process.env.PORT || 3000;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Kontaktadresse i «Om siden» (Webex og e-post) og for pushvarsler.
+// Sett CONTACT_EMAIL i .env. Uten den skjules kontaktknappene.
+const CONTACT_EMAIL = (process.env.CONTACT_EMAIL || '').trim();
+// Navnet i «Laget av» under «Om siden». Uten det står det «en kollega på Fornebu».
+const AUTHOR_NAME = (process.env.AUTHOR_NAME || '').trim();
+const escAttr = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const MENU_JSON = path.join(__dirname, 'public', 'menu.json');
 const STATE_FILE = path.join(__dirname, 'state.json');
@@ -206,6 +231,9 @@ async function sendPage(res, file, script) {
   res.set('Cache-Control', 'no-cache, must-revalidate');
   res.type('text/html; charset=utf-8').send(
     html
+      // Kontaktadresse fra .env (CONTACT_EMAIL) - se «Om siden»
+      .replaceAll('__CONTACT_EMAIL__', encodeURIComponent(CONTACT_EMAIL).replace(/%40/g, '@'))
+      .replace('__AUTHOR_NAME__', escAttr(AUTHOR_NAME))
       // Sesongtema på forsiden - satt før første opptegning, ingen blink
       .replace('<html lang="no">', season ? `<html lang="no" data-season="${season}">` : '<html lang="no">')
       // Godtar både "/styles.css" og "styles.css" - forhåndsvisning bruker
@@ -1482,7 +1510,10 @@ async function initPushKeys() {
       console.log('Laget nye VAPID-nøkler i vapid.json');
     }
   }
-  webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:lunsj@fornebu.no', keys.publicKey, keys.privateKey);
+  // Push-tjenestene vil ha en kontaktadresse (mailto: eller https:)
+  const subject = process.env.VAPID_SUBJECT
+    || (CONTACT_EMAIL ? 'mailto:' + CONTACT_EMAIL : 'https://lunsj.regrettable.solutions');
+  webpush.setVapidDetails(subject, keys.publicKey, keys.privateKey);
   app.locals.vapidPublic = keys.publicKey;
   pushReady = true;
 }

@@ -54,9 +54,9 @@ const UI = {
     fbThanks: 'Takk for tilbakemeldingen!', fbSending: 'Sender …',
     fbError: 'Kunne ikke sende - prøv igjen.',
     aboutBtn: 'Om siden', aboutTitle: 'Om denne løsningen',
-    aboutMadeH: 'Laget av', aboutMadeP: 'Siden er laget på fritiden av Marius Bråthen på Fornebu, som et hobbyprosjekt. Den er ikke et offisielt ISS- eller bedriftsverktøy.',
+    aboutMadeH: 'Laget av', aboutMadeP: 'Siden er laget på fritiden av {name}, som et hobbyprosjekt. Den er ikke et offisielt ISS- eller bedriftsverktøy.',
     aboutHostH: 'Drift og hosting', aboutHostP: 'Løsningen kjører på en egen liten server utenfor bedriftens nettverk. Menyene hentes automatisk fra kjøkkenets egne filer flere ganger hver morgen - ingen personopplysninger lagres, kun anonyme stemmer og tilbakemeldinger.',
-    aboutWebexH: 'Bli med i Webex-gruppen', aboutWebexP: 'Det finnes en åpen Webex-gruppe som varsler når dagens meny er klar. Ta kontakt, så legges du til automatisk.',
+    aboutWebexH: 'Bli med i Webex-gruppen', aboutWebexP: 'Det finnes en åpen Webex-gruppe som varsler dagens meny automatisk. Ta kontakt, så legges du til.',
     aboutWebexCta: 'Send melding på Webex',
     aboutWebexAlt: 'Eller send e-post i stedet',
     aboutNote: 'Forslag og feil? Bruk «Gi tilbakemelding» nede til høyre.',
@@ -127,9 +127,9 @@ const UI = {
     fbThanks: 'Thanks for the feedback!', fbSending: 'Sending \u2026',
     fbError: 'Could not send - please try again.',
     aboutBtn: 'About', aboutTitle: 'About this site',
-    aboutMadeH: 'Made by', aboutMadeP: 'Built in spare time by Marius Bråthen at Fornebu as a hobby project. It is not an official ISS or company tool.',
+    aboutMadeH: 'Made by', aboutMadeP: 'Built in spare time by {name} as a hobby project. It is not an official ISS or company tool.',
     aboutHostH: 'Hosting and operations', aboutHostP: 'The site runs on a small private server outside the company network. Menus are pulled automatically from the kitchen\u2019s own files several times each morning - no personal data is stored, only anonymous votes and feedback.',
-    aboutWebexH: 'Join the Webex group', aboutWebexP: 'There is an open Webex space that pings when today\u2019s menu is ready. Get in touch and you are added automatically.',
+    aboutWebexH: 'Join the Webex group', aboutWebexP: 'There is an open Webex space that posts today\u2019s menu automatically. Get in touch and you will be added.',
     aboutWebexCta: 'Message on Webex',
     aboutWebexAlt: 'Or send an email instead',
     aboutNote: 'Suggestions or bugs? Use “Give feedback” in the bottom right.',
@@ -370,8 +370,15 @@ function el(tag, cls, text) {
 
 const CLOCK = '<svg viewBox="0 0 24 24" class="ico-14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
 
+// Navnet i «Om siden» settes av serveren fra AUTHOR_NAME i .env
+function authorName() {
+  const v = document.querySelector('meta[name="author-name"]')?.content || '';
+  return v && !v.includes('__AUTHOR_NAME__') ? v
+    : (state.lang === 'en' ? 'a colleague at Fornebu' : 'en kollega på Fornebu');
+}
+
 function renderStrings() {
-  $$('[data-t]').forEach(n => { n.textContent = t()[n.dataset.t] || ''; });
+  $$('[data-t]').forEach(n => { n.textContent = (t()[n.dataset.t] || '').replace('{name}', authorName()); });
   $('#copyBtn').title = t().copyMenu;
   $('#copyBtn').setAttribute('aria-label', t().copyMenu);
   const inst = $('#installBtn');
@@ -1520,6 +1527,19 @@ function toggleAbout(open) {
   if (open) $('#aboutClose').focus();
   else $('#aboutBtn').focus();
 }
+
+// Kontaktknappene fylles med CONTACT_EMAIL av serveren. Er den ikke satt,
+// skjules de i stedet for å peke på en adresse som ikke finnes.
+(() => {
+  const link = $('#aboutWebexLink');
+  if (!link) return;
+  const email = (link.getAttribute('href') || '').split('email=')[1] || '';
+  if (!email || email.includes('__CONTACT_EMAIL__')) {
+    link.hidden = true;
+    const alt = document.querySelector('.about-alt');
+    if (alt) alt.hidden = true;
+  }
+})();
 
 if (aboutModal) {
   $('#aboutBtn').onclick = () => toggleAbout(true);
