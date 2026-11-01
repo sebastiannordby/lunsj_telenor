@@ -69,6 +69,17 @@
         <button type="button" class="btn btn-secondary btn-sm" id="healthTest">Send testvarsel</button>
         <span class="admin-status" id="healthStatus" hidden></span>
       </div>
+
+      <h3 class="admin-h3">Pushvarsler</h3>
+      <p class="card-body">
+        Sjekker om serveren når push-tjenestene nettleserne bruker (Chrome: fcm.googleapis.com,
+        Firefox: mozilla.com, Edge: notify.windows.com, Safari: apple.com). Et svar med
+        statuskode betyr at tjenesten nås; tidsavbrudd tyder på brannmur.
+      </p>
+      <div class="admin-ov-list" id="pushCheckList"></div>
+      <div class="admin-actions">
+        <button type="button" class="btn btn-secondary btn-sm" id="pushCheck">Sjekk push-tjenestene</button>
+      </div>
     </section>
 
     <section class="card admin-card">

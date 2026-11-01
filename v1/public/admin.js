@@ -247,6 +247,42 @@ $('#healthTest').onclick = async () => {
   }
 };
 
+// ------------------------------------------------------------------ push-sjekk
+
+$('#pushCheck').onclick = async () => {
+  const box = $('#pushCheckList');
+  const btn = $('#pushCheck');
+  btn.disabled = true;
+  box.textContent = '';
+  box.appendChild(el('p', 'admin-status', 'Sjekker … (opptil 8 sekunder)'));
+  try {
+    const r = await api('api/admin/push/check');
+    box.textContent = '';
+    if (!r.pushReady) {
+      box.appendChild(el('p', 'admin-status bad', 'Push er ikke skrudd på - web-push er ikke installert der serveren kjører.'));
+      return;
+    }
+    box.appendChild(el('p', 'admin-status', r.subs + ' abonnement totalt.'));
+    r.checks.forEach(c => {
+      const row = el('div', 'status-row');
+      row.appendChild(el('span', 'status-dot ' + (c.ok ? 'ok' : 'bad')));
+      row.appendChild(el('span', 'status-name', c.host));
+      row.appendChild(el('span', 'status-src', c.ok
+        ? `nås (HTTP ${c.status}, ${c.ms} ms)`
+        : `nås IKKE: ${c.error}`));
+      const extra = [];
+      if (c.subs) extra.push(c.subs + ' abonnent' + (c.subs === 1 ? '' : 'er'));
+      if (c.last) extra.push('siste sending: ' + (c.last.ok ? 'OK ' + c.last.status : 'FEIL ' + c.last.detail));
+      row.appendChild(el('span', 'status-count', extra.join(' · ')));
+      box.appendChild(row);
+    });
+  } catch (e) {
+    box.textContent = 'Sjekken feilet: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+};
+
 // ------------------------------------------------------------------ stemmer
 
 function voteMsg(text, bad) {

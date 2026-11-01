@@ -1749,11 +1749,17 @@ async function disablePush() {
 }
 
 async function testPush() {
+  const btn = $('#pushTest');
+  btn.disabled = true;
+  pushMsg('…');
   try {
     await pushApi('/api/push/test', { endpoint: PUSH.sub?.endpoint, lang: state.lang });
     pushMsg(t().pushTestSent);
   } catch (e) {
+    btn.disabled = false;
     pushMsg(t().pushError.replace('{e}', e.message), true);
+  } finally {
+    btn.disabled = false;
   }
 }
 

@@ -1546,15 +1546,29 @@ async function buildPushPayload(lang, withDinner) {
   };
 }
 
-async function sendPush(entry, payload) {
+const pushHost = sub => { try { return new URL(sub.endpoint).host; } catch { return '?'; } };
+
+// Siste resultat per push-tjeneste, til feilsøking i /admin
+const pushLastResult = new Map();
+
+async function sendPush(entry, payload, details = false) {
+  const host = pushHost(entry.sub);
   try {
-    await webpush.sendNotification(entry.sub, JSON.stringify(payload), { TTL: 3 * 3600, urgency: 'normal' });
-    return 'ok';
+    const r = await webpush.sendNotification(entry.sub, JSON.stringify(payload),
+      { TTL: 3 * 3600, urgency: 'normal', timeout: 15000 });
+    console.log(`Push sendt til ${host}: ${r.statusCode}`);
+    pushLastResult.set(host, { ok: true, status: r.statusCode, at: new Date().toISOString() });
+    return details ? { result: 'ok', status: r.statusCode, host } : 'ok';
   } catch (e) {
     // 404/410 = abonnementet finnes ikke lenger (avinstallert, nullstilt nettleser)
-    if (e.statusCode === 404 || e.statusCode === 410) return 'gone';
-    console.error('Push feilet:', e.statusCode || '', e.body || e.message);
-    return 'error';
+    const gone = e.statusCode === 404 || e.statusCode === 410;
+    const detail = e.statusCode
+      ? `${e.statusCode} ${String(e.body || '').slice(0, 200)}`
+      : (e.code || e.message || String(e));
+    console.error(`Push til ${host} feilet:`, detail);
+    pushLastResult.set(host, { ok: false, status: e.statusCode || null, detail, at: new Date().toISOString() });
+    const result = gone ? 'gone' : 'error';
+    return details ? { result, status: e.statusCode || null, detail, host } : result;
   }
 }
 
@@ -1664,9 +1678,39 @@ app.post('/api/push/test', async (req, res) => {
     body: lang === 'en' ? 'Test notification - it works! 🎉' : 'Testvarsel - det virker! 🎉',
     url: '/', tag: 'lunsj-test'
   };
-  const result = await sendPush(entry, payload);
-  if (result !== 'ok') return res.status(502).json({ error: 'Kunne ikke sende (' + result + ')' });
-  res.json({ ok: true });
+  const r = await sendPush(entry, payload, true);
+  if (r.result === 'gone') {
+    const subs = await readSubs();
+    delete subs[id];
+    await writeSubs(subs);
+    return res.status(410).json({ error: 'Abonnementet er utløpt - slå varselet av og på igjen' });
+  }
+  if (r.result !== 'ok') {
+    return res.status(502).json({ error: `Serveren fikk ikke levert til ${r.host}: ${r.detail}` });
+  }
+  res.json({ ok: true, host: r.host, status: r.status });
+});
+
+// Feilsøking: når serveren push-tjenestene abonnentene bruker? Brannmurer
+// med SNI-filtrering kan la TCP gå gjennom men henge TLS for enkelte verter.
+app.get('/api/admin/push/check', requireAdmin, async (req, res) => {
+  const subs = pushReady ? await readSubs() : {};
+  const counts = {};
+  Object.values(subs).forEach(e => { const h = pushHost(e.sub); counts[h] = (counts[h] || 0) + 1; });
+  const hosts = [...new Set(['fcm.googleapis.com', 'updates.push.services.mozilla.com', 'web.push.apple.com', ...Object.keys(counts)])];
+
+  const checks = await Promise.all(hosts.map(async host => {
+    const t0 = Date.now();
+    try {
+      const ctrl = AbortSignal.timeout(8000);
+      const r = await fetch(`https://${host}/`, { method: 'GET', signal: ctrl });
+      return { host, ok: true, status: r.status, ms: Date.now() - t0, subs: counts[host] || 0, last: pushLastResult.get(host) || null };
+    } catch (e) {
+      const why = e.name === 'TimeoutError' ? 'tidsavbrudd etter 8 s' : (e.cause?.code || e.message);
+      return { host, ok: false, error: why, ms: Date.now() - t0, subs: counts[host] || 0, last: pushLastResult.get(host) || null };
+    }
+  }));
+  res.json({ pushReady, subs: Object.keys(subs).length, checks });
 });
 
 // ---------------------------------------------------------------- statiske filer
