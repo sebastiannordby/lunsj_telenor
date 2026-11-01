@@ -585,10 +585,9 @@ select.input { cursor: pointer; }
 }
 .day-group {
   flex-wrap: nowrap;
-  flex: 1 1 420px;
-  min-width: 0;
+  width: 100%;
 }
-/* «Velg for meg» og kopier står på samme linje som dagvelgeren */
+/* «Velg for meg» og kopier står på samme linje som «Vis allergier» */
 .day-tools { display: flex; align-items: center; gap: var(--s2); margin-left: auto; }
 .day-group .btn {
   font-size: 14px;

@@ -292,10 +292,11 @@ function renderStrings() {
   }
   $('#fbMessage').placeholder = t().fbPlaceholder;
   if (state.banner) renderBanner();
-  $('#datestamp').textContent = new Date().toLocaleDateString(
+  const now = new Date();
+  $('#datestamp').textContent = now.toLocaleDateString(
     state.lang === 'en' ? 'en-GB' : 'nb-NO',
     { weekday: 'long', day: 'numeric', month: 'long' }
-  );
+  ) + ' (' + (state.lang === 'en' ? 'Week ' : 'Uke ') + isoWeek(now) + ')';
   document.title = state.lang === 'en' ? 'Lunch Menu Fornebu' : 'Lunsjmeny Fornebu';
   syncThemeLabel();
 
@@ -744,6 +745,14 @@ function renderLastStamp() {
     .map(s => new Date(s)).filter(d => !isNaN(d));
   if (!all.length) { box.textContent = ''; return; }
   box.textContent = stampText(new Date(Math.max(...all)).toISOString());
+}
+
+/** ISO 8601-ukenummer (norsk standard: uka starter mandag). */
+function isoWeek(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  return Math.ceil(((d - new Date(Date.UTC(d.getUTCFullYear(), 0, 1))) / 86400000 + 1) / 7);
 }
 
 function render() {
