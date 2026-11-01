@@ -1482,7 +1482,7 @@ async function initPushKeys() {
       console.log('Laget nye VAPID-nøkler i vapid.json');
     }
   }
-  webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:lunsj@fornebu.no', keys.publicKey, keys.privateKey);
+  webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:marius.brathen@telenor.no', keys.publicKey, keys.privateKey);
   app.locals.vapidPublic = keys.publicKey;
   pushReady = true;
 }
