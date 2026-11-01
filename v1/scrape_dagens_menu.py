@@ -23,6 +23,8 @@ RAW_HTML_DIR = Path("raw_html")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 RAW_HTML_DIR.mkdir(parents=True, exist_ok=True)
 
+# Middag hentes KUN fra ukesmenyen (scrape_ukens_menu.py). Dagsmeny-widgeten
+# for middag henger igjen med forrige dags rett og ville overstyrt riktig meny.
 CANTEENS = {
     "Kantine M": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=4a0457f8-dbfa-4783-8ebe-b5ee0486843f&scaleToFit=true",
@@ -32,11 +34,6 @@ CANTEENS = {
     "Fresh 4 You": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=aa1358ee-d30e-4289-a630-892cd1210857&scaleToFit=true",
         "opening_hours": "10:30 - 13:00",
-        "building": "C/D",
-    },
-    "Fresh 4 You - Middag": {
-        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=8469c383-d042-4d2d-8b18-30b6f9f90393&scaleToFit=true",
-        "opening_hours": "15:00 - 17:00",
         "building": "C/D",
     },
 }
@@ -85,6 +82,12 @@ def fetch_html(url: str) -> str | None:
 def extract_leaf_texts(soup: BeautifulSoup) -> list[str]:
     for tag in soup.find_all(["script", "style", "noscript", "img", "svg"]):
         tag.decompose()
+    # Allergentall ligger av og til i egen <sup>/<sub>/<small> ("grønnsaker<sup>3</sup>").
+    # Da blir retten ikke et blad-element, og det løse "3" ser ut som starten
+    # på allergentabellen. Pakk dem ut så tallet havner sammen med retten.
+    for tag in soup.find_all(["sup", "sub", "small"]):
+        tag.unwrap()
+    soup.smooth()
 
     texts, seen = [], set()
     for el in soup.find_all(True):

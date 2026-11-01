@@ -79,6 +79,10 @@ DAILY_NAME_TO_ID = {
 # Nedlagte kantiner - ignoreres hvis de dukker opp i gamle dagfiler
 RETIRED_DAILY_NAMES = {"eat the street", "eat the street - middag"}
 
+# Steder som ALDRI skal overstyres av dagfilene. Middagens dagsmeny-widget
+# henger igjen med forrige dags rett, så middag kommer kun fra ukesmenyen.
+WEEKLY_ONLY = {"dinner"}
+
 
 def clean_item(line: str) -> str:
     """'- Rett 1 🍝' -> 'Rett 1 🍝'"""
@@ -183,6 +187,9 @@ def parse_daily(path: Path) -> dict:
             if pid is None:
                 pid = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
                 print(f"  Advarsel: ukjent kantine '{name}' i {path.name} -> id '{pid}'")
+            if pid in WEEKLY_ONLY:
+                current = None
+                continue
             current = pid
             result[pid] = {
                 "label": name,
