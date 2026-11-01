@@ -1482,7 +1482,7 @@ async function initPushKeys() {
       console.log('Laget nye VAPID-nøkler i vapid.json');
     }
   }
-  webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:marius.brathen@telenor.no', keys.publicKey, keys.privateKey);
+  webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:lunsj@fornebu.no', keys.publicKey, keys.privateKey);
   app.locals.vapidPublic = keys.publicKey;
   pushReady = true;
 }
@@ -1721,8 +1721,10 @@ app.use(express.static(PUBLIC_DIR, {
   etag: true,
   lastModified: true,
   setHeaders(res, filePath) {
-    if (filePath.endsWith('.html') || filePath.endsWith('menu.json')) {
-      // Innhold som endres gjennom dagen må alltid revalideres
+    if (filePath.endsWith('.html') || filePath.endsWith('menu.json') || filePath.endsWith('sw.js')) {
+      // Innhold som endres gjennom dagen må alltid revalideres. sw.js må også
+      // alltid sjekkes - ellers holder nettlesere og Cloudflare på en gammel
+      // service worker i en uke (og pushvarsler vises ikke).
       res.set('Cache-Control', 'no-cache, must-revalidate');
     } else {
       // Versjonerte filer kan caches lenge - ?v= endres når filen endres
