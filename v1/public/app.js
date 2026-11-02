@@ -176,14 +176,14 @@ function widgetUrl(id) {
 function menuLink(id, name) {
   const url = widgetUrl(id);
   if (!url) return null;
-  const link = el('a', 'bakery-link');
+  // Bare et øye nederst til venstre - teksten ligger i title/aria-label
+  const link = el('a', 'menu-eye');
   link.href = url;
   link.target = '_blank';
   link.rel = 'noopener';
-  link.title = t().bakernLink.replace('Bakern', name);
-  link.setAttribute('aria-label', link.title);
-  link.innerHTML = '<svg viewBox="0 0 24 24" class="ico-14"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-  link.appendChild(el('span', null, t().bakernLinkShort));
+  link.title = t().bakernLinkShort + ' – ' + name;
+  link.setAttribute('aria-label', t().bakernLink.replace('Bakern', name));
+  link.innerHTML = '<svg viewBox="0 0 24 24" class="ico-16"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   link.onclick = e => {
     if (e.metaKey || e.ctrlKey || e.shiftKey) return; // la nettleseren åpne ny fane
     e.preventDefault();

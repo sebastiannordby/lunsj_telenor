@@ -815,6 +815,28 @@ select.input { cursor: pointer; }
 }
 .bakery-link svg { width: 14px; height: 14px; }
 
+/* «Se menyen»: rundt øye nederst til venstre, rett over stemmelinja.
+   margin-top: auto skyver det ned, så det står likt i alle kortene
+   uansett hvor lang menyen er. */
+.menu-eye {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  width: 32px;
+  height: 32px;
+  margin-top: auto;
+  margin-left: -6px;
+  border-radius: 999px;
+  color: var(--muted);
+  transition: background 0.15s, color 0.15s;
+}
+.menu-eye:hover, .menu-eye:focus-visible {
+  color: var(--text);
+  background: color-mix(in oklab, var(--place, var(--blue-500)) 14%, var(--surface));
+}
+.menu-eye + .vote-foot { margin-top: 0; }
+
 /* Kicker-raden: Lunsj | Middag ligger oppe i hjørnet på Fresh 4 You.
    Negative marger holder radhøyden lik kickeren, så linjene i kortene
    står på samme høyde som Kantine M og Bakern. */
