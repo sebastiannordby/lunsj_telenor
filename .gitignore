@@ -2,3 +2,26 @@ v1/outputs/
 v1/Menyer/
 v1/raw_html/
 v1/public/banner.json
+
+# Genereres av scraperne
+v1/Menyer/
+v1/outputs/
+v1/raw_html/
+v1/public/menu.json
+v1/menu.preview.json
+# Tilstand serveren skriver selv
+v1/state.json
+v1/banner.json
+v1/overrides.json
+v1/last-run.json
+# Lokalt / hemmelig
+.venv/
+venv/
+v1/.venv/
+node_modules/
+__pycache__/
+*.log
+*.xlsx
+telenor-lunsj.json
+/lunsj_telenor/
+/package-lock.json
