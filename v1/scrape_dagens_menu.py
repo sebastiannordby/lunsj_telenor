@@ -21,6 +21,12 @@ import runlog
 DEBUG = os.environ.get("DEBUG") == "1"
 
 OUTPUT_DIR = Path("outputs")
+MENYER_DIR = Path("Menyer")
+
+# Bakern har samme meny hele uka, men legger den ut som dagsmeny. Hentes den,
+# skrives den også som fast ukesmeny (Norsk/Engelsk-format), så alle ukedager
+# på nettsiden og i boten viser den. Feiler hentingen, beholdes forrige fil.
+STATIC_WEEK_FILES = {"Bakern": "bakern.txt"}
 RAW_HTML_DIR = Path("raw_html")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 RAW_HTML_DIR.mkdir(parents=True, exist_ok=True)
@@ -174,6 +180,21 @@ def format_block(canteen: str, info: dict, dishes: list[tuple[str, list[int]]], 
     return "\n".join(lines)
 
 
+def write_static_week(canteen: str, parsed: dict) -> None:
+    filename = STATIC_WEEK_FILES.get(canteen)
+    if not filename or not parsed["no"]:
+        return
+    no = [name for name, _ in parsed["no"]]
+    en = [name for name, _ in parsed["en"]] or no
+    text = "Norsk\n" + "\n".join(f"- {n}" for n in no) + "\n\nEngelsk\n" + "\n".join(f"- {n}" for n in en) + "\n"
+    MENYER_DIR.mkdir(parents=True, exist_ok=True)
+    path = MENYER_DIR / filename
+    tmp = path.with_suffix(".txt.tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+    print(f"  Skrev {path} (samme meny hele uka)")
+
+
 def main():
     no_blocks, en_blocks, al_blocks = [], [], []
     summary, failed = [], []
@@ -187,6 +208,7 @@ def main():
 
         parsed = parse_dagens(html) if html else {"no": [], "en": []}
         print(f"  {len(parsed['no'])} retter (no), {len(parsed['en'])} retter (en)")
+        write_static_week(canteen, parsed)
         summary.append(f"{canteen}: {len(parsed['no'])}" if html else f"{canteen}: henting feilet")
         if not html:
             failed.append(canteen)

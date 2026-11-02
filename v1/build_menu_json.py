@@ -44,9 +44,9 @@ PLACES = {
         "building": "C/D",
         "kind": "lunch",
     },
-    # Bakern har bare dagsmeny (scrape_dagens_menu.py) - ingen ukesfil
+    # Bakern: samme meny hele uka. Skrives av scrape_dagens_menu.py fra dagsmenyen.
     "bakern": {
-        "file": None,
+        "file": "bakern.txt",
         "name": "Bakern",
         "hours": "07:00 – 15:00",
         "lunchHours": "10:30 – 13:00",
