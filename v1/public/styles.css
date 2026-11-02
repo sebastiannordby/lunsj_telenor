@@ -445,25 +445,6 @@ svg.ico-18 { width: 18px; height: 18px; }
   color: var(--muted);
 }
 .admin-ov-items li.empty { font-style: italic; opacity: 0.7; }
-/* Bakern: menybildet og AI-teksten side om side i forhåndsvisningen */
-.admin-bakern-compare {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--s3);
-  align-items: start;
-  margin-bottom: var(--s3);
-}
-.admin-bakern-img {
-  width: 100%;
-  max-height: 420px;
-  object-fit: contain;
-  border-radius: var(--radius);
-  background: var(--n-100);
-}
-.admin-bakern-text { margin: 0; max-height: 420px; }
-@media (max-width: 560px) {
-  .admin-bakern-compare { grid-template-columns: minmax(0, 1fr); }
-}
 /* Tema-velgeren har mange valg - la dem bryte linje i stedet for å presses */
 #themeSeg { flex-wrap: wrap; border-radius: var(--radius); }
 #themeSeg .seg-opt { flex: 1 0 auto; }

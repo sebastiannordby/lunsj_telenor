@@ -44,8 +44,9 @@ PLACES = {
         "building": "C/D",
         "kind": "lunch",
     },
+    # Bakern har bare dagsmeny (scrape_dagens_menu.py) - ingen ukesfil
     "bakern": {
-        "file": "bakern.txt",
+        "file": None,
         "name": "Bakern",
         "hours": "07:00 – 15:00",
         "lunchHours": "10:30 – 13:00",
@@ -242,15 +243,15 @@ def today_key():
 def build(menu_dir: Path, daily_dir: Path) -> dict:
     places = {}
     for pid, meta in PLACES.items():
-        src = menu_dir / meta["file"]
-        weekly = parse_weekly(src)
+        src = menu_dir / meta["file"] if meta.get("file") else None
+        weekly = parse_weekly(src) if src else parse_weekly(menu_dir / "__ingen__")
         places[pid] = {
             "name": meta["name"],
             "hours": meta["hours"],
             "building": meta["building"],
             "kind": meta["kind"],
             "week": weekly,
-            "updated": file_updated(src),
+            "updated": file_updated(src) if src else "",
         }
         if meta.get("lunchHours"):
             places[pid]["lunchHours"] = meta["lunchHours"]

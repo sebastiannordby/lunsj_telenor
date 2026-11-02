@@ -38,6 +38,12 @@ CANTEENS = {
         "opening_hours": "10:30 - 13:00",
         "building": "C/D",
     },
+    # Bakern gikk i nov. 2026 over fra ukesmeny som bilde til vanlig dagsmeny-side
+    "Bakern": {
+        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=e7420bcd-79cf-4268-abb6-08ccca3a7e89&scaleToFit=true",
+        "opening_hours": "10:30 - 13:00",
+        "building": "C",
+    },
 }
 
 ALLERGEN_MAP = {

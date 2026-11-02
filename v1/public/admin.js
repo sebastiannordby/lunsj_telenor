@@ -24,7 +24,7 @@ function showLoggedIn(yes) {
   loginCard.hidden = yes;
   adminBody.hidden = !yes;
   $('#logoutBtn').hidden = !yes;
-  if (yes) { loadBanner(); loadStatus(); loadVotes(); loadOverrides(); loadBakern(); loadHealth(); loadRuns(); loadRaw(); loadTheme(); }
+  if (yes) { loadBanner(); loadStatus(); loadVotes(); loadOverrides(); loadHealth(); loadRuns(); loadRaw(); loadTheme(); }
 }
 
 const el = (tag, cls, text) => {
@@ -160,7 +160,7 @@ const SOURCE_LABEL = {
   manual: ['Skrevet manuelt', 'warn'],
   daily: ['Dagens meny hentet', 'ok'],
   weekly: ['Kun ukesmeny', 'warn'],
-  // Bakern og middag har bare ukesmeny - da er det riktig kilde, ikke et varsel
+  // Middagen har bare ukesmeny - da er det riktig kilde, ikke et varsel
   weeklySource: ['Ukesmeny', 'ok'],
   none: ['Ingen meny', 'bad']
 };
@@ -455,90 +455,6 @@ $('#ovSave').onclick = async () => {
     status.className = 'admin-status bad';
     status.textContent = e.message;
   }
-};
-
-// ------------------------------------------------------------------ bakern
-
-async function loadBakern() {
-  const { text, updated } = await api('api/admin/bakern').catch(() => ({ text: '', updated: null }));
-  $('#bakernText').value = text;
-  $('#bakernStatus').textContent = updated ? 'Sist endret ' + when(updated) : '';
-}
-
-// Fingeravtrykket til bildet i siste forhåndsvisning. Sendes med når teksten
-// lagres, så cron-jobben ikke henter den samme menyen på nytt.
-let bakernHash = null;
-
-async function saveBakern(text, hash) {
-  const status = $('#bakernStatus');
-  status.className = 'admin-status';
-  status.textContent = 'Lagrer …';
-  try {
-    const r = await api('api/admin/bakern', {
-      method: 'POST',
-      body: JSON.stringify({ text, hash })
-    });
-    status.className = 'admin-status ok';
-    status.textContent = 'Lagret og bygget på nytt · ' + when(r.updated);
-    loadStatus();
-    return true;
-  } catch (e) {
-    status.className = 'admin-status bad';
-    status.textContent = e.message;
-    return false;
-  }
-}
-
-$('#bakernSave').onclick = async () => {
-  if (await saveBakern($('#bakernText').value, bakernHash)) bakernHash = null;
-};
-
-$('#bakernFetch').onclick = async () => {
-  const btn = $('#bakernFetch');
-  const status = $('#bakernFetchStatus');
-  btn.disabled = true;
-  status.hidden = false;
-  status.className = 'admin-status';
-  status.textContent = 'Henter bildet og leser det av … tar vanligvis 10–30 sekunder.';
-  try {
-    const r = await api('api/admin/bakern/preview', { method: 'POST' });
-    $('#bakernPreviewText').textContent = r.text;
-    $('#bakernImg').src = r.image;
-    $('#bakernPreview').hidden = false;
-    $('#bakernPreview').dataset.hash = r.hash;
-    status.className = 'admin-status ok';
-    status.textContent = 'Forhåndsvisning klar - ingenting er lagret ennå.';
-  } catch (e) {
-    status.className = 'admin-status bad';
-    status.textContent = 'Klarte ikke hente menyen: ' + e.message;
-  } finally {
-    btn.disabled = false;
-  }
-};
-
-$('#bakernPublish').onclick = async () => {
-  const ok = await saveBakern($('#bakernPreviewText').textContent, $('#bakernPreview').dataset.hash);
-  if (ok) {
-    $('#bakernText').value = $('#bakernPreviewText').textContent;
-    $('#bakernPreview').hidden = true;
-    $('#bakernFetchStatus').hidden = true;
-    bakernHash = null;
-  }
-};
-
-$('#bakernEdit').onclick = () => {
-  $('#bakernText').value = $('#bakernPreviewText').textContent;
-  bakernHash = $('#bakernPreview').dataset.hash || null;
-  $('#bakernPreview').hidden = true;
-  const status = $('#bakernStatus');
-  status.className = 'admin-status';
-  status.textContent = 'Ikke lagret - rediger og trykk «Lagre og bygg på nytt».';
-  $('#bakernText').focus();
-};
-
-$('#bakernDiscard').onclick = () => {
-  $('#bakernPreview').hidden = true;
-  $('#bakernFetchStatus').hidden = true;
 };
 
 // ------------------------------------------------------------------ banner

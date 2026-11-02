@@ -17,12 +17,12 @@ const UI = {
     mapTitle: 'Hvor er kantinene?',
     mapSub: 'Hold musepekeren over en markør for å se menyen - eller trykk på den på mobil.',
     mapEmpty: 'Velg et sted i kartet over.',
-    staticMenu: 'Fast meny hele uken', buildingLabel: 'Bygg', cafeLabel: 'Kafé',
+    staticMenu: 'Ny meny hver dag', buildingLabel: 'Bygg', cafeLabel: 'Kafé',
     openLabel: 'Åpent', lunchWindow: 'lunsjtilbudet gjelder',
     bakeryAlways: 'Bakevarer og nystekt brød hele åpningstiden.',
     bannerHide: 'Skjul melding', lunchWindowShort: 'Lunsjtilbud',
-    manualFlag: 'Skrevet manuelt', bakernLink: 'Åpne Bakern sin egen meny', bakernLinkShort: 'Se ukemenyen', dinnerFrom: 'Middag',
-    bakernPreviewTitle: 'Bakern – ukemeny', openNewTab: 'Åpne i ny fane',
+    manualFlag: 'Skrevet manuelt', bakernLink: 'Åpne Bakern sin egen meny', bakernLinkShort: 'Se menyen', dinnerFrom: 'Middag',
+    bakernPreviewTitle: 'Bakern – meny', openNewTab: 'Åpne i ny fane',
     bakernFrameHint: 'Vises ikke menyen? Åpne den i ny fane.',
     lastUpdated: 'Sist oppdatert',
     allergyTodayOnly: 'Allergener vises kun for dagens meny',
@@ -90,12 +90,12 @@ const UI = {
     mapTitle: 'Where are the canteens?',
     mapSub: 'Hover a marker to see its menu - or tap it on mobile.',
     mapEmpty: 'Pick a spot on the map above.',
-    staticMenu: 'Same menu all week', buildingLabel: 'Building', cafeLabel: 'Café',
+    staticMenu: 'New menu every day', buildingLabel: 'Building', cafeLabel: 'Café',
     openLabel: 'Open', lunchWindow: 'lunch offer served',
     bakeryAlways: 'Pastries and freshly baked bread all day.',
     bannerHide: 'Hide message', lunchWindowShort: 'Lunch offer',
-    manualFlag: 'Entered manually', bakernLink: 'Open Bakern\u2019s own menu', bakernLinkShort: 'See weekly menu', dinnerFrom: 'Dinner',
-    bakernPreviewTitle: 'Bakern – weekly menu', openNewTab: 'Open in new tab',
+    manualFlag: 'Entered manually', bakernLink: 'Open Bakern\u2019s own menu', bakernLinkShort: 'See menu', dinnerFrom: 'Dinner',
+    bakernPreviewTitle: 'Bakern – menu', openNewTab: 'Open in new tab',
     bakernFrameHint: 'Menu not showing? Open it in a new tab.',
     lastUpdated: 'Last updated',
     allergyTodayOnly: 'Allergens are only available for today\u2019s menu',
@@ -154,6 +154,43 @@ const UI = {
 const BAKERN_MENU_URL =
   'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=e7420bcd-79cf-4268-abb6-08ccca3a7e89';
 const BAKERN_FRAME_URL = BAKERN_MENU_URL;
+
+// Kjøkkenets egne skjermwidgeter, til «Se menyen» på kortene.
+// today = dagsmenyen (brukes når du ser på i dag), week = ukesmenyen.
+// Middagens dagsmeny-side henger igjen fra dagen før, så den bruker ukesmenyen.
+const INISIGN = token => 'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=' + token;
+const MENU_WIDGETS = {
+  m:         { today: INISIGN('4a0457f8-dbfa-4783-8ebe-b5ee0486843f'), week: INISIGN('756a5aa2-a95f-4d15-ad5a-59829741075b') },
+  fresh4you: { today: INISIGN('aa1358ee-d30e-4289-a630-892cd1210857'), week: INISIGN('a8923cdb-9d92-46bc-b6a4-d026c2cf9a89') },
+  dinner:    { week: INISIGN('9b060d7e-6658-4d96-b953-23079d7df3b2') },
+  bakern:    { today: BAKERN_MENU_URL, week: BAKERN_MENU_URL }
+};
+
+function widgetUrl(id) {
+  const w = MENU_WIDGETS[id];
+  if (!w) return null;
+  return (showingToday() && w.today) || w.week || w.today;
+}
+
+/** «Se menyen»-lenke som åpner kjøkkenets egen side i dialogen. */
+function menuLink(id, name) {
+  const url = widgetUrl(id);
+  if (!url) return null;
+  const link = el('a', 'bakery-link');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener';
+  link.title = t().bakernLink.replace('Bakern', name);
+  link.setAttribute('aria-label', link.title);
+  link.innerHTML = '<svg viewBox="0 0 24 24" class="ico-14"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  link.appendChild(el('span', null, t().bakernLinkShort));
+  link.onclick = e => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey) return; // la nettleseren åpne ny fane
+    e.preventDefault();
+    toggleBakern(true, url, name);
+  };
+  return link;
+}
 
 const FRIDAY_LINES = {
   no: ['Endelig fredag!', 'Ha en fin fredag!', 'Er det fredag? Ja. 🙌', 'God helg - men først lunsj.'],
@@ -513,6 +550,10 @@ function canteenCard(info, withVote) {
 
   card.appendChild(dishList(shown));
 
+  card.style.setProperty('--place', info.color);   // hover-farge på «Se menyen»
+  const link = menuLink(shown.isDinner || (info.id === DINNER_HOST && f4yTab() === 'dinner') ? 'dinner' : info.id, info.name);
+  if (link) card.appendChild(link);
+
   if (withVote) card.appendChild(voteFoot(info));
   return card;
 }
@@ -596,7 +637,6 @@ function renderBakery() {
 
   const top = el('div', 'bakery-top');
   top.appendChild(el('div', 'card-kicker', t().buildingLabel + ' ' + info.building));
-  top.appendChild(el('span', 'tag bakery-tag', t().staticMenu));
   card.appendChild(top);
   card.appendChild(el('div', 'card-title', info.name));
 
@@ -615,18 +655,7 @@ function renderBakery() {
   card.appendChild(el('p', 'bakery-note', t().bakeryAlways));
 
   // Forhåndsvisning i dialog; ny fane som reserve inne i dialogen
-  const link = el('a', 'bakery-link');
-  link.href = BAKERN_MENU_URL;
-  link.target = '_blank';
-  link.rel = 'noopener';
-  link.innerHTML = '<svg viewBox="0 0 24 24" class="ico-14"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-  link.appendChild(el('span', null, t().bakernLinkShort));
-  link.onclick = e => {
-    if (e.metaKey || e.ctrlKey || e.shiftKey) return; // la nettleseren åpne ny fane
-    e.preventDefault();
-    toggleBakern(true);
-  };
-  card.appendChild(link);
+  card.appendChild(menuLink('bakern', info.name));
 
   if (showingToday()) card.appendChild(voteFoot(info));
 }
@@ -1493,11 +1522,15 @@ function fitBakern() {
 const bakernModal = $('#bakernModal');
 const bakernBackdrop = $('#bakernBackdrop');
 
-function toggleBakern(open) {
+function toggleBakern(open, url = BAKERN_FRAME_URL, name = 'Bakern') {
   if (!bakernModal) return;
   const frame = $('#bakernFrame');
-  if (open && frame.src !== BAKERN_FRAME_URL) frame.src = BAKERN_FRAME_URL;
-  $('#bakernExternal').href = BAKERN_MENU_URL;
+  if (open && frame.src !== url) frame.src = url;
+  if (open) {
+    $('#bakernExternal').href = url;
+    $('#bakernTitle').textContent = t().bakernPreviewTitle.replace('Bakern', name);
+    frame.title = name;
+  }
   bakernModal.hidden = !open;
   bakernBackdrop.hidden = !open;
   if (open) {

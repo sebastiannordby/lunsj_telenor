@@ -57,13 +57,12 @@ const OVERRIDES_FILE = path.join(__dirname, 'overrides.json');
 const STATUS_FILE = path.join(__dirname, 'last-run.json');
 const PREVIEW_JSON = path.join(__dirname, 'menu.preview.json');
 const MENU_DIR = path.join(__dirname, 'Menyer');
-const BAKERN_TXT = path.join(MENU_DIR, 'bakern.txt');
 const RAW_DIR = path.join(__dirname, 'raw_html');
-const BAKERN_HASH = path.join(RAW_DIR, 'bakern_image.sha256');
 
 // Steder som bare har ukesmeny (ingen dagsmeny-widget å skrape). For dem er
 // "ukesmeny" riktig kilde, ikke et faresignal.
-const WEEKLY_SOURCE = new Set(['bakern', 'dinner']);
+// Bakern har hatt dagsmeny siden nov. 2026, så bare middagen står her.
+const WEEKLY_SOURCE = new Set(['dinner']);
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
 
 // Kantiner som kan overstyres manuelt fra /admin (nødmodus)
@@ -581,8 +580,7 @@ app.delete('/api/admin/banner', requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
-// Skraper dagsmenyene (lunsj) og ukesmenyene (lunsj + middag). Bakern hentes
-// for seg, siden den går via AI og bare trengs når bildet er byttet.
+// Skraper dagsmenyene (lunsj, også Bakern) og ukesmenyene (lunsj + middag).
 async function runScrapers(log) {
   log.push('$ python3 scrape_dagens_menu.py');
   log.push((await runPython(['scrape_dagens_menu.py'])).trimEnd());
@@ -693,8 +691,7 @@ app.get('/api/admin/status', requireAdmin, async (req, res) => {
     lastRun,
     files: {
       menuJson: await mtime(MENU_JSON),
-      dayFile: await mtime(path.join(__dirname, 'outputs', 'menus_no.txt')),
-      bakern: await mtime(BAKERN_TXT)
+      dayFile: await mtime(path.join(__dirname, 'outputs', 'menus_no.txt'))
     }
   });
 });
@@ -842,38 +839,6 @@ app.delete('/api/admin/override', requireAdmin, async (req, res) => {
   res.json({ ok: true, overrides: all });
 });
 
-// ---------------------------------------------------------------- bakern.txt
-
-app.get('/api/admin/bakern', requireAdmin, async (req, res) => {
-  try {
-    res.json({ text: await fs.readFile(BAKERN_TXT, 'utf-8'), updated: await mtime(BAKERN_TXT) });
-  } catch {
-    res.json({ text: '', updated: null });
-  }
-});
-
-app.post('/api/admin/bakern', requireAdmin, async (req, res) => {
-  const text = String(req.body?.text || '').slice(0, 8000);
-  if (!text.trim()) return res.status(400).json({ error: 'Teksten er tom' });
-  try {
-    await fs.mkdir(MENU_DIR, { recursive: true });
-    const tmp = BAKERN_TXT + '.tmp';
-    await fs.writeFile(tmp, text.endsWith('\n') ? text : text + '\n', 'utf-8');
-    await fs.rename(tmp, BAKERN_TXT);
-    // Kom teksten fra "Hent fra bildet", lagrer vi bildets fingeravtrykk - da
-    // lar cron-jobben menyen være til Bakern faktisk bytter bilde.
-    const hash = String(req.body?.hash || '');
-    if (/^[a-f0-9]{64}$/.test(hash)) {
-      await fs.mkdir(RAW_DIR, { recursive: true });
-      await fs.writeFile(BAKERN_HASH, hash + '\n', 'utf-8');
-    }
-    const log = await rebuildJson();
-    res.json({ ok: true, log: log.trim(), updated: await mtime(BAKERN_TXT) });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
 // ------------------------------------------------------------- kjørelogg
 //
 // runs.json skrives av runlog.py i hvert Python-skript. Her vises siste
@@ -883,8 +848,7 @@ const RUNS_FILE = path.join(__dirname, 'runs.json');
 const SCRIPTS = [
   { script: 'scrape_dagens_menu.py', label: 'Dagsmeny (lunsj)', maxAgeH: 2, weekdayMorning: true },
   { script: 'scrape_ukens_menu.py', label: 'Ukesmenyer og middag', maxAgeH: 26 },
-  { script: 'build_menu_json.py', label: 'Bygg menu.json', maxAgeH: 2, weekdayMorning: true },
-  { script: 'scrape_bakern.py', label: 'Bakern (bilde + AI)', maxAgeH: 8 * 24 }
+  { script: 'build_menu_json.py', label: 'Bygg menu.json', maxAgeH: 2, weekdayMorning: true }
 ];
 
 async function readRuns() {
@@ -1005,6 +969,12 @@ async function currentSeason() {
   return mode === 'auto' ? autoSeason() : mode;
 }
 
+// Åpent: sesongen akkurat nå (brukes av Webex-boten til symbol i overskriften)
+app.get('/api/theme', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ season: await currentSeason() });
+});
+
 app.get('/api/admin/theme', requireAdmin, async (req, res) => {
   const { mode } = await readTheme();
   const auto = autoSeason();
@@ -1018,33 +988,6 @@ app.post('/api/admin/theme', requireAdmin, async (req, res) => {
   }
   await fs.writeFile(THEME_FILE, JSON.stringify({ mode, set: new Date().toISOString() }, null, 2), 'utf-8');
   res.json({ ok: true, mode, current: await currentSeason() });
-});
-
-// Henter Bakern-menyen fra bildet i widgeten via AI, uten å lagre noe.
-// Admin ser teksten og bildet side om side, og velger selv om den skal brukes.
-app.post('/api/admin/bakern/preview', requireAdmin, async (req, res) => {
-  try {
-    const out = await runPython(['scrape_bakern.py', '--json'], { timeout: 180000 });
-    const line = out.split('\n').reverse().find(l => l.startsWith('JSON:'));
-    if (!line) throw new Error('Fikk ingen meny tilbake fra scrape_bakern.py');
-    const { text, hash } = JSON.parse(line.slice(5));
-    const log = out.split('\n').filter(l => !l.startsWith('JSON:')).join('\n').trim();
-    res.json({ ok: true, text, hash, image: 'api/admin/bakern/image?t=' + Date.now(), log });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// Siste menybilde scrape_bakern.py lastet ned (raw_html/bakern_meny.*)
-app.get('/api/admin/bakern/image', requireAdmin, async (req, res) => {
-  try {
-    const file = (await fs.readdir(RAW_DIR)).find(f => /^bakern_meny\.(png|jpe?g|webp|gif)$/i.test(f));
-    if (!file) return res.status(404).json({ error: 'Ingen bilde ennå' });
-    res.set('Cache-Control', 'no-store');
-    res.sendFile(path.join(RAW_DIR, file));
-  } catch {
-    res.status(404).json({ error: 'Ingen bilde ennå' });
-  }
 });
 
 // ------------------------------------------------------------- forhåndsvis

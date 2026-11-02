@@ -111,9 +111,9 @@
       <span class="card-kicker">Menyer</span>
       <h2 class="card-title">Oppdater lunsjmenyene nå</h2>
       <p class="card-body">
-        Kjører <code class="admin-code">scrape_dagens_menu.py</code> (dagens lunsj),
+        Kjører <code class="admin-code">scrape_dagens_menu.py</code> (dagens lunsj, også Bakern),
         <code class="admin-code">scrape_ukens_menu.py</code> (ukesmenyer og middag) og
-        <code class="admin-code">build_menu_json.py</code>. Bakern hentes for seg, lenger ned.
+        <code class="admin-code">build_menu_json.py</code>.
         Feiler hentingen av en ukesmeny, beholdes den gamle.
       </p>
       <div class="admin-actions">
@@ -203,56 +203,6 @@
           <span class="tag tag-accent">Aktive overstyringer</span>
         </div>
         <div class="admin-ov-list" id="ovList"></div>
-      </div>
-    </section>
-
-    <section class="card admin-card">
-      <span class="card-kicker">Bakern</span>
-      <h2 class="card-title">Ukemeny fra bildefila</h2>
-      <p class="card-body">
-        Menyen hentes automatisk fra bildet hver mandag. «Hent fra bildet» leser det
-        av med AI nå, og viser resultatet før noe lagres. Lagring skriver
-        <code class="admin-code">Menyer/bakern.txt</code> og bygger
-        <code class="admin-code">menu.json</code> på nytt. Format: <code class="admin-code">Norsk</code>
-        og <code class="admin-code">Engelsk</code> på egne linjer, rettene under med «- ».
-      </p>
-      <div class="admin-actions">
-        <button type="button" class="btn btn-primary btn-sm icon-btn" id="bakernFetch">
-          <svg viewBox="0 0 24 24" class="ico-16"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-          <span>Hent fra bildet</span>
-        </button>
-        <a class="btn btn-secondary btn-sm icon-btn" id="bakernWidget" target="_blank" rel="noopener"
-           href="https://widget.inisign.com/Widget/Customers/Customer.aspx?token=e7420bcd-79cf-4268-abb6-08ccca3a7e89&amp;scaleToFit=true">
-          <svg viewBox="0 0 24 24" class="ico-14"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
-          <span>Åpne Bakern sin meny</span>
-        </a>
-      </div>
-      <p class="admin-status" id="bakernFetchStatus" hidden></p>
-
-      <div class="admin-preview" id="bakernPreview" hidden>
-        <div class="admin-preview-head">
-          <span class="tag tag-accent">Forhåndsvisning</span>
-          <span class="admin-current-until">Ikke lagret ennå - sammenlign med bildet</span>
-        </div>
-        <div class="admin-bakern-compare">
-          <img class="admin-bakern-img" id="bakernImg" alt="Bakern sitt menybilde">
-          <pre class="admin-log admin-bakern-text" id="bakernPreviewText"></pre>
-        </div>
-        <div class="admin-actions">
-          <button type="button" class="btn btn-primary btn-sm" id="bakernPublish">Publiser denne</button>
-          <button type="button" class="btn btn-secondary btn-sm" id="bakernEdit">Rediger først</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="bakernDiscard">Forkast</button>
-        </div>
-      </div>
-      <div class="admin-form">
-        <div class="field">
-          <label for="bakernText">bakern.txt</label>
-          <textarea class="input admin-mono" id="bakernText" rows="14" spellcheck="false"></textarea>
-        </div>
-        <div class="admin-actions">
-          <button type="button" class="btn btn-primary" id="bakernSave">Lagre og bygg på nytt</button>
-          <span class="admin-status" id="bakernStatus"></span>
-        </div>
       </div>
     </section>
 
