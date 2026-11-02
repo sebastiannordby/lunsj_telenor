@@ -4,3 +4,9 @@ v2/lunsj_ala_fornebu/database.db
 v2/lunsj_ala_fornebu/lib/database/database.db
 v2/lunsj_ala_fornebu/lib/database/database.db
 v2/lunsj_ala_fornebu/lib/database/database.db
+alerts.json
+runs.json
+theme.json
+push-subs.json
+vapid.json
+.env
