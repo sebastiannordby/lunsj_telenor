@@ -20,17 +20,17 @@ MAX_HTML_CHARS = 60000
 urls = {
     "Kantine M": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=4a0457f8-dbfa-4783-8ebe-b5ee0486843f&scaleToFit=true",
-        "opening_hours": "10:30 - 13:00",
+        "opening_hours": "10:30 - 14:00",
         "building": "M 2. etasje"
     },
     "Fresh 4 You": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=aa1358ee-d30e-4289-a630-892cd1210857&scaleToFit=true",
-        "opening_hours": "10:30 - 13:00",
+        "opening_hours": "10:30 - 14:00",
         "building": "C/D"
     },
     #"Bakern": {
     #    "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=e7420bcd-79cf-4268-abb6-08ccca3a7e89&scaleToFit=true",
-    #    "opening_hours": "10:30 - 13:00",
+    #    "opening_hours": "10:30 - 14:00",
     #    "building": "C"
     #}
 }

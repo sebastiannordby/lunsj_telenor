@@ -26,6 +26,7 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup, Tag
 
+import allergen_store
 import runlog
 
 MENYER_DIR = Path("Menyer")
@@ -131,11 +132,14 @@ def is_allergen_legend(text: str) -> bool:
 
 
 def parse_week(html: str) -> dict[str, dict[int, list[str]]]:
-    """Returnerer {"no": {0: [rett, rett], 1: [...], ...}, "en": {...}}."""
+    """Returnerer {"no": {0: [rett, rett], 1: [...], ...}, "en": {...},
+    "codes": {"no": {0: [[1, 3], [4]], ...}, "en": {...}}} - codes står i samme
+    rekkefølge som rettene."""
     soup = BeautifulSoup(html, "html.parser")
     texts = extract_leaf_texts(soup)
 
     result = {"no": {i: [] for i in range(5)}, "en": {i: [] for i in range(5)}}
+    codes = {"no": {i: [] for i in range(5)}, "en": {i: [] for i in range(5)}}
     current_day, current_lang = None, None
     in_legend = False
 
@@ -153,11 +157,13 @@ def parse_week(html: str) -> dict[str, dict[int, list[str]]]:
         if is_allergen_legend(text) or current_day is None:
             continue
 
-        name, _codes = split_trailing_codes(text)
+        name, dish_codes = split_trailing_codes(text)
         if len(name) < 2 or name.isdigit():
             continue
         result[current_lang][current_day].append(name)
+        codes[current_lang][current_day].append(dish_codes)
 
+    result["codes"] = codes
     return result
 
 
@@ -189,6 +195,7 @@ def format_week_file(week: dict[str, dict[int, list[str]]]) -> str:
 
 def main():
     summary, failed = [], []
+    allergens = {}
     for canteen, info in CANTEENS.items():
         print(f"Behandler: {canteen}")
         html = fetch_html(info["url"])
@@ -208,9 +215,15 @@ def main():
             failed.append(canteen)
             continue
         summary.append(f"{canteen}: {dishes}")
+        allergens[info["file"]] = {
+            lang: {str(d): [[n, c] for n, c in zip(week[lang][d], week["codes"][lang][d])] for d in range(5)}
+            for lang in ("no", "en")
+        }
 
         filepath.write_text(format_week_file(week or {"no": {i: [] for i in range(5)}, "en": {i: [] for i in range(5)}}), encoding="utf-8")
         print(f"  Skrev {filepath} ({dishes} retter)")
+    if allergens:
+        allergen_store.update(MENYER_DIR / "allergener.json", allergens)
     return (not failed, ", ".join(summary))
 
 

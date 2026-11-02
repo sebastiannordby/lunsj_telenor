@@ -234,7 +234,7 @@ function walkText(id) {
   return w ? '🚶 ' + Object.entries(w).map(([from, min]) => `${from}: ${min} min`).join(' · ') : '';
 }
 
-/** "10:30 – 13:00" -> [630, 780] i minutter, eller null. */
+/** "10:30 – 14:00" -> [630, 780] i minutter, eller null. */
 function parseHours(hours) {
   const m = String(hours || '').match(/(\d{1,2})[:.](\d{2})\s*[–-]\s*(\d{1,2})[:.](\d{2})/);
   return m ? [m[1] * 60 + +m[2], m[3] * 60 + +m[4]] : null;
@@ -354,27 +354,46 @@ function votesText(n) {
   return n + ' ' + (n === 1 ? t().votesLabelOne : t().votesLabel);
 }
 
-/** Rettene for et sted på valgt dag, i valgt språk. */
-function dishesFor(id) {
+// Allergenkodene (1-14) fra kjøkkenet, oversatt til valgt språk
+const ALLERGEN_NAMES = {
+  no: ['', 'Egg', 'Fisk', 'Gluten', 'Melk', 'Nøtter', 'Peanøtter', 'Selleri', 'Sennep',
+       'Sesamfrø', 'Skalldyr', 'Soya', 'Sulfitter', 'Bløtdyr', 'Lupin'],
+  en: ['', 'Egg', 'Fish', 'Gluten', 'Milk', 'Nuts', 'Peanuts', 'Celery', 'Mustard',
+       'Sesame seed', 'Shellfish', 'Soy', 'Sulphites', 'Molluscs', 'Lupine']
+};
+
+/** Rettene og deres allergenkoder for et sted på valgt dag, i valgt språk. */
+function menuFor(id) {
   const data = state.data;
-  if (!data || !data.places[id]) return [];
+  if (!data || !data.places[id]) return { items: [], codes: [] };
 
   // Dagfilene er ferskere enn ukesmenyen - bruk dem når valgt dag er i dag
   if (showingToday()) {
-    // Manuelt skrevet meny fra /admin vinner over alt
+    // Manuelt skrevet meny fra /admin vinner over alt (har ingen koder)
     const manual = data.manual?.[id]?.items;
-    if (manual && manual.length) return manual;
+    if (manual && manual.length) return { items: manual, codes: [] };
 
-    // Allergenfila er menyen med allergener påført hver rett
-    if (state.allergens) {
-      const al = data.todayOverride?.allergens?.[id]?.items;
-      if (al && al.length) return al;
-    }
-    const override = data.todayOverride?.[state.lang]?.[id]?.items;
-    if (override && override.length) return override;
+    const override = data.todayOverride?.[state.lang]?.[id];
+    if (override?.items?.length) return { items: override.items, codes: override.codes || [] };
   }
 
-  return data.places[id].week?.[state.lang]?.[activeDay()] || [];
+  const place = data.places[id];
+  const day = activeDay();
+  return {
+    items: place.week?.[state.lang]?.[day] || [],
+    codes: place.weekCodes?.[state.lang]?.[day] || []
+  };
+}
+
+/** Rettene som tekst - med allergener bak hver rett når de er slått på. */
+function dishesFor(id) {
+  const { items, codes } = menuFor(id);
+  if (!state.allergens) return items;
+  const names = ALLERGEN_NAMES[state.lang] || ALLERGEN_NAMES.no;
+  return items.map((item, i) => {
+    const list = (codes[i] || []).map(c => names[c]).filter(Boolean);
+    return list.length ? `${item} (${list.join(', ')})` : item;
+  });
 }
 
 function placeInfo(id) {
@@ -453,15 +472,12 @@ function renderTabs() {
   $$('[data-lang]').forEach(b => {
     b.className = 'btn btn-sm ' + (b.dataset.lang === state.lang ? 'btn-secondary' : 'btn-ghost');
   });
-  // Allergenene finnes bare i dagsfila, så knappen gjelder kun dagens meny.
-  // Den blir stående, men utilgjengelig, på andre dager.
-  const isTodayView = showingToday();
-  if (!isTodayView) state.allergens = false;
+  // Allergener vises på valgt språk for alle dager (kodene ligger i menu.json)
   const allergyBtn = $('#allergyToggle');
   allergyBtn.classList.toggle('is-on', state.allergens);
-  allergyBtn.disabled = !isTodayView;
+  allergyBtn.disabled = false;
   allergyBtn.setAttribute('aria-pressed', state.allergens ? 'true' : 'false');
-  allergyBtn.title = isTodayView ? '' : t().allergyTodayOnly;
+  allergyBtn.title = state.allergens ? t().allergyOnHint : t().allergyOffHint;
 
   const active = activeDay();
   const group = $('#weekTabs');
@@ -554,7 +570,9 @@ function canteenCard(info, withVote) {
   const link = menuLink(shown.isDinner || (info.id === DINNER_HOST && f4yTab() === 'dinner') ? 'dinner' : info.id, info.name);
   if (link) card.appendChild(link);
 
-  if (withVote) card.appendChild(voteFoot(info));
+  // Stemmingen gjelder lunsjen - ikke vis den på middagsfanen
+  const showingDinner = info.id === DINNER_HOST && f4yTab() === 'dinner';
+  if (withVote && !showingDinner) card.appendChild(voteFoot(info));
   return card;
 }
 
@@ -645,6 +663,8 @@ function renderBakery() {
   hours.appendChild(el('span', 'nowrap', info.hours));
   hours.appendChild(openBadge(info.hours));
   card.appendChild(hours);
+  // Først det som gjelder hele dagen, så lunsjtilbudet og rettene
+  card.appendChild(el('p', 'bakery-note', t().bakeryAlways));
   if (info.lunchHours) {
     const w = el('div', 'bakery-window', t().lunchWindowShort + ' ');
     w.appendChild(el('span', 'nowrap', info.lunchHours));
@@ -652,7 +672,6 @@ function renderBakery() {
   }
 
   card.appendChild(dishList(info));
-  card.appendChild(el('p', 'bakery-note', t().bakeryAlways));
 
   // Forhåndsvisning i dialog; ny fane som reserve inne i dialogen
   card.appendChild(menuLink('bakern', info.name));
@@ -1134,7 +1153,6 @@ document.addEventListener('pointerdown', e => {
 });
 
 $('#allergyToggle').onclick = () => {
-  if (!showingToday()) return;
   state.allergens = !state.allergens;
   writeUrl();
   render();

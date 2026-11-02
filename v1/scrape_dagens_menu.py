@@ -9,6 +9,7 @@ Sett DEBUG=1 som miljovariabel for aa printe alle raa tekstlinjer per
 kantine - nyttig hvis en side har uventet struktur.
 """
 
+import json
 import os
 import re
 from pathlib import Path
@@ -16,6 +17,7 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
+import allergen_store
 import runlog
 
 DEBUG = os.environ.get("DEBUG") == "1"
@@ -36,18 +38,18 @@ RAW_HTML_DIR.mkdir(parents=True, exist_ok=True)
 CANTEENS = {
     "Kantine M": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=4a0457f8-dbfa-4783-8ebe-b5ee0486843f&scaleToFit=true",
-        "opening_hours": "10:30 - 13:00",
+        "opening_hours": "10:30 - 14:00",
         "building": "M, 2. etasje",
     },
     "Fresh 4 You": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=aa1358ee-d30e-4289-a630-892cd1210857&scaleToFit=true",
-        "opening_hours": "10:30 - 13:00",
+        "opening_hours": "10:30 - 14:00",
         "building": "C/D",
     },
     # Bakern gikk i nov. 2026 over fra ukesmeny som bilde til vanlig dagsmeny-side
     "Bakern": {
         "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=e7420bcd-79cf-4268-abb6-08ccca3a7e89&scaleToFit=true",
-        "opening_hours": "10:30 - 13:00",
+        "opening_hours": "10:30 - 14:00",
         "building": "C",
     },
 }
@@ -192,12 +194,16 @@ def write_static_week(canteen: str, parsed: dict) -> None:
     tmp = path.with_suffix(".txt.tmp")
     tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, path)
+    allergen_store.update(MENYER_DIR / "allergener.json", {
+        filename: {"static": {lang: [[n, c] for n, c in parsed[lang]] for lang in ("no", "en")}}
+    })
     print(f"  Skrev {path} (samme meny hele uka)")
 
 
 def main():
     no_blocks, en_blocks, al_blocks = [], [], []
     summary, failed = [], []
+    allergens = {}
 
     for canteen, info in CANTEENS.items():
         print(f"Behandler: {canteen}")
@@ -213,6 +219,7 @@ def main():
         if not html:
             failed.append(canteen)
 
+        allergens[canteen] = {lang: [[n, c] for n, c in parsed[lang]] for lang in ("no", "en")}
         no_blocks.append(format_block(canteen, info, parsed["no"], "no", allergen_names=False))
         en_blocks.append(format_block(canteen, info, parsed["en"], "en", allergen_names=False))
         al_blocks.append(format_block(canteen, info, parsed["en"], "en", allergen_names=True))
@@ -220,7 +227,11 @@ def main():
     (OUTPUT_DIR / "menus_no.txt").write_text("\n\n".join(no_blocks) + "\n", encoding="utf-8")
     (OUTPUT_DIR / "menus_en.txt").write_text("\n\n".join(en_blocks) + "\n", encoding="utf-8")
     (OUTPUT_DIR / "menus_al.txt").write_text("\n\n".join(al_blocks) + "\n", encoding="utf-8")
-    print("Skrev outputs/menus_no.txt, menus_en.txt, menus_al.txt")
+    # Hele fila skrives på nytt hver gang - dagsmenyen gjelder bare i dag
+    tmp = OUTPUT_DIR / "allergener.json.tmp"
+    tmp.write_text(json.dumps(allergens, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tmp, OUTPUT_DIR / "allergener.json")
+    print("Skrev outputs/menus_no.txt, menus_en.txt, menus_al.txt, allergener.json")
     return (not failed, ", ".join(summary))
 
 

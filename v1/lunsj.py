@@ -66,12 +66,12 @@ def fetch_menu(url, language, day):
 urls = {
     "Flow": {
         "url": 'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=756a5aa2-a95f-4d15-ad5a-59829741075b&scaleToFit=true',
-        "opening_hours": "10:30 - 13:00",
+        "opening_hours": "10:30 - 14:00",
         "building": "M 2. etasje"
     },
     "Fresh 4 You": {
         "url": 'https://widget.inisign.com/Widget/Customers/Customer.aspx?token=a8923cdb-9d92-46bc-b6a4-d026c2cf9a89&scaleToFit=true',
-        "opening_hours": "10:30 - 13:00",
+        "opening_hours": "10:30 - 14:00",
         "building": "C/D"
     },
     "Fresh 4 You - Middag": {

@@ -33,14 +33,14 @@ PLACES = {
     "m": {
         "file": "kantine_m.txt",
         "name": "Kantine M",
-        "hours": "10:30 – 13:00",
+        "hours": "10:30 – 14:00",
         "building": "M, 2. etasje",
         "kind": "lunch",
     },
     "fresh4you": {
         "file": "fresh_4_you.txt",
         "name": "Fresh 4 You",
-        "hours": "10:30 – 13:00",
+        "hours": "10:30 – 14:00",
         "building": "C/D",
         "kind": "lunch",
     },
@@ -49,7 +49,7 @@ PLACES = {
         "file": "bakern.txt",
         "name": "Bakern",
         "hours": "07:00 – 15:00",
-        "lunchHours": "10:30 – 13:00",
+        "lunchHours": "10:30 – 14:00",
         "building": "C",
         "kind": "static",
     },
@@ -150,7 +150,7 @@ def parse_weekly(path: Path) -> dict:
     return out
 
 
-# "Kantine M (10:30 - 13:00) - Bygg: M"  /  "... - Building: J/K"
+# "Kantine M (10:30 - 14:00) - Bygg: M"  /  "... - Building: J/K"
 DAILY_HEADER = re.compile(
     r"^(?P<name>.+?)\s*\((?P<hours>[^)]+)\)\s*-\s*(?:Bygg|Building):\s*(?P<building>.+)$"
 )
@@ -159,7 +159,7 @@ DAILY_HEADER = re.compile(
 def parse_daily(path: Path) -> dict:
     """
     Leser en dagfil med blokker:
-        Kantine M (10:30 - 13:00) - Bygg: M
+        Kantine M (10:30 - 14:00) - Bygg: M
         - rett
         - rett
     Returnerer {place_id: {"hours":…, "building":…, "items":[…]}}.
@@ -240,8 +240,54 @@ def today_key():
     return DAY_KEYS[wd] if wd <= 4 else None
 
 
+# ---------------------------------------------------------------- allergener
+#
+# Scraperne lagrer allergen-numrene (1-14) i allergener.json (se
+# allergen_store.py). Her legges de ved siden av rettene i menu.json, i samme
+# rekkefølge: week[lang][dag][i] har koder i weekCodes[lang][dag][i]. Nettsiden
+# oversetter numrene til navn på valgt språk.
+
+def read_json(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def align_codes(items: list, pairs: list, fallback: list | None = None) -> list:
+    """
+    Koder for hver rett i items. pairs = [[navn, [koder]], ...] fra scraperen.
+    Mangler engelsk koder for en rett (skjer på inisign), brukes de norske
+    på samme plass når listene er like lange.
+    """
+    by_name = {}
+    for name, codes in pairs or []:
+        by_name.setdefault(name.strip().lower(), codes)
+    out = []
+    for i, item in enumerate(items):
+        codes = by_name.get(item.strip().lower(), [])
+        if not codes and fallback and len(fallback) == len(items):
+            codes = fallback[i]
+        out.append(sorted(set(codes)))
+    return out
+
+
+def week_codes(week: dict, entry: dict) -> dict:
+    out = {"no": {}, "en": {}}
+    for k_idx, day in enumerate(DAY_KEYS):
+        if "static" in entry:
+            pairs = {lg: entry["static"].get(lg, []) for lg in ("no", "en")}
+        else:
+            pairs = {lg: (entry.get(lg) or {}).get(str(k_idx), []) for lg in ("no", "en")}
+        no_codes = align_codes(week["no"][day], pairs["no"])
+        out["no"][day] = no_codes
+        out["en"][day] = align_codes(week["en"][day], pairs["en"], no_codes)
+    return out
+
+
 def build(menu_dir: Path, daily_dir: Path) -> dict:
     places = {}
+    week_allergens = read_json(menu_dir / "allergener.json")
     for pid, meta in PLACES.items():
         src = menu_dir / meta["file"] if meta.get("file") else None
         weekly = parse_weekly(src) if src else parse_weekly(menu_dir / "__ingen__")
@@ -255,6 +301,8 @@ def build(menu_dir: Path, daily_dir: Path) -> dict:
         }
         if meta.get("lunchHours"):
             places[pid]["lunchHours"] = meta["lunchHours"]
+        if meta.get("file") and meta["file"] in week_allergens:
+            places[pid]["weekCodes"] = week_codes(weekly, week_allergens[meta["file"]])
 
     # Dagfila gjelder bare den dagen den ble skrevet. En fil fra fredag skal
     # ikke vises som "dagens meny" mandag morgen før første skraping.
@@ -267,6 +315,14 @@ def build(menu_dir: Path, daily_dir: Path) -> dict:
     }
     if not daily_fresh:
         print("  Dagfila er ikke fra i dag - bruker bare ukesmenyene.")
+    else:
+        daily_allergens = read_json(daily_dir / "allergener.json")
+        id_to_name = {DAILY_NAME_TO_ID.get(n.lower()): n for n in daily_allergens}
+        for lang in ("no", "en"):
+            for pid, block in daily.get(lang, {}).items():
+                entry = daily_allergens.get(id_to_name.get(pid, ""), {})
+                fallback = (daily.get("no", {}).get(pid) or {}).get("codes") if lang == "en" else None
+                block["codes"] = align_codes(block["items"], entry.get(lang, []), fallback)
 
     # Dagfilene har autoritative åpningstider/bygg - bruk dem når de finnes.
     # Unntak: steder med eget lunsjvindu (Bakern) beholder åpningstiden fra
