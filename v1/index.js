@@ -1,7 +1,6 @@
 // index.js
 //
 // Ny side på  /      (public/index.html + app.js + styles.css)
-// Gammel side på /old (se OLD-SITE-seksjonen nederst)
 //
 import express from 'express';
 import { spawn } from 'child_process';
@@ -453,6 +452,7 @@ app.post('/api/vote', async (req, res) => {
   if (state.log.length > VOTE_LOG_MAX) state.log = state.log.slice(-VOTE_LOG_MAX);
 
   await writeState(state);
+  statsRecordVotes(state.votes);
 
   // Uvanlig mange stemmer på kort tid -> varsel på ntfy.
   const recent = state.log.filter(e => Date.now() - e.t < BURST_WINDOW_MS).length;
@@ -969,6 +969,51 @@ async function currentSeason() {
   return mode === 'auto' ? autoSeason() : mode;
 }
 
+// ------------------------------------------------------------- dagens tips
+//
+// Fast råd på forsiden (vises fram til kl. 12 på hverdager) og nederst i
+// Webex-postens morgenmelding. Teksten styres fra /admin.
+
+const TIP_FILE = path.join(__dirname, 'tip.json');
+const TIP_DEFAULT = {
+  enabled: true,
+  text: 'Det er vanligvis størst pågang i kantinene mellom kl. 11 og 12. Dersom du har mulighet til å legge lunsjen utenom dette tidsrommet, kan det bidra til kortere kø og en roligere lunsjopplevelse.',
+  textEn: 'The canteens are usually busiest between 11:00 and 12:00. If you can have lunch outside that window, it helps keep queues short and lunch calmer for everyone.'
+};
+
+async function readTip() {
+  try {
+    return { ...TIP_DEFAULT, ...JSON.parse(await fs.readFile(TIP_FILE, 'utf-8')) };
+  } catch {
+    return { ...TIP_DEFAULT };
+  }
+}
+
+// Åpent: brukes av forsiden og Webex-boten
+app.get('/api/tip', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const t = await readTip();
+  res.json({ tip: t.enabled && t.text ? { text: t.text, textEn: t.textEn || null } : null });
+});
+
+app.get('/api/admin/tip', requireAdmin, async (req, res) => {
+  res.json(await readTip());
+});
+
+app.post('/api/admin/tip', requireAdmin, async (req, res) => {
+  const tip = {
+    enabled: req.body?.enabled !== false,
+    text: String(req.body?.text || '').trim().slice(0, 400),
+    textEn: String(req.body?.textEn || '').trim().slice(0, 400),
+    set: new Date().toISOString()
+  };
+  if (tip.enabled && !tip.text) return res.status(400).json({ error: 'Tipset må ha norsk tekst' });
+  const tmp = TIP_FILE + '.tmp';
+  await fs.writeFile(tmp, JSON.stringify(tip, null, 2), 'utf-8');
+  await fs.rename(tmp, TIP_FILE);
+  res.json({ ok: true, tip });
+});
+
 // Åpent: sesongen akkurat nå (brukes av Webex-boten til symbol i overskriften)
 app.get('/api/theme', async (req, res) => {
   res.set('Cache-Control', 'no-store');
@@ -1046,24 +1091,6 @@ app.get('/admin', async (req, res, next) => {
 
 // ---------------------------------------------------------------- update
 
-app.get('/update-day', async (req, res) => {
-  try {
-    const out = await runPython(['lunsj_fetch_daymenu.py']);
-    res.type('text/plain; charset=utf-8').send(out + '\n' + await rebuildJson());
-  } catch (e) {
-    res.status(500).type('text/plain; charset=utf-8').send(`Feil: ${e.message}`);
-  }
-});
-
-app.get('/update-week', async (req, res) => {
-  try {
-    const out = await runPython(['lunsj_fetch_weekmenu.py']);
-    res.type('text/plain; charset=utf-8').send(out + '\n' + await rebuildJson());
-  } catch (e) {
-    res.status(500).type('text/plain; charset=utf-8').send(`Feil: ${e.message}`);
-  }
-});
-
 app.get('/update-gjovik', async (req, res) => {
   try {
     const out = await runPython(['Gjovik/fetch_menu_google-spreadsheet.py']);
@@ -1073,92 +1100,27 @@ app.get('/update-gjovik', async (req, res) => {
   }
 });
 
-// ================================================================
-// OLD SITE  -  den gamle siden, bevart på /old i betaperioden
-// ================================================================
+// ---------------------------------------------------------------- gamle bokmerker
 //
-// Lim inn din opprinnelige renderAppPage (og eventuelle hjelpere den
-// bruker) her. Signaturen under er den de gamle rutene kaller.
-// Slett hele denne seksjonen når betaperioden er over.
+// Adresser fra den gamle siden sendes til tilsvarende visning på den nye.
 
-const OLD_DAYS = ['-1', '0', '1', '2', '3', '4'];
-
-const oldDayMap = {
-  mandag: '0', tirsdag: '1', onsdag: '2', torsdag: '3', fredag: '4',
-  monday: '0', tuesday: '1', wednesday: '2', thursday: '3', friday: '4'
+const OLD_DAY_MAP = {
+  mandag: 'mon', tirsdag: 'tue', onsdag: 'wed', torsdag: 'thu', fredag: 'fri',
+  monday: 'mon', tuesday: 'tue', wednesday: 'wed', thursday: 'thu', friday: 'fri'
 };
+const oldDay = d => OLD_DAY_MAP[String(d).toLowerCase()];
 
-/**
- * Rendrer den gamle siden.
- * @param {string} day  '-1' = dagens, '0'–'4' = mandag–fredag
- * @param {string} lang 'no' | 'en' | 'al'
- */
-async function renderOldPage(day, lang) {
-  // Bruker de gamle lese-skriptene, uendret.
-  const script = day === '-1' ? 'lunsj_read_daymenu.py' : 'lunsj_read_weekmenu.py';
-  const menu = await runPython([script, day, lang]);
-
-  const links = OLD_DAYS.map(d => {
-    const label = { '-1': 'Dagens', '0': 'Mandag', '1': 'Tirsdag', '2': 'Onsdag', '3': 'Torsdag', '4': 'Fredag' }[d];
-    const active = d === day ? ' class="on"' : '';
-    return `<a href="/old?day=${d}&lang=${lang}"${active}>${label}</a>`;
-  }).join(' ');
-
-  const langs = [['no', 'Norsk'], ['en', 'English'], ['al', 'Allergener']]
-    .map(([l, label]) => {
-      const active = l === lang ? ' class="on"' : '';
-      return `<a href="/old?day=${day}&lang=${l}"${active}>${label}</a>`;
-    }).join(' ');
-
-  return `<!DOCTYPE html>
-<html lang="no"><head><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lunsjmeny (gammel versjon)</title>
-<style>
-  body { font-family: system-ui, sans-serif; background: #f5ead8; color: #201e1d;
-         margin: 0; padding: 1.5rem; }
-  .app { background: #fff; border-radius: 16px; padding: 1.5rem 2rem; margin: 0 auto;
-         max-width: 640px; box-shadow: 0 8px 30px rgba(7,4,82,.12); }
-  .banner { max-width: 640px; margin: 0 auto 1rem; padding: .75rem 1rem; border-radius: 999px;
-            background: #1c16c5; color: #fff; font-size: .9rem; }
-  .banner a { color: #fff; font-weight: 700; }
-  h1 { margin: 0 0 1rem; font-size: 1.5rem; }
-  nav { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
-  nav a { font-size: .85rem; text-decoration: none; color: #120e80;
-          padding: .25rem .75rem; border: 1px solid #d0dde7; border-radius: 999px; }
-  nav a.on { background: #1c16c5; border-color: #1c16c5; color: #fff; }
-  pre { white-space: break-spaces; font-family: inherit; font-size: 1rem; margin: 0; }
-</style></head>
-<body>
-<div class="banner">Dette er den gamle siden. <a href="/">Gå til den nye →</a></div>
-<div class="app">
-  <h1>LUNSJMENY</h1>
-  <nav>${links}</nav>
-  <nav>${langs}</nav>
-  <pre>${menu}</pre>
-</div>
-</body></html>`;
-}
-
-app.get('/old', async (req, res) => {
-  const day = OLD_DAYS.includes(String(req.query.day)) ? String(req.query.day) : '-1';
-  const lang = ['no', 'en', 'al'].includes(String(req.query.lang)) ? String(req.query.lang) : 'no';
-  try {
-    res.type('text/html; charset=utf-8').send(await renderOldPage(day, lang));
-  } catch (e) {
-    res.status(500).type('text/plain; charset=utf-8').send(`Feil: ${e.message}`);
-  }
+app.get('/old', (req, res) => res.redirect(301, '/'));
+app.get('/en', (req, res) => res.redirect(301, '/?lang=en'));
+app.get('/with-allergies', (req, res) => res.redirect(301, '/?allergens=1'));
+app.get('/dag/:day', (req, res) => {
+  const d = oldDay(req.params.day);
+  res.redirect(301, d ? '/?day=' + d : '/');
 });
-
-// Gamle bokmerker → /old, så de virker uendret i betaperioden
-app.get('/en', (req, res) => res.redirect(302, '/old?lang=en'));
-app.get('/with-allergies', (req, res) => res.redirect(302, '/old?lang=al'));
-app.get('/dag/:day', (req, res) =>
-  res.redirect(302, `/old?day=${oldDayMap[req.params.day] ?? '-1'}&lang=no`));
-app.get('/en/day/:day', (req, res) =>
-  res.redirect(302, `/old?day=${oldDayMap[req.params.day] ?? '-1'}&lang=en`));
-
-// ================================================================
+app.get('/en/day/:day', (req, res) => {
+  const d = oldDay(req.params.day);
+  res.redirect(301, '/?lang=en' + (d ? '&day=' + d : ''));
+});
 
 // ---------------------------------------------------------------- gjøvik
 
@@ -1273,24 +1235,6 @@ app.get('/gjovik', async (req, res) => {
   <h1>Lunsjmeny Gjøvik</h1>
   ${todayCard}${week}${notes}
 </div></body></html>`);
-  } catch (e) {
-    res.status(500).type('text/plain; charset=utf-8').send(`Feil: ${e.message}`);
-  }
-});
-
-// ---------------------------------------------------------------- webex / test
-
-app.get('/webex', async (req, res) => {
-  try {
-    res.type('text/plain; charset=utf-8').send(await runPython(['lunsj_webex.py', '-1', 'no']));
-  } catch (e) {
-    res.status(500).type('text/plain; charset=utf-8').send(`Feil: ${e.message}`);
-  }
-});
-
-app.get('/test', async (req, res) => {
-  try {
-    res.type('text/plain; charset=utf-8').send(await runPython(['lunsj_test.py', '-1', 'no']));
   } catch (e) {
     res.status(500).type('text/plain; charset=utf-8').send(`Feil: ${e.message}`);
   }
@@ -1418,6 +1362,190 @@ app.post('/api/admin/health/test', requireAdmin, async (req, res) => {
   if (NTFY_ALERT === 'off') return res.status(400).json({ error: 'Varsler er skrudd av (NTFY_ALERT=off)' });
   await sendAlert('Lunsjmeny: testvarsel', 'Testvarsel fra /admin. Varslene kommer hit.', 'bell');
   res.json({ ok: true, topic: NTFY_ALERT });
+});
+
+// ---------------------------------------------------------------- statistikk
+//
+// Egen, anonym bruksstatistikk i stedet for Google Analytics. Ingen cookies,
+// ingen IP-adresser lagres. Unike besøk telles med en hash av IP + nettleser
+// og et salt som byttes hver dag, så samme person kan ikke følges over dager.
+// Alt lagres som tall per dag i stats.json og beholdes i STATS_KEEP_DAYS dager.
+
+const STATS_FILE = path.join(__dirname, 'stats.json');
+const STATS_KEEP_DAYS = 120;
+const STATS_FLUSH_MS = 60 * 1000;
+const STATS_LIMIT_PER_CLIENT = 300; // hendelser per klient per dag
+
+const STAT_EVENTS = new Set([
+  'dag', 'sprak', 'allergener', 'se_menyen', 'middagsfane', 'kart', 'hjul',
+  'kopier', 'push_pa', 'push_av', 'tilbakemelding', 'installer',
+  'sesong_av', 'sesong_pa', 'mork_modus', 'stem'
+]);
+const STAT_PLACES = new Set(['m', 'fresh4you', 'bakern', 'dinner', '']);
+const STAT_DAYS = new Set(['mon', 'tue', 'wed', 'thu', 'fri']);
+const BOT_EVENTS = new Set([
+  'lunsj', 'middag', 'bakern', 'meny', 'allergi', 'imorgen', 'ukedag',
+  'kantine', 'gjovik', 'kaffe', 'hjelp', 'paaminnelse', 'knapp',
+  'paaminnelse_sendt', 'morgenpost', 'annet'
+]);
+
+let stats = null;
+let statsDirty = false;
+const statsHits = new Map(); // klientnøkkel -> { date, n }
+
+function loadStats() {
+  if (stats) return stats;
+  try {
+    stats = JSON.parse(readFileSync(STATS_FILE, 'utf-8'));
+  } catch {
+    stats = {};
+  }
+  stats.days ||= {};
+  stats.salt ||= { date: '', value: '' };
+  stats.seen ||= { date: '', keys: [] };
+  return stats;
+}
+
+function statsDay(date = todayKey()) {
+  const s = loadStats();
+  if (s.salt.date !== date) {
+    s.salt = { date, value: randomUUID() };
+    s.seen = { date, keys: [] };
+  }
+  return (s.days[date] ||= {
+    views: 0, uniques: 0, hours: {}, lang: {}, viewDay: {}, devices: {},
+    app: 0, events: {}, places: {}, votes: {}, bot: {}
+  });
+}
+
+const statsSeenSet = () => {
+  const s = loadStats();
+  if (!s._set || s._setDate !== s.seen.date) {
+    s._set = new Set(s.seen.keys);
+    s._setDate = s.seen.date;
+  }
+  return s._set;
+};
+
+function bump(obj, key, n = 1) {
+  obj[key] = (obj[key] || 0) + n;
+}
+
+function osloHour() {
+  return Number(new Date().toLocaleString('en-GB', { timeZone: 'Europe/Oslo', hour: '2-digit', hour12: false })) % 24;
+}
+
+function pruneStats() {
+  const s = loadStats();
+  const cutoff = new Date(Date.now() - STATS_KEEP_DAYS * 86400000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' });
+  for (const d of Object.keys(s.days)) if (d < cutoff) delete s.days[d];
+}
+
+async function flushStats() {
+  if (!statsDirty || !stats) return;
+  statsDirty = false;
+  pruneStats();
+  const { _set, _setDate, ...rest } = stats;
+  try {
+    await fs.writeFile(STATS_FILE, JSON.stringify(rest), 'utf-8');
+  } catch (e) {
+    console.error('Kunne ikke lagre statistikk:', e.message);
+  }
+}
+
+setInterval(flushStats, STATS_FLUSH_MS);
+for (const sig of ['SIGTERM', 'SIGINT']) {
+  process.once(sig, async () => { await flushStats(); process.exit(0); });
+}
+
+function statsRateExceeded(req) {
+  const key = clientKey(req);
+  const today = todayKey();
+  const hit = statsHits.get(key);
+  if (!hit || hit.date !== today) {
+    if (statsHits.size > 20000) statsHits.clear();
+    statsHits.set(key, { date: today, n: 1 });
+    return false;
+  }
+  hit.n += 1;
+  return hit.n > STATS_LIMIT_PER_CLIENT;
+}
+
+// Kalles fra stemme-endepunktet: dagens stemmetall kopieres inn i historikken,
+// siden state.json nullstilles hver midnatt.
+function statsRecordVotes(votes) {
+  const day = statsDay();
+  day.votes = { ...votes };
+  statsDirty = true;
+}
+
+// sendBeacon sender text/plain, så vi tar imot rå tekst også.
+app.post('/api/stats', express.text({ type: '*/*', limit: '2kb' }), (req, res) => {
+  res.status(204).end();
+  try {
+    if (!originAllowed(req)) return;
+    if (/bot|crawl|spider|preview|headless/i.test(req.headers['user-agent'] || '')) return;
+    if (statsRateExceeded(req)) return;
+
+    const b = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    const day = statsDay();
+
+    if (b.t === 'view') {
+      day.views += 1;
+      bump(day.hours, osloHour());
+      bump(day.lang, b.lang === 'en' ? 'en' : 'no');
+      bump(day.devices, b.mobile ? 'mobil' : 'pc');
+      if (b.app) day.app += 1;
+      const vd = String(b.day || '');
+      if (STAT_DAYS.has(vd)) bump(day.viewDay, vd);
+
+      const key = hashKey(stats.salt.value + '|' + clientKey(req));
+      const seen = statsSeenSet();
+      if (!seen.has(key)) {
+        seen.add(key);
+        stats.seen.keys.push(key);
+        day.uniques += 1;
+      }
+    } else if (b.t === 'event') {
+      const e = String(b.e || '');
+      if (!STAT_EVENTS.has(e)) return;
+      bump(day.events, e);
+      const p = String(b.p || '');
+      if (p && STAT_PLACES.has(p)) bump(day.places, e + ':' + p);
+    } else {
+      return;
+    }
+    statsDirty = true;
+  } catch {
+    // Ugyldig innhold ignoreres stille - statistikk skal aldri gi feil.
+  }
+});
+
+// Webex-boten melder fra om kommandoer. Bare lokale kall godtas (boten går
+// på samme server); kall via Cloudflare har x-forwarded-for og avvises.
+app.post('/api/stats/bot', (req, res) => {
+  const ip = req.socket.remoteAddress || '';
+  const local = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(ip);
+  if (!local || req.headers['x-forwarded-for'] || req.headers['cf-connecting-ip']) {
+    return res.status(403).json({ error: 'kun lokalt' });
+  }
+  const e = String(req.body?.e || '');
+  if (!BOT_EVENTS.has(e)) return res.status(400).json({ error: 'ukjent hendelse' });
+  bump(statsDay().bot, e);
+  statsDirty = true;
+  res.json({ ok: true });
+});
+
+app.get('/api/admin/stats', requireAdmin, (req, res) => {
+  const n = Math.min(Math.max(parseInt(req.query.days, 10) || 30, 1), STATS_KEEP_DAYS);
+  statsDay(); // sørger for at i dag finnes
+  const out = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' });
+    const day = stats.days[d];
+    out.push({ date: d, ...(day || { views: 0, uniques: 0, hours: {}, lang: {}, viewDay: {}, devices: {}, app: 0, events: {}, places: {}, votes: {}, bot: {} }) });
+  }
+  res.json({ days: out, keepDays: STATS_KEEP_DAYS });
 });
 
 // ---------------------------------------------------------------- pushvarsler

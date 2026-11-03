@@ -83,6 +83,34 @@
     </section>
 
     <section class="card admin-card">
+      <span class="card-kicker">Statistikk</span>
+      <h2 class="card-title">Bruk av siden og boten</h2>
+      <p class="card-body">
+        Anonym telling uten cookies og uten lagrede IP-adresser. «Unike» er antall
+        ulike nettlesere per dag (summert over perioden, så samme person teller én gang per dag).
+      </p>
+      <div class="admin-form">
+        <div class="seg" id="statsSeg">
+          <label class="seg-opt"><input type="radio" name="statsDays" value="7"><span>7 dager</span></label>
+          <label class="seg-opt"><input type="radio" name="statsDays" value="30" checked><span>30 dager</span></label>
+          <label class="seg-opt"><input type="radio" name="statsDays" value="90"><span>90 dager</span></label>
+        </div>
+      </div>
+      <div class="stats-kpis" id="statsKpis"></div>
+      <h3 class="admin-h3">Besøk per dag</h3>
+      <div class="stats-bars" id="statsDaily"></div>
+      <h3 class="admin-h3">Tid på døgnet</h3>
+      <div class="stats-bars stats-hours" id="statsHours"></div>
+      <div class="stats-cols">
+        <div><h3 class="admin-h3">Funksjoner</h3><div class="admin-vote-list" id="statsEvents"></div></div>
+        <div><h3 class="admin-h3">Webex-boten</h3><div class="admin-vote-list" id="statsBot"></div></div>
+        <div><h3 class="admin-h3">Stemmer totalt</h3><div class="admin-vote-list" id="statsVotes"></div></div>
+        <div><h3 class="admin-h3">Fordeling</h3><div class="admin-vote-list" id="statsSplit"></div></div>
+      </div>
+      <p class="admin-status" id="statsStatus" hidden></p>
+    </section>
+
+    <section class="card admin-card">
       <span class="card-kicker">Stemmer</span>
       <h2 class="card-title">Dagens avstemming</h2>
       <p class="card-body">
@@ -269,6 +297,33 @@
           <span class="admin-status" id="bannerStatus" hidden></span>
         </div>
       </form>
+    </section>
+
+    <section class="card admin-card">
+      <span class="card-kicker">Dagens tips</span>
+      <h2 class="card-title">Fast råd under lunsjkortene</h2>
+      <p class="card-body">
+        Vises på forsiden på hverdager fram til kl. 12, og nederst i Webex-postens
+        morgenmelding kl. 08:31. Til faste råd - bruk banneret for midlertidige meldinger.
+      </p>
+      <div class="admin-form">
+        <div class="field">
+          <label for="tipText">Tekst (norsk)</label>
+          <textarea class="input" id="tipText" rows="3" maxlength="400"></textarea>
+        </div>
+        <div class="field">
+          <label for="tipTextEn">Tekst (engelsk)</label>
+          <textarea class="input" id="tipTextEn" rows="3" maxlength="400"></textarea>
+        </div>
+        <label class="admin-check">
+          <input type="checkbox" id="tipEnabled">
+          <span>Vis tipset</span>
+        </label>
+        <div class="admin-actions">
+          <button type="button" class="btn btn-primary" id="tipSave">Lagre tips</button>
+          <span class="admin-status" id="tipStatus" hidden></span>
+        </div>
+      </div>
     </section>
 
     <section class="card admin-card">

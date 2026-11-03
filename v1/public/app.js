@@ -5,7 +5,7 @@ const UI = {
   no: {
     heading: 'LUNSJMENY FORNEBU',
     sub: 'To kantiner og et bakeri - dagens meny på ett sted.',
-    showingToday: 'Viser dagens meny', oldSite: 'Bytt til gammel side', themeDark: 'Bytt til mørk modus', themeLight: 'Bytt til lys modus',
+    showingToday: 'Viser dagens meny', themeDark: 'Bytt til mørk modus', themeLight: 'Bytt til lys modus',
     weekendKicker: 'Helg', weekendTitle: 'Kantinene er stengt',
     weekendBody: 'Det serveres ingen lunsj i helgen. Kom tilbake på mandag - eller se menyen for en ukedag nå.',
     weekendCta: 'Se mandagens meny',
@@ -55,7 +55,7 @@ const UI = {
     fbError: 'Kunne ikke sende - prøv igjen.',
     aboutBtn: 'Om siden', aboutTitle: 'Om denne løsningen',
     aboutMadeH: 'Laget av', aboutMadeP: 'Siden er laget på fritiden av {name}, som et hobbyprosjekt. Den er ikke et offisielt ISS- eller bedriftsverktøy.',
-    aboutHostH: 'Drift og hosting', aboutHostP: 'Løsningen kjører på en egen liten server utenfor bedriftens nettverk. Menyene hentes automatisk fra kjøkkenets egne filer flere ganger hver morgen - ingen personopplysninger lagres, kun anonyme stemmer og tilbakemeldinger.',
+    aboutHostH: 'Drift og hosting', aboutHostP: 'Løsningen kjører på en egen liten server utenfor bedriftens nettverk. Menyene hentes automatisk fra kjøkkenets egne filer flere ganger hver morgen - ingen personopplysninger lagres. Siden teller anonymt hvor mange som er innom og hvilke funksjoner som brukes, uten cookies, sporing eller lagring av IP-adresser.',
     aboutWebexH: 'Bli med i Webex-gruppen', aboutWebexP: 'Det finnes en åpen Webex-gruppe som varsler dagens meny automatisk. Ta kontakt, så legges du til.',
     aboutWebexCta: 'Send melding på Webex',
     aboutWebexAlt: 'Eller send e-post i stedet',
@@ -78,7 +78,7 @@ const UI = {
   en: {
     heading: 'LUNCH MENU FORNEBU',
     sub: 'Two canteens and a bakery - today\u2019s menu in one place.',
-    showingToday: 'Showing today\u2019s menu', oldSite: 'Switch to the old site', themeDark: 'Switch to dark mode', themeLight: 'Switch to light mode',
+    showingToday: 'Showing today\u2019s menu', themeDark: 'Switch to dark mode', themeLight: 'Switch to light mode',
     weekendKicker: 'Weekend', weekendTitle: 'The canteens are closed',
     weekendBody: 'No lunch is served at the weekend. Come back on Monday - or browse a weekday menu now.',
     weekendCta: 'See Monday\u2019s menu',
@@ -128,7 +128,7 @@ const UI = {
     fbError: 'Could not send - please try again.',
     aboutBtn: 'About', aboutTitle: 'About this site',
     aboutMadeH: 'Made by', aboutMadeP: 'Built in spare time by {name} as a hobby project. It is not an official ISS or company tool.',
-    aboutHostH: 'Hosting and operations', aboutHostP: 'The site runs on a small private server outside the company network. Menus are pulled automatically from the kitchen\u2019s own files several times each morning - no personal data is stored, only anonymous votes and feedback.',
+    aboutHostH: 'Hosting and operations', aboutHostP: 'The site runs on a small private server outside the company network. Menus are pulled automatically from the kitchen\u2019s own files several times each morning - no personal data is stored. The site keeps anonymous counts of visits and which features are used, with no cookies, tracking or stored IP addresses.',
     aboutWebexH: 'Join the Webex group', aboutWebexP: 'There is an open Webex space that posts today\u2019s menu automatically. Get in touch and you will be added.',
     aboutWebexCta: 'Message on Webex',
     aboutWebexAlt: 'Or send an email instead',
@@ -186,6 +186,7 @@ function menuLink(id, name) {
   link.innerHTML = '<svg viewBox="0 0 24 24" class="ico-16"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   link.onclick = e => {
     if (e.metaKey || e.ctrlKey || e.shiftKey) return; // la nettleseren åpne ny fane
+    track('se_menyen', id);
     e.preventDefault();
     toggleBakern(true, url, name);
   };
@@ -275,7 +276,29 @@ function fillOpenBadge(span) {
   }
 }
 
-setInterval(() => $$('.open-state').forEach(fillOpenBadge), 30000);
+setInterval(() => { $$('.open-state').forEach(fillOpenBadge); renderTip(); }, 30000);
+
+// Dagens tips fra /admin - vises bare på dagens meny og fram til kl. 12
+function renderTip() {
+  const box = document.getElementById('lunchTip');
+  if (!box) return;
+  const tip = state.tip;
+  const show = !!tip && showingToday() && new Date().getHours() < 12;
+  box.hidden = !show;
+  if (!show) return;
+  box.innerHTML = CLOCK;
+  box.appendChild(el('span', null, (state.lang === 'en' && tip.textEn) ? tip.textEn : tip.text));
+}
+
+async function loadTip() {
+  try {
+    const r = await fetch('api/tip', { cache: 'no-store' });
+    state.tip = (await r.json()).tip;
+  } catch (e) {
+    state.tip = null;
+  }
+  renderTip();
+}
 
 /** Fresh 4 You viser middagen (i kort og kart) når middagsfanen er valgt. */
 function shownPlace(id) {
@@ -497,7 +520,7 @@ function renderTabs() {
     }
     b.appendChild(long);
     b.appendChild(short);
-    b.onclick = () => { state.day = k; state.selected = null; writeUrl(); render(); };
+    b.onclick = () => { if (state.day !== k) track('dag'); state.day = k; state.selected = null; writeUrl(); render(); };
     group.appendChild(b);
   });
 
@@ -551,7 +574,7 @@ function canteenCard(info, withVote) {
       b.type = 'button';
       b.setAttribute('role', 'tab');
       b.setAttribute('aria-selected', tab === k ? 'true' : 'false');
-      b.onclick = () => { state.f4yTab = k; renderCanteens(); renderMap(); };
+      b.onclick = () => { if (k === 'dinner' && state.f4yTab !== 'dinner') track('middagsfane'); state.f4yTab = k; renderCanteens(); renderMap(); };
       seg.appendChild(b);
     });
     head.appendChild(seg);
@@ -784,6 +807,7 @@ function renderMap() {
       } else {
         state.selected = id;
         setHover(id);
+        track('kart', id);
       }
       renderMap();
     };
@@ -928,6 +952,7 @@ function render() {
   renderCanteens();
   renderMap();
   renderLegend();
+  renderTip();
 }
 
 // ------------------------------------------------------------------ voting
@@ -998,6 +1023,7 @@ function showVoteError(msg) {
 
 async function castVote(id, anchor) {
   const wasMine = state.myVote === id;
+  if (!wasMine) track('stem', id);
   // Posisjonen må leses nå - etter render er knappen byttet ut og måler 0.
   let origin = null;
   if (anchor) {
@@ -1072,6 +1098,7 @@ function flashCopied() {
 }
 
 function copyMenu() {
+  track('kopier');
   const text = menuAsText();
   const fallback = () => {
     const ta = document.createElement('textarea');
@@ -1101,6 +1128,7 @@ function copyMenu() {
 // ------------------------------------------------------------------ feedback
 
 async function sendFeedback(kind, message) {
+  track('tilbakemelding');
   const status = $('#fbStatus');
   status.textContent = t().fbSending;
   try {
@@ -1136,10 +1164,24 @@ function resetFeedback() {
   $('#fbStatus').textContent = '';
 }
 
+// --------------------------------------------------------------- statistikk
+// Anonym telling til egen server (ingen cookies, ingen tredjepart).
+function track(e, p) {
+  const body = JSON.stringify(e === 'view'
+    ? { t: 'view', lang: state.lang, day: state.day,
+        mobile: matchMedia('(max-width: 700px)').matches,
+        app: matchMedia('(display-mode: standalone)').matches }
+    : { t: 'event', e, p: p || '' });
+  try {
+    if (navigator.sendBeacon && navigator.sendBeacon('/api/stats', new Blob([body], { type: 'text/plain' }))) return;
+    fetch('/api/stats', { method: 'POST', body, keepalive: true, headers: { 'Content-Type': 'text/plain' } }).catch(() => {});
+  } catch (err) {}
+}
+
 // ------------------------------------------------------------------ wiring
 
 $$('[data-lang]').forEach(b => {
-  b.onclick = () => { state.lang = b.dataset.lang; writeUrl(); render(); };
+  b.onclick = () => { if (state.lang !== b.dataset.lang) track('sprak'); state.lang = b.dataset.lang; writeUrl(); render(); };
 });
 
 // Trykk utenfor en markør lukker popupen og detaljkortet
@@ -1154,6 +1196,7 @@ document.addEventListener('pointerdown', e => {
 
 $('#allergyToggle').onclick = () => {
   state.allergens = !state.allergens;
+  if (state.allergens) track('allergener');
   writeUrl();
   render();
 };
@@ -1222,6 +1265,7 @@ function syncThemeLabel() {
 
 themeBtn.onclick = () => {
   const dark = document.documentElement.dataset.theme === 'dark';
+  if (!dark) track('mork_modus');
   if (dark) {
     delete document.documentElement.dataset.theme;
   } else {
@@ -1290,6 +1334,7 @@ if (installBtn) {
   });
 
   installBtn.onclick = async () => {
+    track('installer');
     if (installPrompt) {
       installPrompt.prompt();
       const { outcome } = await installPrompt.userChoice;
@@ -1463,6 +1508,7 @@ function renderWheel() {
 function spinWheel() {
   const slices = wheelSlices();
   if (slices.length < 2 || wheel.spinning) return;
+  track('hjul');
 
   const i = Math.floor(Math.random() * slices.length);
   const step = 360 / slices.length;
@@ -1661,6 +1707,7 @@ if (seasonBtn) {
   seasonBtn.onclick = () => {
     const root = document.documentElement;
     const on = !!root.dataset.season;
+    track(on ? 'sesong_av' : 'sesong_pa');
     if (on) delete root.dataset.season;
     else root.dataset.season = root.dataset.seasonAvail;
     try { localStorage.setItem('lunsj-season', on ? 'off' : 'on'); } catch (e) {}
@@ -1779,6 +1826,7 @@ function togglePush(open) {
 async function savePush() {
   PUSH.time = $('#pushTime').value;
   if (!PUSH.days.length) return pushMsg(t().pushNeedDay, true);
+  track('push_pa');
   const btn = $('#pushSave');
   btn.disabled = true;
   try {
@@ -1804,6 +1852,7 @@ async function savePush() {
 }
 
 async function disablePush() {
+  track('push_av');
   try {
     if (PUSH.sub) {
       await pushApi('/api/push/unsubscribe', { endpoint: PUSH.sub.endpoint }).catch(() => {});
@@ -1859,8 +1908,10 @@ async function boot() {
     console.error('Kunne ikke laste menu.json', e);
   }
   render();
+  track('view');
   loadTraffic();
   loadBanner();
+  loadTip();
   renderSeasonFx();
   initPush();
 }

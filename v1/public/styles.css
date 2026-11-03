@@ -124,7 +124,7 @@ a:hover { color: var(--blue-900); }
 
 .lang-group { display: flex; gap: var(--s1); }
 
-.old-switch { margin-left: auto; }
+.footer-links #aboutBtn { margin-left: auto; }
 
 /* Ikon-knapp: skal ikke dele bredde likt med tekstknappene */
 .install-btn { flex: 0 0 auto; }
@@ -614,7 +614,7 @@ select.input { cursor: pointer; }
   .nav-brand { font-size: 15px; overflow: hidden; text-overflow: ellipsis; }
   .nav .btn-sm { padding: var(--s1) var(--s2); }
 
-  .old-switch { margin-left: 0; }
+  .footer-links #aboutBtn { margin-left: 0; }
 }
 
 .section-row {
@@ -760,6 +760,20 @@ select.input { cursor: pointer; }
   margin-bottom: var(--s6);
 }
 .lunch-layout[hidden] { display: none; }
+
+/* Dagens tips (fra /admin) under lunsjkortene, fram til kl. 12 */
+.lunch-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin: calc(var(--s3) * -1) 0 var(--s6);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+.lunch-tip[hidden] { display: none; }
+.lunch-tip svg { margin-top: 3px; }
 .lunch-layout .card-grid {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   margin-bottom: 0;
@@ -1544,4 +1558,42 @@ html:not([data-season]) .season-fx { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .season-fx { display: none; }
+}
+
+/* Statistikk i admin */
+.stats-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--s3);
+  margin-top: var(--s4);
+}
+.stats-kpi {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: var(--s3); border-radius: 12px; background: var(--n-100);
+}
+.stats-kpi-label { font-size: 12px; color: var(--muted); font-weight: 600; }
+.stats-kpi-value { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.stats-kpi-sub { font-size: 12px; color: var(--muted); }
+.stats-bars {
+  display: flex; align-items: flex-end; gap: 2px;
+  height: 130px; margin-top: var(--s3); padding-bottom: 18px;
+  border-bottom: 1px solid var(--n-200);
+}
+.stats-hours { height: 90px; }
+.stats-bar { position: relative; flex: 1 1 0; height: 100%; display: flex; align-items: flex-end; min-width: 3px; }
+.stats-bar-fill, .stats-bar-sub {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  border-radius: 3px 3px 0 0;
+}
+.stats-bar-fill { background: var(--accent-fill-hover); }
+.stats-bar-sub { background: var(--blue-500); z-index: 1; }
+.stats-hours .stats-bar-fill { background: var(--blue-500); }
+.stats-bar:hover .stats-bar-fill { background: var(--cyan-500); }
+.stats-bar-label {
+  position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: var(--muted); white-space: nowrap;
+}
+.stats-cols {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0 var(--s6);
 }

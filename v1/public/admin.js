@@ -24,7 +24,7 @@ function showLoggedIn(yes) {
   loginCard.hidden = yes;
   adminBody.hidden = !yes;
   $('#logoutBtn').hidden = !yes;
-  if (yes) { loadBanner(); loadStatus(); loadVotes(); loadOverrides(); loadHealth(); loadRuns(); loadRaw(); loadTheme(); }
+  if (yes) { loadBanner(); loadStatus(); loadVotes(); loadOverrides(); loadHealth(); loadTip(); loadRuns(); loadRaw(); loadTheme(); loadStats(); }
 }
 
 const el = (tag, cls, text) => {
@@ -725,6 +725,41 @@ async function loadRaw() {
   });
 }
 
+// ------------------------------------------------------------------ dagens tips
+
+async function loadTip() {
+  try {
+    const t = await api('api/admin/tip');
+    $('#tipText').value = t.text || '';
+    $('#tipTextEn').value = t.textEn || '';
+    $('#tipEnabled').checked = t.enabled !== false;
+  } catch (e) {}
+}
+
+$('#tipSave').onclick = async () => {
+  const status = $('#tipStatus');
+  status.hidden = false;
+  status.className = 'admin-status';
+  status.textContent = 'Lagrer …';
+  try {
+    const r = await api('api/admin/tip', {
+      method: 'POST',
+      body: JSON.stringify({
+        text: $('#tipText').value,
+        textEn: $('#tipTextEn').value,
+        enabled: $('#tipEnabled').checked
+      })
+    });
+    status.className = 'admin-status ok';
+    status.textContent = r.tip.enabled
+      ? 'Lagret - vises på forsiden fram til kl. 12 og i morgenposten.'
+      : 'Lagret - tipset er skrudd av.';
+  } catch (e) {
+    status.className = 'admin-status bad';
+    status.textContent = e.message;
+  }
+};
+
 // ------------------------------------------------------------------ tema
 
 async function loadTheme() {
@@ -768,6 +803,134 @@ async function saveTheme(mode) {
     status.textContent = e.message;
   }
 }
+
+// ------------------------------------------------------------ statistikk
+
+const STAT_LABELS = {
+  dag: 'Bytter ukedag', sprak: 'Bytter språk', allergener: 'Viser allergener',
+  se_menyen: '«Se menyen» (øyet)', middagsfane: 'Middagsfanen', kart: 'Trykk på kartet',
+  hjul: 'Lykkehjulet', kopier: 'Kopierer menyen', push_pa: 'Slår på/lagrer push',
+  push_av: 'Slår av push', tilbakemelding: 'Tilbakemelding', installer: 'Installer-knappen',
+  sesong_av: 'Skrur av sesongpynt', sesong_pa: 'Skrur på sesongpynt', mork_modus: 'Mørk modus',
+  stem: 'Stemmer'
+};
+const BOT_LABELS = {
+  lunsj: 'lunsj', middag: 'middag', bakern: 'bakern', meny: 'meny', allergi: 'allergi',
+  imorgen: 'i morgen', ukedag: 'mandag, tirsdag …', kantine: 'kantine m / fresh 4 you',
+  gjovik: 'gjøvik', kaffe: 'kaffe', hjelp: 'hjelp', paaminnelse: 'påminnelse-kommandoer',
+  knapp: 'knappetrykk', paaminnelse_sendt: 'påminnelser sendt', morgenpost: 'morgenposter',
+  annet: 'annet'
+};
+const PLACE_LABELS = { m: 'Kantine M', fresh4you: 'Fresh 4 You', bakern: 'Bakern', dinner: 'Middag' };
+const DAY_LABELS = { mon: 'man', tue: 'tir', wed: 'ons', thu: 'tor', fri: 'fre' };
+
+function sumMaps(days, key) {
+  const out = {};
+  days.forEach(d => Object.entries(d[key] || {}).forEach(([k, v]) => { out[k] = (out[k] || 0) + v; }));
+  return out;
+}
+
+function statRows(box, entries, labels = {}, sort = true) {
+  box.textContent = '';
+  const list = entries.filter(([, v]) => v > 0);
+  if (sort) list.sort((a, b) => b[1] - a[1]);
+  if (!list.length) { box.appendChild(el('div', 'vote-row vote-detail', 'Ingen data ennå')); return; }
+  list.forEach(([k, v]) => {
+    const row = el('div', 'vote-row');
+    row.appendChild(el('span', 'vote-name', labels[k] || k));
+    row.appendChild(el('span', 'vote-count', String(v)));
+    box.appendChild(row);
+  });
+}
+
+function statBars(box, items, { tall = false } = {}) {
+  box.textContent = '';
+  const max = Math.max(1, ...items.map(i => i.value));
+  items.forEach(i => {
+    const col = el('div', 'stats-bar');
+    col.title = i.title;
+    const bar = el('span', 'stats-bar-fill');
+    bar.style.height = Math.round((i.value / max) * 100) + '%';
+    if (i.value && i.value / max < 0.03) bar.style.height = '3%';
+    if (i.sub != null) {
+      const sub = el('span', 'stats-bar-sub');
+      sub.style.height = Math.round((i.sub / max) * 100) + '%';
+      col.appendChild(sub);
+    }
+    col.appendChild(bar);
+    col.appendChild(el('span', 'stats-bar-label', i.label || ''));
+    box.appendChild(col);
+  });
+}
+
+async function loadStats() {
+  const days = Number(($('input[name="statsDays"]:checked') || {}).value || 30);
+  const status = $('#statsStatus');
+  try {
+    const data = await api('api/admin/stats?days=' + days);
+    const list = data.days;
+    const views = list.reduce((a, d) => a + d.views, 0);
+    const uniques = list.reduce((a, d) => a + d.uniques, 0);
+    // Snittet regnes bare over hverdager med data, så dager før statistikken startet ikke drar det ned.
+    const weekdays = list.filter(d => { const w = new Date(d.date + 'T12:00').getDay(); return w > 0 && w < 6 && d.views > 0; });
+    const avg = weekdays.length ? Math.round(weekdays.reduce((a, d) => a + d.uniques, 0) / weekdays.length) : 0;
+    const today = list[list.length - 1];
+    const botTotal = list.reduce((a, d) => a + Object.values(d.bot || {}).reduce((x, y) => x + y, 0), 0);
+
+    const kpis = $('#statsKpis');
+    kpis.textContent = '';
+    [['I dag', today.uniques, today.views + ' visninger'],
+     ['Snitt per hverdag', avg, 'unike'],
+     ['Unike, sum per dag', uniques, views + ' visninger'],
+     ['Webex-bot', botTotal, 'hendelser']].forEach(([label, value, sub]) => {
+      const k = el('div', 'stats-kpi');
+      k.appendChild(el('span', 'stats-kpi-label', label));
+      k.appendChild(el('span', 'stats-kpi-value', String(value)));
+      k.appendChild(el('span', 'stats-kpi-sub', sub));
+      kpis.appendChild(k);
+    });
+
+    const every = Math.ceil(list.length / 10);
+    statBars($('#statsDaily'), list.map((d, i) => ({
+      value: d.views, sub: d.uniques,
+      label: (i % every === 0 || i === list.length - 1) ? d.date.slice(8) + '.' + d.date.slice(5, 7) : '',
+      title: `${d.date}: ${d.uniques} unike, ${d.views} visninger`
+    })));
+
+    const hours = sumMaps(list, 'hours');
+    const hourItems = [];
+    const used = Object.keys(hours).filter(h => hours[h] > 0).map(Number);
+    const h0 = Math.min(6, ...used), h1 = Math.max(20, ...used);
+    for (let h = h0; h <= h1; h++) hourItems.push({ value: hours[h] || 0, label: h % 2 === 0 ? String(h) : '', title: `kl. ${h}: ${hours[h] || 0} visninger` });
+    statBars($('#statsHours'), hourItems);
+
+    const events = sumMaps(list, 'events');
+    statRows($('#statsEvents'), Object.entries(events), STAT_LABELS);
+    statRows($('#statsBot'), Object.entries(sumMaps(list, 'bot')), BOT_LABELS);
+    statRows($('#statsVotes'), Object.entries(sumMaps(list, 'votes')), PLACE_LABELS);
+
+    const lang = sumMaps(list, 'lang');
+    const dev = sumMaps(list, 'devices');
+    const vd = sumMaps(list, 'viewDay');
+    const places = sumMaps(list, 'places');
+    const eye = Object.entries(places).filter(([k]) => k.startsWith('se_menyen:'))
+      .map(([k, v]) => ['Se menyen: ' + (PLACE_LABELS[k.split(':')[1]] || k), v]);
+    const appViews = list.reduce((a, d) => a + (d.app || 0), 0);
+    statRows($('#statsSplit'), [
+      ['Norsk', lang.no || 0], ['Engelsk', lang.en || 0],
+      ['Mobil', dev.mobil || 0], ['PC', dev.pc || 0], ['Installert app', appViews],
+      ...Object.entries(vd).map(([k, v]) => ['Åpnet på ' + (DAY_LABELS[k] || k), v]),
+      ...eye
+    ], {}, false);
+    status.hidden = true;
+  } catch (e) {
+    status.hidden = false;
+    status.className = 'admin-status bad';
+    status.textContent = 'Kunne ikke hente statistikk: ' + e.message;
+  }
+}
+
+$$('input[name="statsDays"]').forEach(i => { i.onchange = loadStats; });
 
 // ------------------------------------------------------------------ boot
 
