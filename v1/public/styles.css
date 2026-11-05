@@ -211,7 +211,7 @@ svg.ico-18 { width: 18px; height: 18px; }
 /* ---------------------------------------------------------------- layout */
 
 .wrap {
-  max-width: 1080px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: var(--s6) var(--s4) 88px;
 }
@@ -220,7 +220,7 @@ svg.ico-18 { width: 18px; height: 18px; }
    smalere enn innholdet pluss dokkens bredde, gir vi innholdet en høyre-gutter
    slik at ingen kontroll kan havne under den. Bunnpolstring alene hjelper ikke:
    dokken er fixed og følger rullingen. */
-@media (min-width: 621px) and (max-width: 1264px) {
+@media (min-width: 621px) and (max-width: 1464px) {
   .wrap { padding-right: 84px; }
 }
 
@@ -702,8 +702,9 @@ select.input { cursor: pointer; }
 
 .hours {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--s2);
+  gap: 2px var(--s2);
   font-size: 13px;
   font-weight: 700;
 }
@@ -763,8 +764,12 @@ select.input { cursor: pointer; }
   margin-bottom: var(--s6);
 }
 .lunch-layout .card-grid, .lunch-layout .side-cards { display: contents; }
-@container (min-width: 900px) {
+@container (min-width: 1000px) {
   .lunch-layout { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s3); }
+  /* Litt tettere i smale kort, så «Stenger om 20 min» får plass på samme linje */
+  .lunch-layout .hours { column-gap: 6px; }
+  .lunch-layout .open-state::before { margin-right: 4px; }
+  .lunch-layout .card { padding-left: 16px; padding-right: 16px; }
 }
 @container (max-width: 560px) {
   .lunch-layout { grid-template-columns: minmax(0, 1fr); }
@@ -1466,6 +1471,12 @@ select.input { cursor: pointer; }
 .open-state.is-soon { color: var(--accent-ink); }
 .open-state.is-closing { color: #c46a12; }
 .open-state.is-closed { font-weight: 500; }
+
+/* Stengt for i dag: kortet tones ned i grått. Holder du over det, vises fargene igjen. */
+.lunch-layout .card { transition: filter 0.3s, opacity 0.3s; }
+.lunch-layout .card.is-closed { filter: grayscale(1); opacity: 0.6; }
+.lunch-layout .card.is-closed:hover,
+.lunch-layout .card.is-closed:focus-within { filter: none; opacity: 1; }
 :root[data-theme="dark"] .open-state.is-open { color: #6fcf97; }
 :root[data-theme="dark"] .open-state.is-closing { color: #f0a050; }
 

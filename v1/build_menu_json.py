@@ -59,6 +59,7 @@ PLACES = {
         "file": "cafe_m.txt",
         "name": "Cafe M",
         "hours": "08:30 – 15:30",
+        "lunchHours": "10:30 – 14:00",
         "building": "M",
         "kind": "cafe",
     },

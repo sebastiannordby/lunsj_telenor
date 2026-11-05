@@ -276,6 +276,9 @@ function fillOpenBadge(span) {
     span.className = 'open-state is-' + s.cls;
     span.textContent = s.text;
   }
+  // Menykortet blir grått når stedet har stengt for i dag (ikke før det åpner)
+  const card = span.closest('.lunch-layout .card');
+  if (card) card.classList.toggle('is-closed', !!s && s.cls === 'closed');
 }
 
 setInterval(() => { $$('.open-state').forEach(fillOpenBadge); renderTip(); }, 30000);
@@ -585,7 +588,7 @@ function canteenCard(info, withVote) {
 
   const hours = el('div', 'hours');
   hours.innerHTML = CLOCK;
-  hours.appendChild(el('span', null, shown.hours));
+  hours.appendChild(el('span', 'nowrap', shown.hours));
   hours.appendChild(openBadge(shown.hours));
   card.appendChild(hours);
 
@@ -631,6 +634,7 @@ function renderCanteens() {
   grid.textContent = '';
   LUNCH_IDS.forEach(id => grid.appendChild(canteenCard(placeInfo(id), showingToday())));
   renderSideCards(); // stemmetallene i Bakern- og Cafe M-kortet følger kantinene
+  $$('.lunch-layout .open-state').forEach(fillOpenBadge); // nå er kortene i DOM-en
 }
 
 // Midlertidig banner satt fra /admin. Skjules per bruker via localStorage,
