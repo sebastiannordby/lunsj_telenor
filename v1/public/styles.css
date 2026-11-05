@@ -1663,11 +1663,19 @@ html:not([data-season]) .season-fx { display: none; }
 .cafe-section[open] .cafe-chev { transform: rotate(180deg); }
 .cafe-section[open] .cafe-head { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
 
+.cafe-section { container-type: inline-size; }
+/* Samme kolonner som lunsjkortene, så hvert sted havner rett under sitt kort */
 .cafe-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--s3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s4);
   margin-top: var(--s3);
+}
+@container (min-width: 1000px) {
+  .cafe-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s3); }
+}
+@container (max-width: 560px) {
+  .cafe-grid { grid-template-columns: minmax(0, 1fr); }
 }
 .cafe-tile {
   display: flex;

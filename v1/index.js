@@ -1572,7 +1572,7 @@ const DAY_NAMES = {
   no: ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag'],
   en: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 };
-const PUSH_PLACES = ['m', 'fresh4you', 'bakern', 'cafem'];
+const PUSH_PLACES = ['fresh4you', 'm', 'cafem', 'bakern'];
 
 let pushReady = false;
 

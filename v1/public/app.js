@@ -23,7 +23,7 @@ const UI = {
     bannerHide: 'Skjul melding', lunchWindowShort: 'Lunsjtilbud',
     cafesTitle: 'Kafeer og bakeri', bakeryLabel: 'Bakeri', cafesOpen: '{n} av {m} åpne nå', cafesAll: 'Kaffe, bakevarer og brus',
     cafesLunch: 'Lunsj {t} - se menyen over', lunchTag: 'Lunsjtilbud',
-    offerBakern: 'Kaffe, nystekt brød, bakevarer og brus', offerCafe: 'Kaffe, bakevarer og brus',
+    offerBakern: 'Kaffe, nystekt brød og bakevarer', offerCafe: 'Kaffe, bakevarer og brus',
     offerExpo: 'Kaffe, bakevarer, brus og is',
     manualFlag: 'Skrevet manuelt', bakernLink: 'Åpne Bakern sin egen meny', bakernLinkShort: 'Se menyen', dinnerFrom: 'Middag',
     bakernPreviewTitle: 'Bakern – meny', openNewTab: 'Åpne i ny fane',
@@ -100,7 +100,7 @@ const UI = {
     bannerHide: 'Hide message', lunchWindowShort: 'Lunch offer',
     cafesTitle: 'Cafés and bakery', bakeryLabel: 'Bakery', cafesOpen: '{n} of {m} open now', cafesAll: 'Coffee, pastries and soft drinks',
     cafesLunch: 'Lunch {t} - see the menu above', lunchTag: 'Lunch offer',
-    offerBakern: 'Coffee, fresh bread, pastries and soft drinks', offerCafe: 'Coffee, pastries and soft drinks',
+    offerBakern: 'Coffee, fresh bread and pastries', offerCafe: 'Coffee, pastries and soft drinks',
     offerExpo: 'Coffee, pastries, soft drinks and ice cream',
     manualFlag: 'Entered manually', bakernLink: 'Open Bakern\u2019s own menu', bakernLinkShort: 'See menu', dinnerFrom: 'Dinner',
     bakernPreviewTitle: 'Bakern – menu', openNewTab: 'Open in new tab',
@@ -229,7 +229,8 @@ function isDark() {
 
 // Eat The Street er lagt ned. Middagen er flyttet til Fresh 4 You og vises
 // som en fane inne i det kortet.
-const LUNCH_IDS = ['m', 'fresh4you'];
+// Rekkefølgen på siden: Fresh 4 You, Kantine M, Cafe M, Bakern
+const LUNCH_IDS = ['fresh4you', 'm'];
 const DINNER_HOST = 'fresh4you';
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
 
@@ -691,8 +692,8 @@ function renderBanner() {
 // Øverst handler det bare om mat: kortene viser lunsjtiden (og blir grå
 // kl. 14). Kafétilbudet og åpningstidene står i «Kafeer og bakeri» lenger ned.
 const SIDE_CARDS = [
-  { id: 'bakern', el: '#bakeryCard' },
-  { id: 'cafem', el: '#cafemCard' }
+  { id: 'cafem', el: '#cafemCard' },
+  { id: 'bakern', el: '#bakeryCard' }
 ];
 
 function renderSideCards() {
@@ -986,11 +987,13 @@ function render() {
 
 // Kafeer og bakeri: kaffe, bakst og åpningstider, adskilt fra maten øverst.
 // Sammenfoldet som standard; valget huskes i nettleseren.
+// Rekkefølgen følger lunsjkortene: Cafe M og Bakern står rett under sitt eget
+// lunsjkort (kolonne 3 og 4), Hot Spot og Café Expo under kantinene.
 const CAFES = [
-  { id: 'bakern', kind: 'bakery', offer: 'offerBakern', lunch: true },
-  { id: 'cafem', offer: 'offerCafe', lunch: true },
   { id: 'hotspot', offer: 'offerCafe' },
-  { id: 'expo', offer: 'offerExpo' }
+  { id: 'expo', offer: 'offerExpo' },
+  { id: 'cafem', offer: 'offerCafe', lunch: true },
+  { id: 'bakern', kind: 'bakery', offer: 'offerBakern', lunch: true }
 ];
 
 // Hele åpningstiden, ikke lunsjvinduet som står på kortene øverst
@@ -1161,7 +1164,7 @@ async function castVote(id, anchor) {
 
 function menuAsText() {
   const lines = [t().heading + ' - ' + $('#datestamp').textContent, ''];
-  [...LUNCH_IDS, 'bakern', 'cafem', 'dinner'].forEach(id => {
+  [...LUNCH_IDS, 'cafem', 'bakern', 'dinner'].forEach(id => {
     const info = placeInfo(id);
     lines.push(`${info.name} (${t().buildingLabel} ${info.building}, ${info.hours})`);
     if (info.dishes.length) {
@@ -1460,7 +1463,7 @@ if (installBtn) {
 // «Velg for meg»: et lykkehjul mellom stedene brukeren vurderer. Hvilke steder
 // som er med lagres i localStorage, så valget står til neste besøk.
 
-const WHEEL_IDS = [...LUNCH_IDS, 'bakern', 'cafem'];
+const WHEEL_IDS = [...LUNCH_IDS, 'cafem', 'bakern'];
 const WHEEL_KEY = 'lunsj-wheel-picks';
 
 const wheelModal = $('#wheelModal');
