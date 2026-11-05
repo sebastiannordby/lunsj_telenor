@@ -752,12 +752,22 @@ select.input { cursor: pointer; }
 /* Lunsj: to kantiner + Bakern som høy sidekolonne */
 
 .nowrap { white-space: nowrap; }
+.lunch-wrap { container-type: inline-size; }
+/* Fire steder på én rad når det er plass, ellers 2 + 2, og én kolonne på mobil.
+   Kortene i samme rad blir like høye, så det blir lite tomrom. */
 .lunch-layout {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(240px, 0.8fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--s4);
   align-items: stretch;
   margin-bottom: var(--s6);
+}
+.lunch-layout .card-grid, .lunch-layout .side-cards { display: contents; }
+@container (min-width: 900px) {
+  .lunch-layout { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s3); }
+}
+@container (max-width: 560px) {
+  .lunch-layout { grid-template-columns: minmax(0, 1fr); }
 }
 .lunch-layout[hidden] { display: none; }
 
@@ -774,13 +784,6 @@ select.input { cursor: pointer; }
 }
 .lunch-tip[hidden] { display: none; }
 .lunch-tip svg { margin-top: 3px; }
-.lunch-layout .card-grid {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  margin-bottom: 0;
-}
-@media (max-width: 860px) {
-  .lunch-layout { grid-template-columns: minmax(0, 1fr); }
-}
 
 .side-cards {
   display: flex;
@@ -906,6 +909,13 @@ select.input { cursor: pointer; }
 }
 .vote-foot .btn { margin-left: auto; white-space: nowrap; }
 .vote-count { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.vote-count-short { display: none; }
+/* Smale kort (fire på rad): «7 stemmer» i stedet for «7 stemmer i dag» */
+.lunch-layout .card { container-type: inline-size; }
+@container (max-width: 250px) {
+  .vote-count-long { display: none; }
+  .vote-count-short { display: inline; }
+}
 .vote-foot { flex-wrap: wrap; row-gap: var(--s1); }
 
 /* ---------------------------------------------------------------- map */

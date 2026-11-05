@@ -13,7 +13,7 @@ const UI = {
     monShort: 'Man', tueShort: 'Tir', wedShort: 'Ons', thuShort: 'Tor', friShort: 'Fre',
     todaySuffix: '(dagens)', copiedToast: 'Hele menyen er kopiert', voteTodayOnly: 'Du kan bare stemme på dagens meny.',
     lunch: 'Lunsj', dinner: 'Middag', allergyToggle: 'Vis allergener',
-    voteLabel: '🙋 Jeg spiser her', votedLabel: '✓ Du spiser her', votesLabel: 'stemmer i dag', votesLabelOne: 'stemme i dag',
+    voteLabel: '🙋 Jeg spiser her', votedLabel: '✓ Du spiser her', votesLabel: 'stemmer i dag', votesLabelOne: 'stemme i dag', votesShort: 'stemmer', votesShortOne: 'stemme',
     mapTitle: 'Hvor er kantinene?',
     mapSub: 'Hold musepekeren over en markør for å se menyen - eller trykk på den på mobil.',
     mapEmpty: 'Velg et sted i kartet over.',
@@ -86,7 +86,7 @@ const UI = {
     monShort: 'Mon', tueShort: 'Tue', wedShort: 'Wed', thuShort: 'Thu', friShort: 'Fri',
     todaySuffix: '(today)', copiedToast: 'The whole menu was copied', voteTodayOnly: 'You can only vote on today\u2019s menu.',
     lunch: 'Lunch', dinner: 'Dinner', allergyToggle: 'Show allergens',
-    voteLabel: '🙋 Eating here', votedLabel: '✓ You\u2019re eating here', votesLabel: 'votes today', votesLabelOne: 'vote today',
+    voteLabel: '🙋 Eating here', votedLabel: '✓ You\u2019re eating here', votesLabel: 'votes today', votesLabelOne: 'vote today', votesShort: 'votes', votesShortOne: 'vote',
     mapTitle: 'Where are the canteens?',
     mapSub: 'Hover a marker to see its menu - or tap it on mobile.',
     mapEmpty: 'Pick a spot on the map above.',
@@ -607,7 +607,11 @@ function voteFoot(info) {
     const mine = state.myVote === info.id;
 
     const foot = el('div', 'vote-foot');
-    foot.appendChild(el('span', 'vote-count', votesText(count)));
+    // Kort versjon («7 stemmer») vises når kortet er smalt - se styles.css
+    const vc = el('span', 'vote-count');
+    vc.appendChild(el('span', 'vote-count-long', votesText(count)));
+    vc.appendChild(el('span', 'vote-count-short', count + ' ' + (count === 1 ? t().votesShortOne : t().votesShort)));
+    foot.appendChild(vc);
 
     const btn = el('button', 'btn btn-sm ' + (mine ? 'btn-secondary' : 'btn-ghost'),
       mine ? t().votedLabel : t().voteLabel);
