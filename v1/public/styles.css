@@ -782,6 +782,14 @@ select.input { cursor: pointer; }
   .lunch-layout { grid-template-columns: minmax(0, 1fr); }
 }
 
+.side-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  min-width: 0;
+}
+.side-cards > .bakery { flex: 1 1 auto; }
+#cafemCard { --place: #6b7d4a; }
 .bakery {
   --place: #8a5a2b;
   display: flex;

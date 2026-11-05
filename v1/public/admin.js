@@ -394,7 +394,7 @@ $('#voteResetAll').onclick = () => resetVotes('', '');
 
 const PLACE_NAMES = {
   m: 'Kantine M', fresh4you: 'Fresh 4 You',
-  bakern: 'Bakern', dinner: 'Fresh 4 You – Middag'
+  bakern: 'Bakern', cafem: 'Cafe M', dinner: 'Fresh 4 You – Middag'
 };
 
 function renderOverrides(all) {
@@ -816,12 +816,12 @@ const STAT_LABELS = {
 };
 const BOT_LABELS = {
   lunsj: 'lunsj', middag: 'middag', bakern: 'bakern', meny: 'meny', allergi: 'allergi',
-  imorgen: 'i morgen', ukedag: 'mandag, tirsdag …', kantine: 'kantine m / fresh 4 you',
+  imorgen: 'i morgen', ukedag: 'mandag, tirsdag …', kantine: 'kantine m / fresh 4 you', cafem: 'cafe m',
   gjovik: 'gjøvik', kaffe: 'kaffe', hjelp: 'hjelp', paaminnelse: 'påminnelse-kommandoer',
   knapp: 'knappetrykk', paaminnelse_sendt: 'påminnelser sendt', morgenpost: 'morgenposter',
   annet: 'annet'
 };
-const PLACE_LABELS = { m: 'Kantine M', fresh4you: 'Fresh 4 You', bakern: 'Bakern', dinner: 'Middag' };
+const PLACE_LABELS = { m: 'Kantine M', fresh4you: 'Fresh 4 You', bakern: 'Bakern', cafem: 'Cafe M', dinner: 'Middag' };
 const DAY_LABELS = { mon: 'man', tue: 'tir', wed: 'ons', thu: 'tor', fri: 'fre' };
 
 function sumMaps(days, key) {
@@ -869,20 +869,23 @@ async function loadStats() {
   try {
     const data = await api('api/admin/stats?days=' + days);
     const list = data.days;
-    const views = list.reduce((a, d) => a + d.views, 0);
-    const uniques = list.reduce((a, d) => a + d.uniques, 0);
-    // Snittet regnes bare over hverdager med data, så dager før statistikken startet ikke drar det ned.
-    const weekdays = list.filter(d => { const w = new Date(d.date + 'T12:00').getDay(); return w > 0 && w < 6 && d.views > 0; });
-    const avg = weekdays.length ? Math.round(weekdays.reduce((a, d) => a + d.uniques, 0) / weekdays.length) : 0;
+    // Snittet regnes bare over hele hverdager: ikke i dag (dagen er ikke over)
+    // og ikke dagen statistikken startet (bare delvis talt).
+    const weekdays = list.filter(d => {
+      const w = new Date(d.date + 'T12:00').getDay();
+      return w > 0 && w < 6 && d.views > 0 && d.date !== data.today && d.date !== data.since && d.date > (data.since || '');
+    });
+    const avg = weekdays.length ? Math.round(weekdays.reduce((a, d) => a + d.uniques, 0) / weekdays.length) : null;
+    const best = list.reduce((m, d) => (d.date !== data.today && d.uniques > (m?.uniques || 0) ? d : m), null);
     const today = list[list.length - 1];
     const botTotal = list.reduce((a, d) => a + Object.values(d.bot || {}).reduce((x, y) => x + y, 0), 0);
 
     const kpis = $('#statsKpis');
     kpis.textContent = '';
     [['I dag', today.uniques, today.views + ' visninger'],
-     ['Snitt per hverdag', avg, 'unike'],
-     ['Unike, sum per dag', uniques, views + ' visninger'],
-     ['Webex-bot', botTotal, 'hendelser']].forEach(([label, value, sub]) => {
+     ['Snitt per hverdag', avg ?? '–', avg == null ? 'trenger én hel hverdag' : `unike, ${weekdays.length} ${weekdays.length === 1 ? 'hel dag' : 'hele dager'}`],
+     ['Beste dag', best ? best.uniques : '–', best ? 'unike ' + best.date.slice(8) + '.' + best.date.slice(5, 7) : 'ingen hele dager ennå'],
+     ['Webex-bot', botTotal, 'hendelser i perioden']].forEach(([label, value, sub]) => {
       const k = el('div', 'stats-kpi');
       k.appendChild(el('span', 'stats-kpi-label', label));
       k.appendChild(el('span', 'stats-kpi-value', String(value)));

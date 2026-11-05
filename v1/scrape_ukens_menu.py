@@ -45,8 +45,14 @@ CANTEENS = {
         "file": "fresh_4_you.txt",
     },
     "Fresh 4 You - Middag": {
-        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=9b060d7e-6658-4d96-b953-23079d7df3b2&scaleToFit=true",
+        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=dd6ee59b-6e03-4215-8543-a01dbda54db7&scaleToFit=true",
         "file": "fresh_4_you_-_middag.txt",
+    },
+    # Cafe M legger ikke alltid ut ukesmeny. optional = tom side er ikke en feil.
+    "Cafe M": {
+        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=e7a0be40-4bb4-462a-8feb-0f9b3f5012b9&scaleToFit=true",
+        "file": "cafe_m.txt",
+        "optional": True,
     },
 }
 
@@ -212,7 +218,8 @@ def main():
         if dishes == 0 and filepath.is_file():
             print(f"  Fant ingen retter - beholder eksisterende {filepath}")
             summary.append(f"{canteen}: beholdt gammel fil")
-            failed.append(canteen)
+            if not (html and info.get("optional")):
+                failed.append(canteen)
             continue
         summary.append(f"{canteen}: {dishes}")
         allergens[info["file"]] = {

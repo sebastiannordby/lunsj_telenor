@@ -4,7 +4,7 @@
 const UI = {
   no: {
     heading: 'LUNSJMENY FORNEBU',
-    sub: 'To kantiner og et bakeri - dagens meny på ett sted.',
+    sub: 'To kantiner, et bakeri og en kafé - dagens meny på ett sted.',
     showingToday: 'Viser dagens meny', themeDark: 'Bytt til mørk modus', themeLight: 'Bytt til lys modus',
     weekendKicker: 'Helg', weekendTitle: 'Kantinene er stengt',
     weekendBody: 'Det serveres ingen lunsj i helgen. Kom tilbake på mandag - eller se menyen for en ukedag nå.',
@@ -77,7 +77,7 @@ const UI = {
   },
   en: {
     heading: 'LUNCH MENU FORNEBU',
-    sub: 'Two canteens and a bakery - today\u2019s menu in one place.',
+    sub: 'Two canteens, a bakery and a café - today\u2019s menu in one place.',
     showingToday: 'Showing today\u2019s menu', themeDark: 'Switch to dark mode', themeLight: 'Switch to light mode',
     weekendKicker: 'Weekend', weekendTitle: 'The canteens are closed',
     weekendBody: 'No lunch is served at the weekend. Come back on Monday - or browse a weekday menu now.',
@@ -162,8 +162,9 @@ const INISIGN = token => 'https://widget.inisign.com/Widget/Customers/Customer.a
 const MENU_WIDGETS = {
   m:         { today: INISIGN('4a0457f8-dbfa-4783-8ebe-b5ee0486843f'), week: INISIGN('756a5aa2-a95f-4d15-ad5a-59829741075b') },
   fresh4you: { today: INISIGN('aa1358ee-d30e-4289-a630-892cd1210857'), week: INISIGN('a8923cdb-9d92-46bc-b6a4-d026c2cf9a89') },
-  dinner:    { week: INISIGN('9b060d7e-6658-4d96-b953-23079d7df3b2') },
-  bakern:    { today: BAKERN_MENU_URL, week: BAKERN_MENU_URL }
+  dinner:    { week: INISIGN('dd6ee59b-6e03-4215-8543-a01dbda54db7') },
+  bakern:    { today: BAKERN_MENU_URL, week: BAKERN_MENU_URL },
+  cafem:     { today: INISIGN('44f3e542-f212-4042-b9e2-d450bd84d31c'), week: INISIGN('e7a0be40-4bb4-462a-8feb-0f9b3f5012b9') }
 };
 
 function widgetUrl(id) {
@@ -209,7 +210,8 @@ const GEO = {
                name: 'Café Expo', hours: '08:00 – 15:00', noteKey: 'expoFriday' },
   hotspot:   { color: '#7a8a5e', dark: '#b3c48c', left: '45%', top: '50%', vote: false, cafe: true,
                name: 'Hot Spot', hours: '07:30 – 14:30' },
-  cafem:     { color: '#7a8a5e', dark: '#b3c48c', left: '68%', top: '63%', vote: false, cafe: true,
+  // Cafe M har lunsjtilbud (nov. 2026) og vises som kort under Bakern
+  cafem:     { color: '#6b7d4a', dark: '#b3c48c', left: '68%', top: '63%', vote: true,
                name: 'Cafe M', hours: '08:30 – 15:30' }
 };
 
@@ -624,7 +626,7 @@ function renderCanteens() {
   const grid = $('#canteenCards');
   grid.textContent = '';
   LUNCH_IDS.forEach(id => grid.appendChild(canteenCard(placeInfo(id), showingToday())));
-  renderBakery(); // stemmetallene i Bakern-kortet følger kantinene
+  renderSideCards(); // stemmetallene i Bakern- og Cafe M-kortet følger kantinene
 }
 
 // Midlertidig banner satt fra /admin. Skjules per bruker via localStorage,
@@ -667,11 +669,20 @@ function renderBanner() {
   box.hidden = false;
 }
 
-// Bakern står som en egen, høy sidekolonne ved siden av de to kantinene -
-// tonet i Bakern-fargen så den skiller seg tydelig fra kantinekortene.
-function renderBakery() {
-  const info = placeInfo('bakern');
-  const card = $('#bakeryCard');
+// Bakern og Cafe M står under hverandre i en sidekolonne ved siden av de to
+// kantinene - tonet i stedets farge så de skiller seg fra kantinekortene.
+const SIDE_CARDS = [
+  { id: 'bakern', el: '#bakeryCard', noteKey: 'bakeryAlways' },
+  { id: 'cafem', el: '#cafemCard' }
+];
+
+function renderSideCards() {
+  SIDE_CARDS.forEach(renderSideCard);
+}
+
+function renderSideCard({ id, el: sel, noteKey }) {
+  const info = placeInfo(id);
+  const card = $(sel);
   if (!card) return;
   card.textContent = '';
   card.style.setProperty('--place', info.color);
@@ -687,7 +698,7 @@ function renderBakery() {
   hours.appendChild(openBadge(info.hours));
   card.appendChild(hours);
   // Først det som gjelder hele dagen, så lunsjtilbudet og rettene
-  card.appendChild(el('p', 'bakery-note', t().bakeryAlways));
+  if (noteKey) card.appendChild(el('p', 'bakery-note', t()[noteKey]));
   if (info.lunchHours) {
     const w = el('div', 'bakery-window', t().lunchWindowShort + ' ');
     w.appendChild(el('span', 'nowrap', info.lunchHours));
@@ -697,7 +708,8 @@ function renderBakery() {
   card.appendChild(dishList(info));
 
   // Forhåndsvisning i dialog; ny fane som reserve inne i dialogen
-  card.appendChild(menuLink('bakern', info.name));
+  const link = menuLink(id, info.name);
+  if (link) card.appendChild(link);
 
   if (showingToday()) card.appendChild(voteFoot(info));
 }
@@ -1065,7 +1077,7 @@ async function castVote(id, anchor) {
 
 function menuAsText() {
   const lines = [t().heading + ' - ' + $('#datestamp').textContent, ''];
-  [...LUNCH_IDS, 'bakern', 'dinner'].forEach(id => {
+  [...LUNCH_IDS, 'bakern', 'cafem', 'dinner'].forEach(id => {
     const info = placeInfo(id);
     lines.push(`${info.name} (${t().buildingLabel} ${info.building}, ${info.hours})`);
     if (info.dishes.length) {
@@ -1166,9 +1178,22 @@ function resetFeedback() {
 
 // --------------------------------------------------------------- statistikk
 // Anonym telling til egen server (ingen cookies, ingen tredjepart).
+// Grove kjennetegn som skiller nettlesere bak samme IP-adresse fra hverandre.
+// Sendes bare med for å telle unike riktig - serveren lagrer dem ikke.
+function clientHint() {
+  try {
+    return [screen.width + 'x' + screen.height, devicePixelRatio,
+      (navigator.languages || [navigator.language]).join(','),
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+      navigator.hardwareConcurrency || ''].join('|');
+  } catch (e) {
+    return '';
+  }
+}
+
 function track(e, p) {
   const body = JSON.stringify(e === 'view'
-    ? { t: 'view', lang: state.lang, day: state.day,
+    ? { t: 'view', lang: state.lang, day: state.day, fp: clientHint(),
         mobile: matchMedia('(max-width: 700px)').matches,
         app: matchMedia('(display-mode: standalone)').matches }
     : { t: 'event', e, p: p || '' });
@@ -1351,7 +1376,7 @@ if (installBtn) {
 // «Velg for meg»: et lykkehjul mellom stedene brukeren vurderer. Hvilke steder
 // som er med lagres i localStorage, så valget står til neste besøk.
 
-const WHEEL_IDS = [...LUNCH_IDS, 'bakern'];
+const WHEEL_IDS = [...LUNCH_IDS, 'bakern', 'cafem'];
 const WHEEL_KEY = 'lunsj-wheel-picks';
 
 const wheelModal = $('#wheelModal');

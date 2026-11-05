@@ -65,7 +65,7 @@ const WEEKLY_SOURCE = new Set(['dinner']);
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
 
 // Kantiner som kan overstyres manuelt fra /admin (nødmodus)
-const OVERRIDE_PLACES = ['m', 'fresh4you', 'bakern', 'dinner'];
+const OVERRIDE_PLACES = ['m', 'fresh4you', 'bakern', 'cafem', 'dinner'];
 
 // Admin-passord. Sett ADMIN_PASSWORD i miljøet (systemd-unit eller .env);
 // uten det genereres et engangspassord som skrives til loggen ved oppstart.
@@ -83,9 +83,9 @@ const NTFY_TEXT = process.env.NTFY_TEXT || 'mb-lunsjfbu-lunsjmeny-fornebu-tekst'
 const NTFY_ALERT = process.env.NTFY_ALERT || 'mb-lunsjfbu-lunsjmeny-fornebu-varsel';
 const NTFY_URL = process.env.NTFY_URL || 'https://ntfy.sh';
 
-const VOTE_PLACES = new Set(['m', 'fresh4you', 'bakern']);
+const VOTE_PLACES = new Set(['m', 'fresh4you', 'bakern', 'cafem']);
 
-const VOTE_LABELS = { m: 'M', fresh4you: 'Fresh4You', bakern: 'Bakern' };
+const VOTE_LABELS = { m: 'M', fresh4you: 'Fresh4You', bakern: 'Bakern', cafem: 'Cafe M' };
 
 // Bot-brems: en klient som ikke tar imot cookien kan ellers poste stemmer i
 // det uendelige. Vi teller forsøk per IP per dag i minnet (nullstilles ved
@@ -1256,6 +1256,8 @@ function osloClock() {
 }
 
 /** Problemer akkurat nå. Tomt i helgen og utenfor tidsvinduene. */
+const OPTIONAL_PLACES = new Set(['cafem']);
+
 async function healthProblems() {
   const { weekday, minutes } = osloClock();
   if (weekday > 4) return [];
@@ -1291,13 +1293,14 @@ async function healthProblems() {
   }
 
   if (minutes >= 10 * 60) {
-    const empty = places.filter(p => p.source === 'none').map(p => p.name);
+    // Cafe M legger ikke ut meny hver dag - det skal ikke gi varsel
+    const empty = places.filter(p => p.source === 'none' && !OPTIONAL_PLACES.has(p.id)).map(p => p.name);
     if (empty.length) {
       problems.push({ key: 'empty:' + empty.join(','), text: `Ingen meny for: ${empty.join(', ')}. Skriv den inn under Nødmodus i /admin.` });
     }
     // Dagsmenyen er hentet, men fant ikke noe for en lunsjkantine
     const fallback = dailyFresh
-      ? places.filter(p => p.source === 'weekly' && !p.weeklySource).map(p => p.name)
+      ? places.filter(p => p.source === 'weekly' && !p.weeklySource && !OPTIONAL_PLACES.has(p.id)).map(p => p.name)
       : [];
     if (fallback.length) {
       problems.push({ key: 'fallback:' + fallback.join(','), text: `Fant ikke dagens meny for: ${fallback.join(', ')}. Viser ukesmenyen i stedet.` });
@@ -1381,11 +1384,11 @@ const STAT_EVENTS = new Set([
   'kopier', 'push_pa', 'push_av', 'tilbakemelding', 'installer',
   'sesong_av', 'sesong_pa', 'mork_modus', 'stem'
 ]);
-const STAT_PLACES = new Set(['m', 'fresh4you', 'bakern', 'dinner', '']);
+const STAT_PLACES = new Set(['m', 'fresh4you', 'bakern', 'cafem', 'dinner', '']);
 const STAT_DAYS = new Set(['mon', 'tue', 'wed', 'thu', 'fri']);
 const BOT_EVENTS = new Set([
   'lunsj', 'middag', 'bakern', 'meny', 'allergi', 'imorgen', 'ukedag',
-  'kantine', 'gjovik', 'kaffe', 'hjelp', 'paaminnelse', 'knapp',
+  'kantine', 'cafem', 'gjovik', 'kaffe', 'hjelp', 'paaminnelse', 'knapp',
   'paaminnelse_sendt', 'morgenpost', 'annet'
 ]);
 
@@ -1499,7 +1502,11 @@ app.post('/api/stats', express.text({ type: '*/*', limit: '2kb' }), (req, res) =
       const vd = String(b.day || '');
       if (STAT_DAYS.has(vd)) bump(day.viewDay, vd);
 
-      const key = hashKey(stats.salt.value + '|' + clientKey(req));
+      // Mange på kontornettet deler samme utgående IP og samme nettleserversjon.
+      // Skjermstørrelse, språk og tidssone fra nettleseren skiller dem bedre.
+      // Verdiene brukes bare i hashen og lagres aldri.
+      const fp = String(b.fp || '').slice(0, 200);
+      const key = hashKey(stats.salt.value + '|' + clientKey(req) + '|' + fp);
       const seen = statsSeenSet();
       if (!seen.has(key)) {
         seen.add(key);
@@ -1545,7 +1552,9 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
     const day = stats.days[d];
     out.push({ date: d, ...(day || { views: 0, uniques: 0, hours: {}, lang: {}, viewDay: {}, devices: {}, app: 0, events: {}, places: {}, votes: {}, bot: {} }) });
   }
-  res.json({ days: out, keepDays: STATS_KEEP_DAYS });
+  // Første dag med data var bare delvis (statistikken startet midt på dagen)
+  const since = Object.keys(stats.days).filter(d => stats.days[d].views > 0).sort()[0] || null;
+  res.json({ days: out, keepDays: STATS_KEEP_DAYS, since, today: todayKey() });
 });
 
 // ---------------------------------------------------------------- pushvarsler
@@ -1563,7 +1572,7 @@ const DAY_NAMES = {
   no: ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag'],
   en: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 };
-const PUSH_PLACES = ['m', 'fresh4you', 'bakern'];
+const PUSH_PLACES = ['m', 'fresh4you', 'bakern', 'cafem'];
 
 let pushReady = false;
 

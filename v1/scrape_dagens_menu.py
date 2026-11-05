@@ -52,6 +52,12 @@ CANTEENS = {
         "opening_hours": "10:30 - 14:00",
         "building": "C",
     },
+    # Cafe M (nov. 2026): kafé med et lite lunsjtilbud, ikke en full kantine
+    "Cafe M": {
+        "url": "https://widget.inisign.com/Widget/Customers/Customer.aspx?token=44f3e542-f212-4042-b9e2-d450bd84d31c&scaleToFit=true",
+        "opening_hours": "08:30 - 15:30",
+        "building": "M",
+    },
 }
 
 ALLERGEN_MAP = {

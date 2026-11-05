@@ -53,6 +53,15 @@ PLACES = {
         "building": "C",
         "kind": "static",
     },
+    # Cafe M: kafé med lunsjtilbud. Dagens meny fra dagsmenyen, ukesmenyen
+    # når kjøkkenet legger den ut.
+    "cafem": {
+        "file": "cafe_m.txt",
+        "name": "Cafe M",
+        "hours": "08:30 – 15:30",
+        "building": "M",
+        "kind": "cafe",
+    },
     # Middagen er flyttet til Fresh 4 You (Eat The Street er lagt ned)
     "dinner": {
         "file": "fresh_4_you_-_middag.txt",
@@ -77,6 +86,7 @@ DAILY_NAME_TO_ID = {
     "kantine m": "m",
     "fresh 4 you": "fresh4you",
     "bakern": "bakern",
+    "cafe m": "cafem",
 }
 
 # Nedlagte kantiner - ignoreres hvis de dukker opp i gamle dagfiler
