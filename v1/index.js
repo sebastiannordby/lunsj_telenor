@@ -1382,7 +1382,7 @@ const STATS_LIMIT_PER_CLIENT = 300; // hendelser per klient per dag
 const STAT_EVENTS = new Set([
   'dag', 'sprak', 'allergener', 'se_menyen', 'middagsfane', 'kart', 'hjul',
   'kopier', 'push_pa', 'push_av', 'tilbakemelding', 'installer',
-  'sesong_av', 'sesong_pa', 'mork_modus', 'stem'
+  'sesong_av', 'sesong_pa', 'mork_modus', 'stem', 'kafeer'
 ]);
 const STAT_PLACES = new Set(['m', 'fresh4you', 'bakern', 'cafem', 'dinner', '']);
 const STAT_DAYS = new Set(['mon', 'tue', 'wed', 'thu', 'fri']);

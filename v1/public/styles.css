@@ -1626,3 +1626,64 @@ html:not([data-season]) .season-fx { display: none; }
   display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 0 var(--s6);
 }
+
+/* ------------------------------------------------ kafeer og bakeri */
+
+.lunch-tag {
+  margin: -6px 0 -6px auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: color-mix(in oklab, var(--place) 18%, var(--surface));
+  color: var(--text);
+}
+
+.cafe-section { margin: 0 0 var(--s6); }
+.cafe-section[hidden] { display: none; }
+.cafe-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--elev-sm);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.cafe-head::-webkit-details-marker { display: none; }
+.cafe-head:hover { background: var(--n-100); }
+.cafe-head:focus-visible { outline: 2px solid var(--blue-500); outline-offset: 2px; }
+.cafe-head-title { font-weight: 700; font-size: 15px; }
+.cafe-head-sum { color: var(--muted); font-size: 13px; }
+.cafe-chev { margin-left: auto; color: var(--muted); transition: transform 0.2s; }
+.cafe-section[open] .cafe-chev { transform: rotate(180deg); }
+.cafe-section[open] .cafe-head { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
+
+.cafe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--s3);
+  margin-top: var(--s3);
+}
+.cafe-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--elev-sm);
+  border-left: 4px solid var(--place);
+  transition: filter 0.3s, opacity 0.3s;
+}
+.cafe-tile.is-closed { filter: grayscale(1); opacity: 0.6; }
+.cafe-name { font-family: var(--font-head); font-weight: 700; font-size: 17px; }
+.cafe-hours { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; font-size: 13px; font-weight: 700; }
+.cafe-offer { font-size: 13px; color: var(--muted); }
+.cafe-lunch { font-size: 12px; font-weight: 600; color: var(--accent-ink); margin-top: 2px; }
+.cafe-note { font-size: 12px; color: var(--muted); }
+.cafe-note.hot { color: #c46a12; font-weight: 600; }

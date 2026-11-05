@@ -812,7 +812,7 @@ const STAT_LABELS = {
   hjul: 'Lykkehjulet', kopier: 'Kopierer menyen', push_pa: 'Slår på/lagrer push',
   push_av: 'Slår av push', tilbakemelding: 'Tilbakemelding', installer: 'Installer-knappen',
   sesong_av: 'Skrur av sesongpynt', sesong_pa: 'Skrur på sesongpynt', mork_modus: 'Mørk modus',
-  stem: 'Stemmer'
+  stem: 'Stemmer', kafeer: 'Åpner «Kafeer og bakeri»'
 };
 const BOT_LABELS = {
   lunsj: 'lunsj', middag: 'middag', bakern: 'bakern', meny: 'meny', allergi: 'allergi',

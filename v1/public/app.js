@@ -21,6 +21,10 @@ const UI = {
     openLabel: 'Åpent', lunchWindow: 'lunsjtilbudet gjelder',
     bakeryAlways: 'Bakevarer og nystekt brød hele åpningstiden.',
     bannerHide: 'Skjul melding', lunchWindowShort: 'Lunsjtilbud',
+    cafesTitle: 'Kafeer og bakeri', bakeryLabel: 'Bakeri', cafesOpen: '{n} av {m} åpne nå', cafesAll: 'Kaffe, bakevarer og brus',
+    cafesLunch: 'Lunsj {t} - se menyen over', lunchTag: 'Lunsjtilbud',
+    offerBakern: 'Kaffe, nystekt brød, bakevarer og brus', offerCafe: 'Kaffe, bakevarer og brus',
+    offerExpo: 'Kaffe, bakevarer, brus og is',
     manualFlag: 'Skrevet manuelt', bakernLink: 'Åpne Bakern sin egen meny', bakernLinkShort: 'Se menyen', dinnerFrom: 'Middag',
     bakernPreviewTitle: 'Bakern – meny', openNewTab: 'Åpne i ny fane',
     bakernFrameHint: 'Vises ikke menyen? Åpne den i ny fane.',
@@ -94,6 +98,10 @@ const UI = {
     openLabel: 'Open', lunchWindow: 'lunch offer served',
     bakeryAlways: 'Pastries and freshly baked bread all day.',
     bannerHide: 'Hide message', lunchWindowShort: 'Lunch offer',
+    cafesTitle: 'Cafés and bakery', bakeryLabel: 'Bakery', cafesOpen: '{n} of {m} open now', cafesAll: 'Coffee, pastries and soft drinks',
+    cafesLunch: 'Lunch {t} - see the menu above', lunchTag: 'Lunch offer',
+    offerBakern: 'Coffee, fresh bread, pastries and soft drinks', offerCafe: 'Coffee, pastries and soft drinks',
+    offerExpo: 'Coffee, pastries, soft drinks and ice cream',
     manualFlag: 'Entered manually', bakernLink: 'Open Bakern\u2019s own menu', bakernLinkShort: 'See menu', dinnerFrom: 'Dinner',
     bakernPreviewTitle: 'Bakern – menu', openNewTab: 'Open in new tab',
     bakernFrameHint: 'Menu not showing? Open it in a new tab.',
@@ -277,11 +285,11 @@ function fillOpenBadge(span) {
     span.textContent = s.text;
   }
   // Menykortet blir grått når stedet har stengt for i dag (ikke før det åpner)
-  const card = span.closest('.lunch-layout .card');
+  const card = span.closest('.lunch-layout .card, .cafe-tile');
   if (card) card.classList.toggle('is-closed', !!s && s.cls === 'closed');
 }
 
-setInterval(() => { $$('.open-state').forEach(fillOpenBadge); renderTip(); }, 30000);
+setInterval(() => { $$('.open-state').forEach(fillOpenBadge); renderTip(); updateCafeSummary(); }, 30000);
 
 // Dagens tips fra /admin - vises bare på dagens meny og fram til kl. 12
 function renderTip() {
@@ -534,6 +542,7 @@ function renderTabs() {
   $('.section-row').hidden = weekend;
   $('#weekendCard').hidden = !weekend;
   $('#lunchSection').hidden = weekend;
+  $('#cafeSection').hidden = weekend;
 }
 
 /** Fanen i Fresh 4 You-kortet. Uten eget valg: middag etter kl. 14 i dag. */
@@ -679,8 +688,10 @@ function renderBanner() {
 
 // Bakern og Cafe M står under hverandre i en sidekolonne ved siden av de to
 // kantinene - tonet i stedets farge så de skiller seg fra kantinekortene.
+// Øverst handler det bare om mat: kortene viser lunsjtiden (og blir grå
+// kl. 14). Kafétilbudet og åpningstidene står i «Kafeer og bakeri» lenger ned.
 const SIDE_CARDS = [
-  { id: 'bakern', el: '#bakeryCard', noteKey: 'bakeryAlways' },
+  { id: 'bakern', el: '#bakeryCard' },
   { id: 'cafem', el: '#cafemCard' }
 ];
 
@@ -688,7 +699,7 @@ function renderSideCards() {
   SIDE_CARDS.forEach(renderSideCard);
 }
 
-function renderSideCard({ id, el: sel, noteKey }) {
+function renderSideCard({ id, el: sel }) {
   const info = placeInfo(id);
   const card = $(sel);
   if (!card) return;
@@ -697,21 +708,16 @@ function renderSideCard({ id, el: sel, noteKey }) {
 
   const top = el('div', 'bakery-top');
   top.appendChild(el('div', 'card-kicker', t().buildingLabel + ' ' + info.building));
+  top.appendChild(el('span', 'lunch-tag', t().lunchTag));
   card.appendChild(top);
   card.appendChild(el('div', 'card-title', info.name));
 
+  const lunch = info.lunchHours || info.hours;
   const hours = el('div', 'hours');
   hours.innerHTML = CLOCK;
-  hours.appendChild(el('span', 'nowrap', info.hours));
-  hours.appendChild(openBadge(info.hours));
+  hours.appendChild(el('span', 'nowrap', lunch));
+  hours.appendChild(openBadge(lunch));
   card.appendChild(hours);
-  // Først det som gjelder hele dagen, så lunsjtilbudet og rettene
-  if (noteKey) card.appendChild(el('p', 'bakery-note', t()[noteKey]));
-  if (info.lunchHours) {
-    const w = el('div', 'bakery-window', t().lunchWindowShort + ' ');
-    w.appendChild(el('span', 'nowrap', info.lunchHours));
-    card.appendChild(w);
-  }
 
   card.appendChild(dishList(info));
 
@@ -970,10 +976,80 @@ function render() {
   // Hjulet tegnes på nytt ved språk- og temabytte mens dialogen står åpen.
   if (wheelModal && !wheelModal.hidden) renderWheel();
   renderCanteens();
+  renderCafes();
   renderMap();
   renderLegend();
   renderTip();
 }
+
+// ------------------------------------------------------------------ kafeer
+
+// Kafeer og bakeri: kaffe, bakst og åpningstider, adskilt fra maten øverst.
+// Sammenfoldet som standard; valget huskes i nettleseren.
+const CAFES = [
+  { id: 'bakern', kind: 'bakery', offer: 'offerBakern', lunch: true },
+  { id: 'cafem', offer: 'offerCafe', lunch: true },
+  { id: 'hotspot', offer: 'offerCafe' },
+  { id: 'expo', offer: 'offerExpo' }
+];
+
+// Hele åpningstiden, ikke lunsjvinduet som står på kortene øverst
+function cafeHours(id) {
+  return state.data?.places?.[id]?.hours || GEO[id]?.hours || '';
+}
+
+function renderCafes() {
+  const box = $('#cafeSection');
+  if (!box) return;
+  const grid = $('#cafeGrid');
+  grid.textContent = '';
+  CAFES.forEach(c => {
+    const info = placeInfo(c.id);
+    const hours = cafeHours(c.id);
+    const tile = el('div', 'cafe-tile');
+    tile.style.setProperty('--place', info.color);
+    const kind = c.kind === 'bakery' ? t().bakeryLabel : t().cafeLabel;
+    tile.appendChild(el('span', 'card-kicker',
+      (info.building ? t().buildingLabel + ' ' + info.building + ' · ' : '') + kind));
+    tile.appendChild(el('span', 'cafe-name', info.name));
+    const h = el('span', 'cafe-hours');
+    h.innerHTML = CLOCK;
+    h.appendChild(el('span', 'nowrap', hours));
+    h.appendChild(openBadge(hours));
+    tile.appendChild(h);
+    tile.appendChild(el('span', 'cafe-offer', t()[c.offer]));
+    if (c.lunch && info.lunchHours) {
+      tile.appendChild(el('span', 'cafe-lunch', '🍽 ' + t().cafesLunch.replace('{t}', info.lunchHours)));
+    }
+    if (info.note) {
+      const fri = todayWeekKey() === 'fri';
+      tile.appendChild(el('span', 'cafe-note' + (fri ? ' hot' : ''), fri ? t().expoFridayToday : info.note));
+    }
+    grid.appendChild(tile);
+  });
+  $$('#cafeGrid .open-state').forEach(fillOpenBadge);
+  $('#cafeTitle').textContent = t().cafesTitle;
+  updateCafeSummary();
+}
+
+function updateCafeSummary() {
+  const sum = $('#cafeSummary');
+  if (!sum) return;
+  const states = CAFES.map(c => openState(cafeHours(c.id)));
+  if (!states.some(Boolean)) { sum.textContent = t().cafesAll; return; }
+  const open = states.filter(s => s && ['open', 'closing'].includes(s.cls)).length;
+  sum.textContent = t().cafesOpen.replace('{n}', open).replace('{m}', CAFES.length);
+}
+
+(() => {
+  const box = $('#cafeSection');
+  if (!box) return;
+  try { box.open = localStorage.getItem('lunsj-cafes') === 'open'; } catch (e) {}
+  box.addEventListener('toggle', () => {
+    try { localStorage.setItem('lunsj-cafes', box.open ? 'open' : 'closed'); } catch (e) {}
+    if (box.open) track('kafeer');
+  });
+})();
 
 // ------------------------------------------------------------------ voting
 
