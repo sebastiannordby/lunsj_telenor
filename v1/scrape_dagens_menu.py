@@ -82,13 +82,41 @@ BARE_NUMBER_RE = re.compile(r"^(1[0-4]|[1-9])$")
 def split_trailing_codes(text: str) -> tuple[str, list[int]]:
     """Skiller allergentall fra rettnavn. Handterer '(1,3)', ' 3,4' og 'mozzarella4'."""
     m = re.search(r"\s*\(\s*(\d{1,2}(?:\s*,\s*\d{1,2})*)\s*\)\s*$", text)
+    if m:
+        # I parentes er det trygt å anta allergenkoder. Et tall over 14 er
+        # da som regel et manglende komma: "(79,11)" -> 7, 9, 11.
+        codes = []
+        for c in re.findall(r"\d+", m.group(1)):
+            n = int(c)
+            codes += [n] if 1 <= n <= 14 else [int(x) for x in c if x != "0"]
+        if codes and all(1 <= c <= 14 for c in codes):
+            return split_inline_codes(text[:m.start()].strip(), codes)
+        m = None
     if not m:
         m = re.search(r"\s*(\d{1,2}(?:\s*,\s*\d{1,2})*)\s*$", text)
     if m:
         codes = [int(c) for c in re.findall(r"\d+", m.group(1))]
         if codes and all(1 <= c <= 14 for c in codes):
-            return text[:m.start()].strip(), codes
-    return text.strip(), []
+            return split_inline_codes(text[:m.start()].strip(), codes)
+    return split_inline_codes(text.strip(), [])
+
+
+# Kjøkkenet skriver av og til kodene inni teksten, limt til neste ord:
+# "råkost og 2,4potet". Bare lister med komma tas, så "2 egg" får stå.
+INLINE_CODES_RE = re.compile(r"(?<![\d,])(\d{1,2}(?:,\d{1,2})+)(?=[A-Za-zÆØÅæøå])")
+
+
+def split_inline_codes(text: str, codes: list[int]) -> tuple[str, list[int]]:
+    found = []
+    def take(m):
+        nums = [int(c) for c in m.group(1).split(",")]
+        if all(1 <= c <= 14 for c in nums):
+            found.extend(nums)
+            return ""
+        return m.group(0)
+    cleaned = re.sub(r"\s{2,}", " ", INLINE_CODES_RE.sub(take, text)).strip()
+    merged = sorted(set(codes) | set(found)) if found else codes
+    return cleaned, merged
 
 
 def fetch_html(url: str) -> str | None:

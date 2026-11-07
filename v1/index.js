@@ -472,9 +472,9 @@ app.post('/api/feedback', async (req, res) => {
   // HTTP-headere må være ren ASCII - emoji sendes derfor som ntfy-tags,
   // ikke i Title. Æ/Ø/Å og emoji er trygt i selve body.
   const targets = {
-    up: [NTFY_UP, 'Tommel opp', 'Noen liker den nye lunsjmeny-siden 👍', '+1'],
-    down: [NTFY_DOWN, 'Tommel ned', 'Noen liker ikke den nye lunsjmeny-siden 👎', '-1'],
-    text: [NTFY_TEXT, 'Detaljert tilbakemelding', message, 'speech_balloon']
+    up: [NTFY_UP, 'Tommel opp', 'Noen liker lunsjmeny-siden 👍', '+1'],
+    down: [NTFY_DOWN, 'Kan bli bedre', 'Noen synes lunsjmeny-siden kan bli bedre 👎', '-1'],
+    text: [NTFY_TEXT, 'Nytt innspill', message, 'speech_balloon']
   };
 
   const target = targets[kind];
@@ -483,6 +483,9 @@ app.post('/api/feedback', async (req, res) => {
   }
 
   const [topic, title, body, tag] = target;
+  // Antall per dag til statistikken og ukesrapporten (ikke selve teksten)
+  bump(statsDay().feedback ||= {}, kind);
+  statsDirty = true;
 
   try {
     const r = await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
@@ -1382,7 +1385,7 @@ const STATS_LIMIT_PER_CLIENT = 300; // hendelser per klient per dag
 const STAT_EVENTS = new Set([
   'dag', 'sprak', 'allergener', 'se_menyen', 'middagsfane', 'kart', 'hjul',
   'kopier', 'push_pa', 'push_av', 'tilbakemelding', 'installer',
-  'sesong_av', 'sesong_pa', 'mork_modus', 'stem', 'kafeer'
+  'sesong_av', 'sesong_pa', 'mork_modus', 'stem', 'kafeer', 'allergifilter'
 ]);
 const STAT_PLACES = new Set(['m', 'fresh4you', 'bakern', 'cafem', 'dinner', '']);
 const STAT_DAYS = new Set(['mon', 'tue', 'wed', 'thu', 'fri']);
@@ -1541,6 +1544,68 @@ app.post('/api/stats/bot', (req, res) => {
   bump(statsDay().bot, e);
   statsDirty = true;
   res.json({ ok: true });
+});
+
+// ---- ukesrapport (hentes av Webex-boten hver mandag)
+
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function isoWeek(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  const day = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - day + 3);
+  const firstThu = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  return 1 + Math.round(((d - firstThu) / 86400000 - 3 + ((firstThu.getUTCDay() + 6) % 7)) / 7);
+}
+
+function sumKey(days, key) {
+  const out = {};
+  days.forEach(d => Object.entries(d?.[key] || {}).forEach(([k, v]) => { out[k] = (out[k] || 0) + v; }));
+  return out;
+}
+
+// Mandag-søndag i uka som starter på `monday`
+function weekSummary(monday) {
+  loadStats();
+  const dates = [...Array(7)].map((_, i) => addDays(monday, i));
+  const days = dates.map(d => stats.days[d] || null);
+  const weekdays = dates.slice(0, 5).map((d, i) => ({ date: d, uniques: days[i]?.uniques || 0, views: days[i]?.views || 0 }));
+  const withData = weekdays.filter(d => d.views > 0);
+  const avg = withData.length ? Math.round(withData.reduce((a, d) => a + d.uniques, 0) / withData.length) : null;
+  const best = weekdays.reduce((m, d) => (d.uniques > (m?.uniques || 0) ? d : m), null);
+  const views = days.reduce((a, d) => a + (d?.views || 0), 0);
+  const hours = sumKey(days, 'hours');
+  const topHour = Object.entries(hours).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  return {
+    week: isoWeek(monday), from: dates[0], to: dates[6],
+    weekdays, avgWeekday: avg, daysWithData: withData.length, best, views,
+    app: days.reduce((a, d) => a + (d?.app || 0), 0),
+    devices: sumKey(days, 'devices'), lang: sumKey(days, 'lang'),
+    topHour: topHour == null ? null : Number(topHour),
+    votes: sumKey(days, 'votes'), events: sumKey(days, 'events'),
+    bot: sumKey(days, 'bot'), feedback: sumKey(days, 'feedback')
+  };
+}
+
+// Bare lokale kall (boten på samme server), som /api/stats/bot
+app.get('/api/stats/weekly', async (req, res) => {
+  const ip = req.socket.remoteAddress || '';
+  const local = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(ip);
+  if (!local || req.headers['x-forwarded-for'] || req.headers['cf-connecting-ip']) {
+    return res.status(403).json({ error: 'kun lokalt' });
+  }
+  // Forrige hele uke (mandag-søndag), og uka før den til sammenligning
+  const today = todayKey();
+  const dow = (new Date(today + 'T12:00:00Z').getUTCDay() + 6) % 7;
+  const thisMonday = addDays(today, -dow);
+  const lastMonday = addDays(thisMonday, -7);
+  let pushSubs = null;
+  try { pushSubs = Object.keys(await readSubs()).length; } catch {}
+  res.json({ ...weekSummary(lastMonday), prev: weekSummary(addDays(lastMonday, -7)), pushSubs });
 });
 
 app.get('/api/admin/stats', requireAdmin, (req, res) => {

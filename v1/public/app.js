@@ -40,6 +40,8 @@ const UI = {
     wheelWinner: 'Dagens valg:',
     wheelClosed: 'stengt i dag',
     allergyOnHint: 'Vises bak hver rett i listen',
+    avoidLabel: 'Jeg unngår:', avoidHint: 'Retter med det du unngår, tones ned og merkes.',
+    avoidClear: 'Nullstill', avoidMatch: 'Inneholder {list}',
     allergyOffHint: 'Slå på for å se allergener i menyen',
     legendCanteens: 'Kantiner', legendBakery: 'Baker', legendCafes: 'Kafeer',
     expoFriday: 'Fredager: gratis kaffe frem til kl. 11 for Telenor-ansatte',
@@ -52,10 +54,11 @@ const UI = {
     installed: 'Snarveien er lagt til',
     copyManual: 'Marker teksten og kopier (Ctrl/Cmd + C):', close: 'Lukk',
     noMenu: 'Ingen meny publisert.',
-    fbButton: 'Gi tilbakemelding', fbTitle: 'Hva synes du om endringen på nettsiden?',
-    fbUp: 'Bra', fbDown: 'Dårlig', fbDetail: 'Skriv detaljert tilbakemelding',
-    fbPlaceholder: 'Hva fungerer bra, hva kan bli bedre?', fbSend: 'Send',
-    fbThanks: 'Takk for tilbakemeldingen!', fbSending: 'Sender …',
+    fbButton: 'Innspill', fbTitle: 'Hva synes du om siden?',
+    fbSub: 'Ris, ros eller ønsker - alle innspill leses. Du er anonym.',
+    fbUp: 'Liker den', fbDown: 'Kan bli bedre', fbDetail: 'Skriv et innspill',
+    fbPlaceholder: 'Hva liker du, hva savner du, eller hva kan bli bedre?', fbSend: 'Send innspill',
+    fbThanks: 'Takk for innspillet!', fbSending: 'Sender …',
     fbError: 'Kunne ikke sende - prøv igjen.',
     aboutBtn: 'Om siden', aboutTitle: 'Om denne løsningen',
     aboutMadeH: 'Laget av', aboutMadeP: 'Siden er laget på fritiden av {name}, som et hobbyprosjekt. Den er ikke et offisielt ISS- eller bedriftsverktøy.',
@@ -117,6 +120,8 @@ const UI = {
     wheelWinner: 'Today\u2019s pick:',
     wheelClosed: 'closed today',
     allergyOnHint: 'Shown after each dish in the list',
+    avoidLabel: 'I avoid:', avoidHint: 'Dishes with what you avoid are dimmed and marked.',
+    avoidClear: 'Clear', avoidMatch: 'Contains {list}',
     allergyOffHint: 'Turn on to see allergens in the menu',
     legendCanteens: 'Canteens', legendBakery: 'Bakery', legendCafes: 'Cafés',
     expoFriday: 'Fridays: free coffee until 11:00 for Telenor employees',
@@ -129,9 +134,10 @@ const UI = {
     installed: 'Shortcut added',
     copyManual: 'Select the text and copy (Ctrl/Cmd + C):', close: 'Close',
     noMenu: 'No menu published.',
-    fbButton: 'Give feedback', fbTitle: 'What do you think of the new site?',
-    fbUp: 'Good', fbDown: 'Bad', fbDetail: 'Write detailed feedback',
-    fbPlaceholder: 'What works well, what could be better?', fbSend: 'Send',
+    fbButton: 'Feedback', fbTitle: 'What do you think of the site?',
+    fbSub: 'Praise, complaints or wishes - every suggestion is read. You are anonymous.',
+    fbUp: 'I like it', fbDown: 'Could be better', fbDetail: 'Write a suggestion',
+    fbPlaceholder: 'What do you like, what is missing, or what could be better?', fbSend: 'Send',
     fbThanks: 'Thanks for the feedback!', fbSending: 'Sending \u2026',
     fbError: 'Could not send - please try again.',
     aboutBtn: 'About', aboutTitle: 'About this site',
@@ -170,7 +176,8 @@ const INISIGN = token => 'https://widget.inisign.com/Widget/Customers/Customer.a
 const MENU_WIDGETS = {
   m:         { today: INISIGN('4a0457f8-dbfa-4783-8ebe-b5ee0486843f'), week: INISIGN('756a5aa2-a95f-4d15-ad5a-59829741075b') },
   fresh4you: { today: INISIGN('aa1358ee-d30e-4289-a630-892cd1210857'), week: INISIGN('a8923cdb-9d92-46bc-b6a4-d026c2cf9a89') },
-  dinner:    { week: INISIGN('dd6ee59b-6e03-4215-8543-a01dbda54db7') },
+  // Dagens middag i dag, ukesmenyen på andre dager
+  dinner:    { today: INISIGN('39b4039b-f157-4921-acac-6108ec5a88f3'), week: INISIGN('dd6ee59b-6e03-4215-8543-a01dbda54db7') },
   bakern:    { today: BAKERN_MENU_URL, week: BAKERN_MENU_URL },
   cafem:     { today: INISIGN('44f3e542-f212-4042-b9e2-d450bd84d31c'), week: INISIGN('e7a0be40-4bb4-462a-8feb-0f9b3f5012b9') }
 };
@@ -327,6 +334,7 @@ const state = {
   day: null,
   f4yTab: null, // null = automatisk: middag etter kl. 14 i dag, ellers lunsj
   allergens: false,
+  avoid: new Set(), // personlig allergenfilter (koder 1-14), lagret i nettleseren
   data: null,
   votes: {},
   myVote: null,
@@ -448,7 +456,8 @@ function placeInfo(id) {
     cafe: !!geo.cafe,
     manual: showingToday() && !!state.data?.manual?.[id]?.items?.length,
     note: geo.noteKey ? t()[geo.noteKey] : '',
-    dishes: geo.cafe ? [] : dishesFor(id)
+    dishes: geo.cafe ? [] : dishesFor(id),
+    dishCodes: geo.cafe ? [] : menuFor(id).codes
   };
 }
 
@@ -558,12 +567,27 @@ function dishList(info) {
     box.appendChild(el('div', 'empty', t().noMenu));
     return box;
   }
-  info.dishes.forEach(d => {
+  const names = ALLERGEN_NAMES[state.lang] || ALLERGEN_NAMES.no;
+  info.dishes.forEach((d, i) => {
     const row = el('div', 'dish');
+    // Personlig filter: bare aktivt når allergenene vises
+    const hit = state.allergens && state.avoid.size
+      ? (info.dishCodes?.[i] || []).filter(c => state.avoid.has(c)) : [];
     const dot = el('span', 'dot');
     dot.style.background = info.color;
+    if (hit.length) {
+      row.classList.add('is-avoid');
+      dot.textContent = '⚠';
+      dot.style.background = 'none';
+    }
     row.appendChild(dot);
-    row.appendChild(el('span', null, d));
+    const text = el('span');
+    text.appendChild(el('span', 'dish-name', d));
+    if (hit.length) {
+      text.appendChild(el('span', 'avoid-match',
+        t().avoidMatch.replace('{list}', hit.map(c => names[c].toLowerCase()).join(', '))));
+    }
+    row.appendChild(text);
     box.appendChild(row);
   });
   return box;
@@ -606,20 +630,24 @@ function canteenCard(info, withVote) {
 
   card.style.setProperty('--place', info.color);   // hover-farge på «Se menyen»
   const link = menuLink(shown.isDinner || (info.id === DINNER_HOST && f4yTab() === 'dinner') ? 'dinner' : info.id, info.name);
-  if (link) card.appendChild(link);
-
   // Stemmingen gjelder lunsjen - ikke vis den på middagsfanen
   const showingDinner = info.id === DINNER_HOST && f4yTab() === 'dinner';
-  if (withVote && !showingDinner) card.appendChild(voteFoot(info));
+  const foot = voteFoot(info, link, withVote && !showingDinner);
+  if (foot) card.appendChild(foot);
   return card;
 }
 
-function voteFoot(info) {
+// Bunnlinjen i kortet: øyet («Se menyen») til venstre, stemmetall og
+// «Jeg spiser her» til høyre. Uten stemming står øyet alene på linjen.
+function voteFoot(info, link, withVote = true) {
+  if (!link && !withVote) return null;
+  const foot = el('div', 'vote-foot');
+  if (link) foot.appendChild(link);
+  if (!withVote) return foot;
   {
     const count = state.votes[info.id] || 0;
     const mine = state.myVote === info.id;
 
-    const foot = el('div', 'vote-foot');
     // Kort versjon («7 stemmer») vises når kortet er smalt - se styles.css
     const vc = el('span', 'vote-count');
     vc.appendChild(el('span', 'vote-count-long', votesText(count)));
@@ -723,10 +751,8 @@ function renderSideCard({ id, el: sel }) {
   card.appendChild(dishList(info));
 
   // Forhåndsvisning i dialog; ny fane som reserve inne i dialogen
-  const link = menuLink(id, info.name);
-  if (link) card.appendChild(link);
-
-  if (showingToday()) card.appendChild(voteFoot(info));
+  const foot = voteFoot(info, menuLink(id, info.name), showingToday());
+  if (foot) card.appendChild(foot);
 }
 
 /** Sist endret på kildefila menyen faktisk kommer fra. */
@@ -976,6 +1002,7 @@ function render() {
   renderTabs();
   // Hjulet tegnes på nytt ved språk- og temabytte mens dialogen står åpen.
   if (wheelModal && !wheelModal.hidden) renderWheel();
+  renderAvoid();
   renderCanteens();
   renderCafes();
   renderMap();
@@ -1305,6 +1332,54 @@ document.addEventListener('pointerdown', e => {
     renderMap();
   }
 });
+
+// ------------------------------------------------------------------ allergenfilter
+
+function loadAvoid() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('lunsj-avoid') || '[]');
+    state.avoid = new Set(saved.filter(c => Number.isInteger(c) && c >= 1 && c <= 14));
+  } catch (e) {}
+}
+
+function saveAvoid() {
+  try { localStorage.setItem('lunsj-avoid', JSON.stringify([...state.avoid])); } catch (e) {}
+}
+
+// Vises bare når «Vis allergener» er slått på
+function renderAvoid() {
+  const box = $('#avoidPanel');
+  if (!box) return;
+  box.hidden = !state.allergens;
+  if (!state.allergens) return;
+  box.textContent = '';
+  const names = ALLERGEN_NAMES[state.lang] || ALLERGEN_NAMES.no;
+  box.appendChild(el('span', 'avoid-label', t().avoidLabel));
+  const chips = el('div', 'avoid-chips');
+  for (let c = 1; c <= 14; c++) {
+    const on = state.avoid.has(c);
+    const b = el('button', 'avoid-chip' + (on ? ' is-on' : ''), names[c]);
+    b.type = 'button';
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.onclick = () => {
+      if (state.avoid.has(c)) state.avoid.delete(c);
+      else { state.avoid.add(c); track('allergifilter'); }
+      saveAvoid();
+      render();
+    };
+    chips.appendChild(b);
+  }
+  if (state.avoid.size) {
+    const clr = el('button', 'avoid-clear', t().avoidClear);
+    clr.type = 'button';
+    clr.onclick = () => { state.avoid.clear(); saveAvoid(); render(); };
+    chips.appendChild(clr);
+  }
+  box.appendChild(chips);
+  box.appendChild(el('p', 'avoid-hint', t().avoidHint));
+}
+
+loadAvoid();
 
 $('#allergyToggle').onclick = () => {
   state.allergens = !state.allergens;

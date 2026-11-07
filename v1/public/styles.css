@@ -852,11 +852,10 @@ select.input { cursor: pointer; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  align-self: flex-start;
+  flex: none;
   width: 32px;
   height: 32px;
-  margin-top: auto;
-  margin-left: -6px;
+  margin: -4px -6px -4px -8px;
   border-radius: 999px;
   color: var(--muted);
   transition: background 0.15s, color 0.15s;
@@ -865,7 +864,6 @@ select.input { cursor: pointer; }
   color: var(--text);
   background: color-mix(in oklab, var(--place, var(--blue-500)) 14%, var(--surface));
 }
-.menu-eye + .vote-foot { margin-top: 0; }
 
 /* Kicker-raden: Lunsj | Middag ligger oppe i hjørnet på Fresh 4 You.
    Negative marger holder radhøyden lik kickeren, så linjene i kortene
@@ -907,7 +905,7 @@ select.input { cursor: pointer; }
 .vote-foot {
   display: flex;
   align-items: center;
-  gap: var(--s3);
+  gap: var(--s2);
   margin-top: auto;
   padding-top: var(--s3);
   border-top: 1px solid var(--n-200);
@@ -917,7 +915,7 @@ select.input { cursor: pointer; }
 .vote-count-short { display: none; }
 /* Smale kort (fire på rad): «7 stemmer» i stedet for «7 stemmer i dag» */
 .lunch-layout .card { container-type: inline-size; }
-@container (max-width: 250px) {
+@container (max-width: 300px) {
   .vote-count-long { display: none; }
   .vote-count-short { display: inline; }
 }
@@ -1414,6 +1412,7 @@ select.input { cursor: pointer; }
 
 .fb-head { display: flex; align-items: flex-start; gap: var(--s2); }
 .fb-title { font-family: var(--font-head); font-weight: 700; letter-spacing: -0.01em; font-size: 18px; line-height: 1.2; flex: 1; }
+.fb-sub { margin: -4px 0 0; font-size: 13px; color: var(--muted); line-height: 1.4; }
 .fb-votes { display: flex; gap: var(--s2); }
 .fb-votes[hidden] { display: none; }
 .fb-votes .btn { flex: 1; justify-content: center; }
@@ -1695,3 +1694,36 @@ html:not([data-season]) .season-fx { display: none; }
 .cafe-lunch { font-size: 12px; font-weight: 600; color: var(--accent-ink); margin-top: 2px; }
 .cafe-note { font-size: 12px; color: var(--muted); }
 .cafe-note.hot { color: #c46a12; font-weight: 600; }
+
+/* ------------------------------------------------ personlig allergenfilter */
+
+.avoid-panel {
+  margin: calc(-1 * var(--s4)) 0 var(--s6);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--elev-sm);
+}
+.avoid-panel[hidden] { display: none; }
+.avoid-label { display: block; font-size: 13px; font-weight: 700; margin-bottom: var(--s2); }
+.avoid-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.avoid-chip, .avoid-clear {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--n-300);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.avoid-chip:hover { background: var(--n-100); }
+.avoid-chip.is-on { background: #b42318; border-color: #b42318; color: #fff; }
+.avoid-clear { border-style: dashed; color: var(--muted); }
+.avoid-hint { margin: var(--s2) 0 0; font-size: 12px; color: var(--muted); }
+
+.dish.is-avoid .dish-name { opacity: 0.5; }
+.dish.is-avoid .dot { width: auto; height: auto; margin-top: 0; border-radius: 0; color: #b42318; font-size: 13px; line-height: 1; }
+.avoid-match { display: block; font-size: 12px; font-weight: 700; color: #b42318; }
+:root[data-theme="dark"] .avoid-match, :root[data-theme="dark"] .dish.is-avoid .dot { color: #ff8a80; }
