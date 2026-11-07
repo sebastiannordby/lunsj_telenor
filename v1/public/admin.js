@@ -24,7 +24,7 @@ function showLoggedIn(yes) {
   loginCard.hidden = yes;
   adminBody.hidden = !yes;
   $('#logoutBtn').hidden = !yes;
-  if (yes) { loadBanner(); loadStatus(); loadVotes(); loadOverrides(); loadHealth(); loadTip(); loadRuns(); loadRaw(); loadTheme(); loadStats(); }
+  if (yes) { loadBanner(); loadStatus(); loadVotes(); loadOverrides(); loadHealth(); loadTip(); loadRuns(); loadRaw(); loadTheme(); loadStats(); loadFeedback(); }
 }
 
 const el = (tag, cls, text) => {
@@ -812,11 +812,12 @@ const STAT_LABELS = {
   hjul: 'Lykkehjulet', kopier: 'Kopierer menyen', push_pa: 'Slår på/lagrer push',
   push_av: 'Slår av push', tilbakemelding: 'Tilbakemelding', installer: 'Installer-knappen',
   sesong_av: 'Skrur av sesongpynt', sesong_pa: 'Skrur på sesongpynt', mork_modus: 'Mørk modus',
-  stem: 'Stemmer', kafeer: 'Åpner «Kafeer og bakeri»', allergifilter: 'Velger allergen å unngå'
+  stem: 'Stemmer', kafeer: 'Åpner «Kafeer og bakeri»', allergifilter: 'Velger allergen å unngå', sok: 'Åpner menysøket', favoritt: 'Lagrer favoritter'
 };
 const BOT_LABELS = {
   lunsj: 'lunsj', middag: 'middag', bakern: 'bakern', meny: 'meny', allergi: 'allergi',
   imorgen: 'i morgen', ukedag: 'mandag, tirsdag …', kantine: 'kantine m / fresh 4 you', cafem: 'cafe m',
+  favoritt: 'favoritt-kommandoer', sok: 'sist / søk', favoritt_sendt: 'favorittvarsler sendt',
   gjovik: 'gjøvik', kaffe: 'kaffe', hjelp: 'hjelp', paaminnelse: 'påminnelse-kommandoer',
   knapp: 'knappetrykk', paaminnelse_sendt: 'påminnelser sendt', morgenpost: 'morgenposter',
   annet: 'annet'
@@ -934,6 +935,58 @@ async function loadStats() {
 }
 
 $$('input[name="statsDays"]').forEach(i => { i.onchange = loadStats; });
+
+// ------------------------------------------------------------------ innspill
+
+function fbTime(iso) {
+  return new Date(iso).toLocaleString('nb-NO', {
+    timeZone: 'Europe/Oslo', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+  });
+}
+
+async function loadFeedback() {
+  const box = $('#fbList');
+  const status = $('#fbAdminStatus');
+  try {
+    const { items, unread } = await api('api/admin/feedback');
+    $('#fbKicker').textContent = unread ? `Innspill · ${unread} ulest${unread === 1 ? '' : 'e'}` : 'Innspill';
+    const list = $('#fbOnlyUnread').checked ? items.filter(f => !f.read) : items;
+    box.textContent = '';
+    if (!list.length) {
+      box.appendChild(el('p', 'fb-empty', items.length ? 'Ingen uleste innspill.' : 'Ingen innspill ennå.'));
+    }
+    list.slice(0, 100).forEach(f => {
+      const row = el('div', 'fb-item' + (f.read ? '' : ' is-unread'));
+      const head = el('div', 'fb-item-head');
+      head.appendChild(el('span', 'fb-time', fbTime(f.at)));
+      const read = el('button', 'btn btn-ghost btn-xs', f.read ? 'Marker ulest' : 'Marker lest');
+      read.type = 'button';
+      read.onclick = async () => {
+        await api('api/admin/feedback/' + f.id, { method: 'POST', body: JSON.stringify({ read: !f.read }) });
+        loadFeedback();
+      };
+      const del = el('button', 'btn btn-ghost btn-xs', 'Slett');
+      del.type = 'button';
+      del.onclick = async () => {
+        if (!confirm('Slette dette innspillet?')) return;
+        await api('api/admin/feedback/' + f.id, { method: 'DELETE' });
+        loadFeedback();
+      };
+      head.appendChild(read);
+      head.appendChild(del);
+      row.appendChild(head);
+      row.appendChild(el('p', 'fb-text', f.message));
+      box.appendChild(row);
+    });
+    status.hidden = true;
+  } catch (e) {
+    status.hidden = false;
+    status.className = 'admin-status bad';
+    status.textContent = 'Kunne ikke hente innspill: ' + e.message;
+  }
+}
+
+$('#fbOnlyUnread').onchange = loadFeedback;
 
 // ------------------------------------------------------------------ boot
 

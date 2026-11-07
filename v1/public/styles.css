@@ -1727,3 +1727,46 @@ html:not([data-season]) .season-fx { display: none; }
 .dish.is-avoid .dot { width: auto; height: auto; margin-top: 0; border-radius: 0; color: #b42318; font-size: 13px; line-height: 1; }
 .avoid-match { display: block; font-size: 12px; font-weight: 700; color: #b42318; }
 :root[data-theme="dark"] .avoid-match, :root[data-theme="dark"] .dish.is-avoid .dot { color: #ff8a80; }
+
+/* Stengt for i dag: markøren på kartet tones ned som kortene */
+.pin.is-closed { filter: grayscale(1); opacity: 0.75; }
+.pin-holder.hot .pin.is-closed, .pin.is-closed:focus-visible { filter: none; opacity: 1; }
+
+/* Innspill i admin */
+.fb-filter { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; }
+.fb-list { display: flex; flex-direction: column; gap: var(--s2); margin-top: var(--s3); max-height: 520px; overflow-y: auto; }
+.fb-item { padding: var(--s2) var(--s3); border-radius: 10px; background: var(--n-100); border-left: 3px solid transparent; }
+.fb-item.is-unread { border-left-color: var(--blue-500); background: color-mix(in oklab, var(--blue-500) 8%, var(--surface)); }
+.fb-item-head { display: flex; align-items: center; gap: var(--s2); }
+.fb-time { font-size: 12px; color: var(--muted); margin-right: auto; }
+.fb-item.is-unread .fb-time { font-weight: 700; color: var(--text); }
+.fb-text { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; }
+.fb-empty { color: var(--muted); font-size: 14px; }
+
+/* Søk i menyene */
+.search-modal { width: min(520px, calc(100vw - 32px)); }
+.search-results { display: flex; flex-direction: column; gap: 6px; min-height: 24px; }
+.search-h { margin-top: var(--s2); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.search-row { display: flex; flex-direction: column; gap: 1px; padding: 6px 0; border-bottom: 1px solid var(--n-200); }
+.search-when { font-size: 12px; color: var(--muted); font-weight: 600; }
+.search-what { font-size: 14px; line-height: 1.4; }
+.search-what .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.search-none, .search-since { margin: var(--s2) 0 0; font-size: 13px; color: var(--muted); }
+.search-fav { align-self: flex-start; margin-top: var(--s2); }
+
+/* Favoritter i push-innstillingene */
+.push-fav-hint { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.push-only { display: flex; gap: 8px; align-items: center; margin-top: var(--s2); font-size: 13px; font-weight: 500; }
+
+/* Frakoblet: viser lagret meny */
+.offline-note {
+  margin: var(--s4) 0 0;
+  padding: var(--s2) var(--s4);
+  border-radius: 12px;
+  background: #fff4e5;
+  color: #7a4100;
+  font-size: 14px;
+  font-weight: 600;
+}
+.offline-note[hidden] { display: none; }
+:root[data-theme="dark"] .offline-note { background: #3a2a12; color: #ffd8a8; }

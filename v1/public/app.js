@@ -76,6 +76,13 @@ const UI = {
     pushIntroOn: 'Varselet er på. Du kan endre tidspunkt og dager når du vil.',
     pushIos: 'På iPhone og iPad virker varsler bare når siden er lagt til på Hjem-skjermen: trykk Del-ikonet og velg «Legg til på Hjem-skjerm». Åpne den derfra og trykk på bjella igjen.',
     pushTimeLabel: 'Tidspunkt', pushDaysLabel: 'Dager',
+    offlineNote: '📴 Du er frakoblet - viser menyen som ble lagret {t}.',
+    pushFavLabel: 'Favoritter (valgfritt)', pushFavHint: 'F.eks. taco, fiskesuppe. Treff får ⭐ øverst i varselet.',
+    pushOnlyFav: 'Varsle bare når en favoritt er på menyen',
+    searchBtn: 'Søk i menyene', searchTitle: 'Når var det sist …?', searchPlaceholder: 'Søk etter en rett, f.eks. taco',
+    searchMin: 'Skriv minst 3 tegn.', searchNone: 'Ingen treff på «{q}».', searchPast: 'Tidligere', searchUpcoming: 'Kommer denne uka',
+    searchToday: 'i dag', searchSince: 'Arkivet går tilbake til {d}.', searchFav: '⭐ Varsle meg når det er {q}',
+    searchFavDone: 'Lagt til i favoritter for pushvarsel.', searchFavNeedPush: 'Slå på pushvarsel først (bjella), så kan du legge til favoritter.',
     pushEnable: 'Slå på varsel', pushSaveBtn: 'Lagre endringer', pushOff: 'Slå av varsel', pushTest: 'Send et testvarsel nå',
     pushSaved: 'Lagret - du får varsel kl. {t}.', pushOffDone: 'Varselet er slått av.', pushTestSent: 'Testvarsel sendt.',
     pushDenied: 'Nettleseren har blokkert varsler for denne siden. Tillat varsler i nettleserens innstillinger og prøv igjen.',
@@ -156,6 +163,13 @@ const UI = {
     pushIntroOn: 'Notifications are on. Change the time and days whenever you like.',
     pushIos: 'On iPhone and iPad, notifications only work when the site is added to the Home Screen: tap the Share icon and choose \u201cAdd to Home Screen\u201d. Open it from there and tap the bell again.',
     pushTimeLabel: 'Time', pushDaysLabel: 'Days',
+    offlineNote: '📴 You are offline - showing the menu saved {t}.',
+    pushFavLabel: 'Favourites (optional)', pushFavHint: 'E.g. taco, fish soup. Matches get a ⭐ at the top of the notification.',
+    pushOnlyFav: 'Only notify me when a favourite is on the menu',
+    searchBtn: 'Search the menus', searchTitle: 'When was it last served?', searchPlaceholder: 'Search for a dish, e.g. taco',
+    searchMin: 'Type at least 3 characters.', searchNone: 'No matches for “{q}”.', searchPast: 'Earlier', searchUpcoming: 'Coming this week',
+    searchToday: 'today', searchSince: 'The archive goes back to {d}.', searchFav: '⭐ Notify me when there is {q}',
+    searchFavDone: 'Added to your push favourites.', searchFavNeedPush: 'Turn on push notifications first (the bell), then you can add favourites.',
     pushEnable: 'Turn on notifications', pushSaveBtn: 'Save changes', pushOff: 'Turn off', pushTest: 'Send a test notification now',
     pushSaved: 'Saved - you will be notified at {t}.', pushOffDone: 'Notifications are turned off.', pushTestSent: 'Test notification sent.',
     pushDenied: 'The browser has blocked notifications for this site. Allow them in the browser settings and try again.',
@@ -297,7 +311,12 @@ function fillOpenBadge(span) {
   if (card) card.classList.toggle('is-closed', !!s && s.cls === 'closed');
 }
 
-setInterval(() => { $$('.open-state').forEach(fillOpenBadge); renderTip(); updateCafeSummary(); }, 30000);
+setInterval(() => {
+  $$('.open-state').forEach(fillOpenBadge);
+  $$('.pin[data-hours]').forEach(p => p.classList.toggle('is-closed', openState(p.dataset.hours)?.cls === 'closed'));
+  renderTip();
+  updateCafeSummary();
+}, 30000);
 
 // Dagens tips fra /admin - vises bare på dagens meny og fram til kl. 12
 function renderTip() {
@@ -849,6 +868,9 @@ function renderMap() {
     const pin = el('button', 'pin');
     pin.type = 'button';
     pin.style.background = info.color;
+    // Markøren blir grå når stedet har stengt for i dag, som kortene
+    pin.dataset.hours = info.hours || '';
+    pin.classList.toggle('is-closed', openState(info.hours)?.cls === 'closed');
     pin.appendChild(el('span', 'dot'));
     pin.appendChild(el('span', 'pin-label', info.name));
     if (state.myVote === id) pin.appendChild(el('span', 'pin-star', '★'));
@@ -1002,6 +1024,8 @@ function render() {
   renderTabs();
   // Hjulet tegnes på nytt ved språk- og temabytte mens dialogen står åpen.
   if (wheelModal && !wheelModal.hidden) renderWheel();
+  const sb = $('#searchBtn');
+  if (sb) { sb.title = t().searchBtn; sb.setAttribute('aria-label', t().searchBtn); }
   renderAvoid();
   renderCanteens();
   renderCafes();
@@ -1801,6 +1825,95 @@ if (bakernModal) {
 
 // ------------------------------------------------------------------ om siden
 
+// ------------------------------------------------------------------ søk i menyene
+// «Når var det sist taco?» - søker i menyarkivet på serveren og i resten av
+// ukas ukesmenyer.
+
+const searchModal = $('#searchModal');
+let searchTimer = null;
+let searchSeq = 0;
+
+function toggleSearch(open) {
+  if (!searchModal) return;
+  searchModal.hidden = !open;
+  $('#searchBackdrop').hidden = !open;
+  if (open) {
+    track('sok');
+    const input = $('#searchInput');
+    input.placeholder = t().searchPlaceholder;
+    input.focus();
+    if (!input.value) $('#searchResults').textContent = '';
+  } else {
+    $('#searchBtn').focus();
+  }
+}
+
+function fmtSearchDate(iso) {
+  const d = new Date(iso + 'T12:00:00');
+  return d.toLocaleDateString(state.lang === 'en' ? 'en-GB' : 'nb-NO', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+async function runSearch(q) {
+  const box = $('#searchResults');
+  const seq = ++searchSeq;
+  q = q.trim();
+  if (q.length < 3) { box.textContent = q ? t().searchMin : ''; return; }
+  try {
+    const r = await fetch('/api/menu/search?q=' + encodeURIComponent(q) + '&lang=' + state.lang).then(x => x.json());
+    if (seq !== searchSeq) return; // et nyere søk er på vei
+    box.textContent = '';
+    if (!r.past?.length && !r.upcoming?.length) {
+      box.appendChild(el('p', 'search-none', t().searchNone.replace('{q}', q)));
+    }
+    const group = (title, rows) => {
+      if (!rows?.length) return;
+      box.appendChild(el('div', 'search-h', title));
+      rows.forEach(x => {
+        const row = el('div', 'search-row');
+        const when = x.today ? t().searchToday : fmtSearchDate(x.date);
+        row.appendChild(el('span', 'search-when', when));
+        const what = el('span', 'search-what');
+        const dot = el('span', 'dot');
+        dot.style.background = placeInfo(x.id).color;
+        what.appendChild(dot);
+        what.appendChild(el('b', null, x.name + ': '));
+        what.appendChild(document.createTextNode(x.dish));
+        row.appendChild(what);
+        box.appendChild(row);
+      });
+    };
+    group(t().searchUpcoming, r.upcoming);
+    group(t().searchPast, r.past);
+    if (r.since) box.appendChild(el('p', 'search-since', t().searchSince.replace('{d}', fmtSearchDate(r.since))));
+    if (pushSupported) {
+      const fav = el('button', 'btn btn-ghost btn-sm search-fav', t().searchFav.replace('{q}', q));
+      fav.type = 'button';
+      fav.onclick = async () => {
+        if (!PUSH.on) { fav.replaceWith(el('p', 'search-since', t().searchFavNeedPush)); return; }
+        const list = PUSH.favorites.split(',').map(s => s.trim()).filter(Boolean);
+        if (!list.some(w => w.toLowerCase() === q.toLowerCase())) list.push(q);
+        PUSH.favorites = list.join(', ');
+        await savePush();
+        fav.replaceWith(el('p', 'search-since', t().searchFavDone));
+      };
+      box.appendChild(fav);
+    }
+  } catch (e) {
+    box.textContent = '';
+  }
+}
+
+if (searchModal) {
+  $('#searchBtn').onclick = () => toggleSearch(true);
+  $('#searchClose').onclick = () => toggleSearch(false);
+  $('#searchBackdrop').onclick = () => toggleSearch(false);
+  $('#searchInput').oninput = e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => runSearch(e.target.value), 250);
+  };
+  searchModal.addEventListener('keydown', e => { if (e.key === 'Escape') toggleSearch(false); });
+}
+
 const aboutModal = $('#aboutModal');
 const aboutBackdrop = $('#aboutBackdrop');
 
@@ -1912,7 +2025,7 @@ if (seasonBtn) {
 const pushBtn = $('#pushBtn');
 const pushModal = $('#pushModal');
 const pushBackdrop = $('#pushBackdrop');
-const PUSH = { key: null, sub: null, on: false, time: '10:25', days: [0, 1, 2, 3, 4], iosHint: false };
+const PUSH = { key: null, sub: null, on: false, time: '10:25', days: [0, 1, 2, 3, 4], iosHint: false, favorites: '', onlyFav: false };
 const pushSupported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
 function b64ToBytes(b64) {
@@ -1946,7 +2059,7 @@ async function initPush() {
     PUSH.sub = await reg.pushManager.getSubscription();
     if (PUSH.sub) {
       const r = await pushApi('/api/push/lookup', { endpoint: PUSH.sub.endpoint });
-      if (r.found) Object.assign(PUSH, { on: true, time: r.time, days: r.days });
+      if (r.found) Object.assign(PUSH, { on: true, time: r.time, days: r.days, favorites: (r.favorites || []).join(', '), onlyFav: !!r.onlyFav });
     }
   } catch (e) {}
   syncPushBtn();
@@ -1995,6 +2108,14 @@ function renderPushModal() {
     };
     days.appendChild(b);
   });
+
+  const fav = $('#pushFav');
+  if (document.activeElement !== fav) fav.value = PUSH.favorites;
+  fav.placeholder = 'taco, fiskesuppe';
+  fav.oninput = () => { PUSH.favorites = fav.value; };
+  const only = $('#pushOnlyFav');
+  only.checked = PUSH.onlyFav;
+  only.onchange = () => { PUSH.onlyFav = only.checked; };
 }
 
 function togglePush(open) {
@@ -2011,7 +2132,7 @@ function togglePush(open) {
 }
 
 async function savePush() {
-  PUSH.time = $('#pushTime').value;
+  PUSH.time = $('#pushTime').value || PUSH.time; // tom hvis lagret fra søket uten at modalen er åpnet
   if (!PUSH.days.length) return pushMsg(t().pushNeedDay, true);
   track('push_pa');
   const btn = $('#pushSave');
@@ -2025,8 +2146,10 @@ async function savePush() {
     PUSH.sub = await reg.pushManager.getSubscription() ||
       await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(PUSH.key) });
     await pushApi('/api/push/subscribe', {
-      subscription: PUSH.sub.toJSON(), time: PUSH.time, days: PUSH.days, lang: state.lang
+      subscription: PUSH.sub.toJSON(), time: PUSH.time, days: PUSH.days, lang: state.lang,
+      favorites: PUSH.favorites, onlyFav: PUSH.onlyFav
     });
+    if (PUSH.favorites.trim()) track('favoritt');
     PUSH.on = true;
     renderPushModal();
     syncPushBtn();
@@ -2082,6 +2205,23 @@ if (pushModal) {
   });
 }
 
+// ------------------------------------------------------------------ offline
+
+// Uten nett viser service workeren siste lagrede meny. Da sier vi fra, og
+// laster siden på nytt av seg selv når nettet er tilbake.
+function renderOffline() {
+  const box = $('#offlineNote');
+  if (!box) return;
+  box.hidden = !state.offline;
+  if (!state.offline) return;
+  const when = state.data?.generated ? new Date(state.data.generated) : null;
+  const time = when ? when.toLocaleString(state.lang === 'en' ? 'en-GB' : 'nb-NO',
+    { weekday: 'long', hour: '2-digit', minute: '2-digit' }) : '';
+  box.textContent = t().offlineNote.replace('{t}', time);
+}
+
+window.addEventListener('online', () => { if (state.offline) location.reload(); });
+
 // ------------------------------------------------------------------ boot
 
 async function boot() {
@@ -2091,10 +2231,12 @@ async function boot() {
   try {
     const r = await fetch('menu.json?v=' + Date.now());
     state.data = await r.json();
+    state.offline = r.headers.get('X-Lunsj-Offline') === '1';
   } catch (e) {
     console.error('Kunne ikke laste menu.json', e);
   }
   render();
+  renderOffline();
   track('view');
   loadTraffic();
   loadBanner();

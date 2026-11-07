@@ -465,6 +465,20 @@ app.post('/api/vote', async (req, res) => {
   res.json({ votes: state.votes, myVote: next || null });
 });
 
+// Skrevne innspill lagres i feedback.json så de kan leses i admin (i tillegg
+// til ntfy). Ingen IP eller annen info om avsender lagres - bare tekst og tid.
+const FEEDBACK_FILE = path.join(__dirname, 'feedback.json');
+const FEEDBACK_MAX = 500;
+const feedbackHits = new Map(); // klient -> { date, n }, maks 20 innspill per dag
+
+async function readFeedback() {
+  try { return JSON.parse(await fs.readFile(FEEDBACK_FILE, 'utf-8')); } catch { return []; }
+}
+
+async function writeFeedback(list) {
+  await fs.writeFile(FEEDBACK_FILE, JSON.stringify(list.slice(0, FEEDBACK_MAX), null, 1), 'utf-8');
+}
+
 app.post('/api/feedback', async (req, res) => {
   const kind = String(req.body?.kind || '');
   const message = String(req.body?.message || '').slice(0, 2000);
@@ -487,6 +501,16 @@ app.post('/api/feedback', async (req, res) => {
   bump(statsDay().feedback ||= {}, kind);
   statsDirty = true;
 
+  if (kind === 'text') {
+    const key = clientKey(req), today = todayKey();
+    const hit = feedbackHits.get(key);
+    if (hit && hit.date === today && hit.n >= 20) return res.status(429).json({ error: 'for mange innspill i dag' });
+    feedbackHits.set(key, { date: today, n: hit && hit.date === today ? hit.n + 1 : 1 });
+    const list = await readFeedback();
+    list.unshift({ id: randomUUID().slice(0, 8), at: new Date().toISOString(), message: message.trim(), read: false });
+    await writeFeedback(list);
+  }
+
   try {
     const r = await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
       method: 'POST',
@@ -499,12 +523,35 @@ app.post('/api/feedback', async (req, res) => {
     }
     res.json({ ok: true });
   } catch (e) {
+    // Innspillet er allerede lagret (og talt) - ntfy er bare et ekstra varsel
     console.error('ntfy-feil:', e);
-    res.status(502).json({ error: e.message });
+    res.json({ ok: true, ntfy: false });
   }
 });
 
 // ---------------------------------------------------------------- admin api
+
+app.get('/api/admin/feedback', requireAdmin, async (req, res) => {
+  const list = await readFeedback();
+  res.json({ items: list, unread: list.filter(f => !f.read).length });
+});
+
+app.post('/api/admin/feedback/:id', requireAdmin, async (req, res) => {
+  const list = await readFeedback();
+  const item = list.find(f => f.id === req.params.id);
+  if (!item) return res.status(404).json({ error: 'finnes ikke' });
+  item.read = req.body?.read !== false;
+  await writeFeedback(list);
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/feedback/:id', requireAdmin, async (req, res) => {
+  const list = await readFeedback();
+  const next = list.filter(f => f.id !== req.params.id);
+  if (next.length === list.length) return res.status(404).json({ error: 'finnes ikke' });
+  await writeFeedback(next);
+  res.json({ ok: true });
+});
 
 app.get('/api/banner', async (req, res) => {
   res.set('Cache-Control', 'no-store');
@@ -1286,6 +1333,12 @@ async function healthProblems() {
     problems.push({ key: 'daily', text: 'Dagsmenyen er ikke hentet i dag (scrape_dagens_menu.py har ikke kjørt).' });
   }
 
+  // Sikkerhetskopien skal tas hver natt
+  const lastBackup = await newestBackup();
+  if (minutes >= 9 * 60 && (!lastBackup || lastBackup < addDays(todayKey(), -1))) {
+    problems.push({ key: 'backup', text: `Ingen sikkerhetskopi siden ${lastBackup || 'start'} (se ${BACKUP_DIR}).` });
+  }
+
   // Skript som feilet sist de kjørte i dag
   const runs = await readRuns();
   for (const s of SCRIPTS) {
@@ -1385,13 +1438,13 @@ const STATS_LIMIT_PER_CLIENT = 300; // hendelser per klient per dag
 const STAT_EVENTS = new Set([
   'dag', 'sprak', 'allergener', 'se_menyen', 'middagsfane', 'kart', 'hjul',
   'kopier', 'push_pa', 'push_av', 'tilbakemelding', 'installer',
-  'sesong_av', 'sesong_pa', 'mork_modus', 'stem', 'kafeer', 'allergifilter'
+  'sesong_av', 'sesong_pa', 'mork_modus', 'stem', 'kafeer', 'allergifilter', 'sok', 'favoritt'
 ]);
 const STAT_PLACES = new Set(['m', 'fresh4you', 'bakern', 'cafem', 'dinner', '']);
 const STAT_DAYS = new Set(['mon', 'tue', 'wed', 'thu', 'fri']);
 const BOT_EVENTS = new Set([
   'lunsj', 'middag', 'bakern', 'meny', 'allergi', 'imorgen', 'ukedag',
-  'kantine', 'cafem', 'gjovik', 'kaffe', 'hjelp', 'paaminnelse', 'knapp',
+  'kantine', 'cafem', 'gjovik', 'kaffe', 'hjelp', 'favoritt', 'sok', 'favoritt_sendt', 'paaminnelse', 'knapp',
   'paaminnelse_sendt', 'morgenpost', 'annet'
 ]);
 
@@ -1605,7 +1658,15 @@ app.get('/api/stats/weekly', async (req, res) => {
   const lastMonday = addDays(thisMonday, -7);
   let pushSubs = null;
   try { pushSubs = Object.keys(await readSubs()).length; } catch {}
-  res.json({ ...weekSummary(lastMonday), prev: weekSummary(addDays(lastMonday, -7)), pushSubs });
+  // Skrevne innspill fra uka (nyeste først) og hvor mange som er ulest totalt
+  const fb = await readFeedback();
+  const weekEnd = addDays(lastMonday, 7);
+  const feedbackTexts = fb.filter(f => {
+    const d = new Date(f.at).toLocaleDateString('sv-SE', { timeZone: 'Europe/Oslo' });
+    return d >= lastMonday && d < weekEnd;
+  }).map(f => f.message);
+  res.json({ ...weekSummary(lastMonday), prev: weekSummary(addDays(lastMonday, -7)), pushSubs,
+    feedbackTexts, feedbackUnread: fb.filter(f => !f.read).length });
 });
 
 app.get('/api/admin/stats', requireAdmin, (req, res) => {
@@ -1620,6 +1681,153 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
   // Første dag med data var bare delvis (statistikken startet midt på dagen)
   const since = Object.keys(stats.days).filter(d => stats.days[d].views > 0).sort()[0] || null;
   res.json({ days: out, keepDays: STATS_KEEP_DAYS, since, today: todayKey() });
+});
+
+// ---------------------------------------------------------------- menyarkiv
+//
+// Dagens meny lagres i archive/ÅÅÅÅ-MM-DD.json (hverdager, oppdateres til
+// kl. 16 så rettelser kommer med). Brukes til «Når var det sist …?» på siden
+// og i boten, og til favorittvarsler.
+
+const ARCHIVE_DIR = path.join(__dirname, 'archive');
+const ARCHIVE_PLACES = ['fresh4you', 'm', 'cafem', 'bakern', 'dinner'];
+let archiveCache = null; // { date: {places} }
+
+/** Dagens retter per sted, i samme rekkefølge som på siden. */
+async function todayMenu(lang = 'no', ids = ARCHIVE_PLACES) {
+  let menu;
+  try {
+    menu = JSON.parse(await fs.readFile(MENU_JSON, 'utf-8'));
+  } catch {
+    return null;
+  }
+  const { weekday } = osloClock();
+  if (weekday > 4) return null;
+  const day = DAY_KEYS[weekday];
+  const dailyFresh = osloDate(menu?.dailyUpdated) === todayKey();
+  return ids.map(id => ({ id, name: menu.places?.[id]?.name || id, items: pushItems(menu, id, lang, day, dailyFresh) }))
+    .filter(p => p.items.length);
+}
+
+async function archiveToday() {
+  const { weekday, minutes } = osloClock();
+  if (weekday > 4 || minutes < 9 * 60 || minutes > 16 * 60) return;
+  const [no, en] = await Promise.all([todayMenu('no'), todayMenu('en')]);
+  if (!no?.length) return;
+  const places = {};
+  for (const p of no) {
+    places[p.id] = { name: p.name, no: p.items, en: en?.find(e => e.id === p.id)?.items || [] };
+  }
+  const file = path.join(ARCHIVE_DIR, todayKey() + '.json');
+  const body = JSON.stringify({ date: todayKey(), places }, null, 1);
+  try {
+    if ((await fs.readFile(file, 'utf-8')) === body) return;
+  } catch {}
+  await fs.mkdir(ARCHIVE_DIR, { recursive: true });
+  await fs.writeFile(file, body, 'utf-8');
+  archiveCache = null;
+}
+
+setInterval(() => archiveToday().catch(e => console.error('Menyarkiv feilet:', e.message)), 15 * 60 * 1000);
+setTimeout(() => archiveToday().catch(() => {}), 20 * 1000);
+
+async function loadArchive() {
+  if (archiveCache) return archiveCache;
+  const out = {};
+  try {
+    for (const f of (await fs.readdir(ARCHIVE_DIR)).filter(f => /^\d{4}-\d{2}-\d{2}\.json$/.test(f))) {
+      try { out[f.slice(0, 10)] = JSON.parse(await fs.readFile(path.join(ARCHIVE_DIR, f), 'utf-8')).places; } catch {}
+    }
+  } catch {}
+  archiveCache = out;
+  return out;
+}
+
+const normText = s => String(s || '').toLowerCase().normalize('NFC');
+
+/** Ord man kan søke på: minst 3 tegn, maks 40. */
+function cleanTerm(q) {
+  const t = normText(q).replace(/\s+/g, ' ').trim();
+  return t.length >= 3 && t.length <= 40 ? t : null;
+}
+
+/** Søk i arkivet (bakover) og i resten av ukesmenyen (framover). */
+async function searchMenus(q, lang = 'no') {
+  const term = cleanTerm(q);
+  if (!term) return null;
+  const archive = await loadArchive();
+  const today = todayKey();
+  const past = [];
+  for (const date of Object.keys(archive).sort().reverse()) {
+    for (const [id, p] of Object.entries(archive[date])) {
+      const items = (lang === 'en' && p.en?.length ? p.en : p.no) || [];
+      const dish = items.find(d => normText(d).includes(term))
+        || (lang === 'en' ? (p.no || []).find(d => normText(d).includes(term)) : null);
+      if (dish) past.push({ date, id, name: p.name, dish, today: date === today });
+    }
+    if (past.length >= 15) break;
+  }
+  // Framover: resten av denne uka fra ukesmenyene
+  const upcoming = [];
+  try {
+    const menu = JSON.parse(await fs.readFile(MENU_JSON, 'utf-8'));
+    const { weekday } = osloClock();
+    for (let wd = weekday + 1; wd <= 4; wd++) {
+      const day = DAY_KEYS[wd];
+      for (const id of ARCHIVE_PLACES) {
+        const week = menu.places?.[id]?.week;
+        const items = (week?.[lang]?.[day]?.length ? week[lang][day] : week?.no?.[day]) || [];
+        const dish = items.find(d => normText(d).includes(term));
+        if (dish) upcoming.push({ date: addDays(today, wd - weekday), id, name: menu.places[id].name, dish });
+      }
+    }
+  } catch {}
+  return { q: term, past, upcoming };
+}
+
+const searchHits = new Map();
+app.get('/api/menu/search', async (req, res) => {
+  const key = clientKey(req), today = todayKey();
+  const hit = searchHits.get(key);
+  if (hit && hit.date === today && hit.n > 200) return res.status(429).json({ error: 'for mange søk' });
+  if (searchHits.size > 20000) searchHits.clear();
+  searchHits.set(key, { date: today, n: hit && hit.date === today ? hit.n + 1 : 1 });
+  const result = await searchMenus(req.query.q, req.query.lang === 'en' ? 'en' : 'no');
+  if (!result) return res.status(400).json({ error: 'Skriv minst 3 tegn' });
+  const archive = await loadArchive();
+  res.json({ ...result, since: Object.keys(archive).sort()[0] || null });
+});
+
+/** Favorittord som finnes i dagens meny: [{ word, id, name, dish }] */
+function favoriteHits(menuToday, words) {
+  const out = [];
+  for (const w of words || []) {
+    const term = cleanTerm(w);
+    if (!term) continue;
+    for (const p of menuToday || []) {
+      const dish = p.items.find(d => normText(d).includes(term));
+      if (dish && !out.some(o => o.id === p.id && o.dish === dish)) out.push({ word: term, id: p.id, name: p.name, dish });
+    }
+  }
+  return out;
+}
+
+function cleanFavorites(list) {
+  return [...new Set((Array.isArray(list) ? list : String(list || '').split(','))
+    .map(cleanTerm).filter(Boolean))].slice(0, 10);
+}
+
+// Boten (lokalt) henter favoritt-treff og søk herfra
+function isLocal(req) {
+  const ip = req.socket.remoteAddress || '';
+  return ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(ip)
+    && !req.headers['x-forwarded-for'] && !req.headers['cf-connecting-ip'];
+}
+
+app.post('/api/favorites/match', async (req, res) => {
+  if (!isLocal(req)) return res.status(403).json({ error: 'kun lokalt' });
+  const menuToday = await todayMenu('no');
+  res.json({ ready: !!menuToday?.length, hits: favoriteHits(menuToday, cleanFavorites(req.body?.words)) });
 });
 
 // ---------------------------------------------------------------- pushvarsler
@@ -1690,6 +1898,18 @@ function pushItems(menu, id, lang, day, dailyFresh) {
   }
   const week = menu?.places?.[id]?.week;
   return week?.[lang]?.[day]?.length ? week[lang][day] : (week?.no?.[day] || []);
+}
+
+/** Favoritt-treff først, med ⭐ i tittelen. */
+function favoritePayload(base, hits, lang) {
+  const first = hits[0];
+  const word = first.word.charAt(0).toUpperCase() + first.word.slice(1);
+  const title = lang === 'en'
+    ? `⭐ ${word} today at ${first.name}!`
+    : `⭐ ${word} i dag hos ${first.name}!`;
+  const favLines = hits.map(h => `⭐ ${h.name}: ${h.dish}`);
+  const rest = base.body.split('\n').filter(l => !hits.some(h => l.startsWith(h.name + ':')));
+  return { ...base, title, body: [...favLines, ...rest].join('\n'), tag: base.tag + '-fav' };
 }
 
 /** Varselets innhold: én linje per sted med første rett. */
@@ -1771,7 +1991,20 @@ async function runPushSchedule() {
       if (!(key in payloads)) payloads[key] = await buildPushPayload(entry.lang, at >= 13 * 60);
       if (!payloads[key]) continue;          // menyen er ikke klar - prøv igjen neste runde
 
-      const result = await sendPush(entry, payloads[key]);
+      let payload = payloads[key];
+      if (entry.favorites?.length) {
+        const mkey = 'menu:' + entry.lang;
+        if (!(mkey in payloads)) payloads[mkey] = await todayMenu(entry.lang);
+        const hits = favoriteHits(payloads[mkey], entry.favorites);
+        if (!hits.length && entry.onlyFav) {
+          entry.lastSent = today;            // ingen favoritter i dag - ikke send
+          changed = true;
+          continue;
+        }
+        if (hits.length) payload = favoritePayload(payload, hits, entry.lang);
+      }
+
+      const result = await sendPush(entry, payload);
       if (result === 'gone') delete subs[id];
       else if (result === 'ok') entry.lastSent = today;
       changed = true;
@@ -1818,6 +2051,9 @@ app.post('/api/push/subscribe', async (req, res) => {
     time,
     days,
     lang: req.body?.lang === 'en' ? 'en' : 'no',
+    // Favoritter: ord som gir ⭐ i varselet. onlyFav = varsle bare når en favoritt er på menyen.
+    favorites: cleanFavorites(req.body?.favorites),
+    onlyFav: !!req.body?.onlyFav && cleanFavorites(req.body?.favorites).length > 0,
     created: subs[id]?.created || new Date().toISOString(),
     // Ny tid senere i dag skal fortsatt gi varsel i dag
     lastSent: subs[id]?.time === time ? subs[id]?.lastSent : null
@@ -1828,7 +2064,8 @@ app.post('/api/push/subscribe', async (req, res) => {
 
 app.post('/api/push/lookup', async (req, res) => {
   const entry = (await readSubs())[subId(req.body?.endpoint)];
-  res.json(entry ? { found: true, time: entry.time, days: entry.days, lang: entry.lang } : { found: false });
+  res.json(entry ? { found: true, time: entry.time, days: entry.days, lang: entry.lang,
+    favorites: entry.favorites || [], onlyFav: !!entry.onlyFav } : { found: false });
 });
 
 app.post('/api/push/unsubscribe', async (req, res) => {
@@ -1908,5 +2145,73 @@ app.use(express.static(PUBLIC_DIR, {
     }
   }
 }));
+
+// ---------------------------------------------------------------- sikkerhetskopi
+//
+// Hver natt (første sjekk etter kl. 03) kopieres tilstandsfilene til
+// backups/ÅÅÅÅ-MM-DD/. De siste BACKUP_KEEP_DAYS dagene beholdes. Viktigst er
+// vapid.json: mistes den, slutter alle push-abonnementene å virke.
+// Sett BACKUP_DIR i .env for å legge kopiene på en annen disk.
+
+const BACKUP_DIR = process.env.BACKUP_DIR || path.join(__dirname, 'backups');
+const BACKUP_KEEP_DAYS = Number(process.env.BACKUP_KEEP_DAYS || 14);
+const BACKUP_FILES = [
+  'vapid.json', 'push-subs.json', 'stats.json', 'feedback.json', 'state.json', 'banner.json',
+  'overrides.json', 'tip.json', 'theme.json', 'favorites.json', '.env'
+];
+
+async function newestBackup() {
+  try {
+    const dirs = (await fs.readdir(BACKUP_DIR)).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+    return dirs.pop() || null;
+  } catch {
+    return null;
+  }
+}
+
+async function runBackup() {
+  const today = todayKey();
+  const dest = path.join(BACKUP_DIR, today);
+  await flushStats();
+  await fs.mkdir(dest, { recursive: true });
+  const copied = [];
+  for (const f of BACKUP_FILES) {
+    try {
+      await fs.copyFile(path.join(__dirname, f), path.join(dest, f));
+      copied.push(f);
+    } catch (e) {
+      if (e.code !== 'ENOENT') console.error(`Sikkerhetskopi av ${f} feilet:`, e.message);
+    }
+  }
+  // Menyarkivet er lite og vokser sakte - én samlet kopi holder
+  try { await fs.cp(ARCHIVE_DIR, path.join(dest, 'archive'), { recursive: true }); } catch {}
+
+  const cutoff = addDays(today, -BACKUP_KEEP_DAYS);
+  for (const d of await fs.readdir(BACKUP_DIR)) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d) && d < cutoff) {
+      await fs.rm(path.join(BACKUP_DIR, d), { recursive: true, force: true });
+    }
+  }
+  console.log(`Sikkerhetskopi ${today}: ${copied.join(', ')}`);
+  return copied;
+}
+
+async function backupIfDue() {
+  const { minutes } = osloClock();
+  if (minutes < 3 * 60) return;
+  if ((await newestBackup()) === todayKey()) return;
+  try { await runBackup(); } catch (e) { console.error('Sikkerhetskopi feilet:', e.message); }
+}
+
+setInterval(backupIfDue, 30 * 60 * 1000);
+setTimeout(backupIfDue, 60 * 1000);
+
+app.post('/api/admin/backup', requireAdmin, async (req, res) => {
+  try {
+    res.json({ ok: true, files: await runBackup(), dir: BACKUP_DIR });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 app.listen(port, () => console.log(`LunsjApp kjører på port: ${port}!`));

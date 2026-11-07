@@ -1,21 +1,58 @@
-// sw.js - minimal service worker.
+// sw.js - service worker: pushvarsler og offline-visning.
 //
-// Finnes bare for at nettleseren skal tilby "Legg til på Hjem-skjerm".
-// Den cacher ingenting med vilje: all trafikk går rett til nettverket, slik at
-// menyoppdateringer aldri blir liggende igjen i en gammel cache.
+// Offline: forsiden og det den trenger (skript, stil, font, kart og menu.json)
+// hentes alltid fra nettet først. Bare hvis nettet feiler, brukes siste
+// kopi fra cachen - så menyen aldri blir liggende gammel når man er på nett.
 //
-// Merk: fetch-handleren er tom med vilje. Kaller vi respondWith(fetch(...)) må
-// hver eneste request vente på at service worker-tråden våkner, og enhver
-// nettverksfeil blir en hard feil i stedet for at nettleseren håndterer den
-// selv - det ga tregere/feilende innlasting i Edge bak bedriftsproxy.
+// Bare disse få adressene går gjennom service workeren. Alt annet (API,
+// bilder, admin) håndteres av nettleseren som før: å fange hver eneste
+// request ga tidligere tregere/feilende innlasting i Edge bak bedriftsproxy.
 
-self.addEventListener('install', () => self.skipWaiting());
+const CACHE = 'lunsj-offline-v1';
+const SHELL = ['/', '/app.js', '/styles.css', '/fonts/fonts.css', '/fonts/figtree-latin-wght-normal.woff2',
+  '/fonts/figtree-latin-ext-wght-normal.woff2', '/menu.json', '/fornebu-kart.png', '/manifest.json',
+  '/android-chrome-192x192.png'];
 
-self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
+self.addEventListener('install', event => {
+  self.skipWaiting();
+  // Forhåndslagre det vi får til; resten lagres når siden brukes
+  event.waitUntil(caches.open(CACHE).then(c => Promise.allSettled(SHELL.map(u => c.add(u)))));
 });
 
-self.addEventListener('fetch', () => {});
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    for (const k of await caches.keys()) if (k !== CACHE) await caches.delete(k);
+    await self.clients.claim();
+  })());
+});
+
+function shellKey(request) {
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin || request.method !== 'GET') return null;
+  if (request.mode === 'navigate') return url.pathname === '/' || url.pathname === '/index.html' ? '/' : null;
+  return SHELL.includes(url.pathname) ? url.pathname : null;
+}
+
+self.addEventListener('fetch', event => {
+  const key = shellKey(event.request);
+  if (!key) return; // ikke vårt - nettleseren tar det
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    try {
+      const res = await fetch(event.request);
+      if (res.ok) cache.put(key, res.clone());
+      return res;
+    } catch (e) {
+      const hit = await cache.match(key);
+      if (!hit) throw e;
+      if (key !== '/menu.json') return hit;
+      // Merk menyen så siden kan vise «frakoblet - lagret meny»
+      const headers = new Headers(hit.headers);
+      headers.set('X-Lunsj-Offline', '1');
+      return new Response(await hit.blob(), { status: 200, headers });
+    }
+  })());
+});
 
 // Daglig menyvarsel (Web Push). Serveren sender { title, body, url, tag }.
 self.addEventListener('push', event => {

@@ -82,6 +82,19 @@
     </section>
 
     <section class="card admin-card">
+      <span class="card-kicker" id="fbKicker">Innspill</span>
+      <h2 class="card-title">Innspill fra brukerne</h2>
+      <p class="card-body">
+        Det folk skriver i «Innspill» på forsiden. Anonymt - bare tekst og tidspunkt lagres.
+      </p>
+      <div class="admin-actions">
+        <label class="seg-opt fb-filter"><input type="checkbox" id="fbOnlyUnread"><span>Bare uleste</span></label>
+      </div>
+      <div class="fb-list" id="fbList"></div>
+      <p class="admin-status" id="fbAdminStatus" hidden></p>
+    </section>
+
+    <section class="card admin-card">
       <span class="card-kicker">Statistikk</span>
       <h2 class="card-title">Bruk av siden og boten</h2>
       <p class="card-body">

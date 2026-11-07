@@ -53,6 +53,8 @@
 
 <main class="wrap">
 
+  <p class="offline-note" id="offlineNote" role="status" hidden></p>
+
   <div class="site-banner" id="siteBanner" hidden>
     <span class="site-banner-emoji" id="siteBannerEmoji"></span>
     <span id="siteBannerText"></span>
@@ -83,6 +85,9 @@
       <button type="button" class="btn btn-ghost btn-sm icon-btn" id="wheelBtn">
         <svg viewBox="0 0 24 24" class="ico-14"><circle cx="12" cy="12" r="9"/><path d="M12 3v9"/><path d="m20 16-8-4"/><path d="m4 16 8-4"/></svg>
         <span data-t="wheelBtn"></span>
+      </button>
+      <button type="button" class="btn btn-ghost btn-icon-only" id="searchBtn">
+        <svg viewBox="0 0 24 24" class="ico-16"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       </button>
       <button type="button" class="btn btn-ghost btn-icon-only" id="pushBtn" hidden>
         <svg viewBox="0 0 24 24" class="ico-16"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
@@ -157,7 +162,7 @@
       <svg viewBox="0 0 24 24" class="ico-14"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
       <span data-t="topUpCard"></span>
     </a>
-    <a href="https://widget.inisign.com/Widget/Customers/Customer.aspx?token=c5a641de-e74e-48eb-be4e-d847f261ec11"
+    <a href="https://widget.inisign.com/Widget/Customers/Customer.aspx?token=025c84b2-c0d6-4822-9e86-a6674ac24eb7"
        target="_blank" rel="noopener" class="btn btn-ghost icon-btn">
       <svg viewBox="0 0 24 24" class="ico-16"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
       <span data-t="issOriginal"></span>
@@ -246,6 +251,16 @@
 </div>
 
 <div class="about-backdrop" id="pushBackdrop" hidden></div>
+
+<div class="about-backdrop" id="searchBackdrop" hidden></div>
+<div class="about-modal search-modal" id="searchModal" role="dialog" aria-modal="true" aria-labelledby="searchTitle" hidden>
+  <div class="about-head">
+    <div class="fb-title" id="searchTitle" data-t="searchTitle"></div>
+    <button type="button" class="btn btn-ghost btn-xs" id="searchClose" aria-label="Lukk">×</button>
+  </div>
+  <input class="input" id="searchInput" type="search" autocomplete="off" maxlength="40">
+  <div class="search-results" id="searchResults" aria-live="polite"></div>
+</div>
 <div class="about-modal push-modal" id="pushModal" role="dialog" aria-modal="true" aria-labelledby="pushTitle" hidden>
   <div class="about-head">
     <div class="fb-title" id="pushTitle" data-t="pushTitle"></div>
@@ -261,6 +276,12 @@
       <div class="field">
         <label data-t="pushDaysLabel"></label>
         <div class="wheel-opts push-days" id="pushDays"></div>
+      </div>
+      <div class="field">
+        <label for="pushFav" data-t="pushFavLabel"></label>
+        <input class="input" id="pushFav" maxlength="200" autocomplete="off">
+        <span class="push-fav-hint" data-t="pushFavHint"></span>
+        <label class="push-only"><input type="checkbox" id="pushOnlyFav"> <span data-t="pushOnlyFav"></span></label>
       </div>
     </div>
     <p class="push-msg" id="pushMsg" role="status"></p>
