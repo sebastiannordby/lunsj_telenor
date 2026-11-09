@@ -817,7 +817,9 @@ const STAT_LABELS = {
 const BOT_LABELS = {
   lunsj: 'lunsj', middag: 'middag', bakern: 'bakern', meny: 'meny', allergi: 'allergi',
   imorgen: 'i morgen', ukedag: 'mandag, tirsdag …', kantine: 'kantine m / fresh 4 you', cafem: 'cafe m',
-  favoritt: 'favoritt-kommandoer', sok: 'sist / søk', favoritt_sendt: 'favorittvarsler sendt',
+  favoritt: 'favoritt-kommandoer',
+  knapp_middag: 'knapp: Middag', knapp_allergi: 'knapp: Allergier', knapp_oppdater: 'knapp: Oppdater menyen',
+  knapp_bakern: 'knapp: Bakern (gamle kort)', knapp_cafem: 'knapp: Cafe M (gamle kort)', knapp_annet: 'knapp: annet', sok: 'sist / søk', favoritt_sendt: 'favorittvarsler sendt',
   gjovik: 'gjøvik', kaffe: 'kaffe', hjelp: 'hjelp', paaminnelse: 'påminnelse-kommandoer',
   knapp: 'knappetrykk', paaminnelse_sendt: 'påminnelser sendt', morgenpost: 'morgenposter',
   annet: 'annet'

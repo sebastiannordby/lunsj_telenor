@@ -1444,7 +1444,8 @@ const STAT_PLACES = new Set(['m', 'fresh4you', 'bakern', 'cafem', 'dinner', ''])
 const STAT_DAYS = new Set(['mon', 'tue', 'wed', 'thu', 'fri']);
 const BOT_EVENTS = new Set([
   'lunsj', 'middag', 'bakern', 'meny', 'allergi', 'imorgen', 'ukedag',
-  'kantine', 'cafem', 'gjovik', 'kaffe', 'hjelp', 'favoritt', 'sok', 'favoritt_sendt', 'paaminnelse', 'knapp',
+  'kantine', 'cafem', 'gjovik', 'kaffe', 'hjelp', 'favoritt', 'sok', 'favoritt_sendt',
+  'knapp_middag', 'knapp_allergi', 'knapp_oppdater', 'knapp_bakern', 'knapp_cafem', 'knapp_annet', 'paaminnelse', 'knapp',
   'paaminnelse_sendt', 'morgenpost', 'annet'
 ]);
 
